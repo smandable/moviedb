@@ -9,3 +9,5 @@ doc
 js/vendor/
 libraries/
 test/
+.sass-cache/
+etc/

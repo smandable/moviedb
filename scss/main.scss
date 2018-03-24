@@ -39,7 +39,7 @@ body {
 			}
 
 			.cell-controls,
-			.ui-grid-coluiGrid-0008 {
+			.ui-grid-coluiGrid-0009 {
 				padding-top: 1px;
 				padding-left: 1px;
 
@@ -133,10 +133,16 @@ body {
 
 						input[type="text"] {
 							width: 80px;
+							margin-left: 5px;
 						}
 
 						input[type="text"]:first-of-type {
 							width: 265px;
+							margin-left: 0;
+						}
+
+						button {
+							margin-left: 5px;
 						}
 					}
 				}
@@ -162,7 +168,7 @@ body {
 
 				.collapse.input-text,
 				.collapse.input-text-single {
-					display: none;
+					display: block;
 					width: 100%;
 				}
 
@@ -201,8 +207,10 @@ body {
 				.collapse {
 					display: none;
 				}
-
-				.collapse.multi-from-dir {
+				/* .collapse.multi-from-dir {
+					display: block;
+				} */
+				.collapse.single-title {
 					display: block;
 				}
 			}
