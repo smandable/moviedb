@@ -1,0 +1,15 @@
+{
+  "name": "movie_db",
+  "description": "",
+  "main": "app.js",
+  "license": "ISC",
+  "homepage": "movies.html",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

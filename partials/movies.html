@@ -1,0 +1,153 @@
+<div class="jumbotron">
+    <div class="movies">
+        <script type="text/javascript" src="js/import-records-input.js"></script>
+        <div class="container">
+            <div class="row">
+                <div class="col-xs-10">
+                    <div ng-controller="MoviesCtrl" data-ng-init="init()" id="movie-controller">
+                        <p class="movies-hdr">{{moviesHdr}}</p>
+                        <div
+                            ui-grid="gridOptions"
+                            ui-grid-cellnav="ui-grid-cellNav"
+                            ui-grid-edit="ui-grid-edit"
+                            ui-grid-resize-columns="ui-grid-resize-columns"
+                            ui-grid-pinning="ui-grid-pinning"
+                            ui-grid-selection="ui-grid-selection"
+                            ui-grid-move-columns="ui-grid-move-columns"
+                            external-scopes="clickHandlerDeleteButton"
+                            class="myMoviesGrid"></div>
+                        <!--<button id="refreshButton" type="button" class="btn btn-primary">Refresh</button>-->
+                        <!--<strong>Calls Pending:</strong> <span ng-bind="callsPending"></span>-->
+                        <!-- <br /><strong>Last Cell Edited:</strong> {{msg.lastCellEdited}} -->
+                        <hr/>
+                    </div>
+                </div>
+                <div class="col-xs-2">
+                    <h4 class="recent-terms-hdr">
+                        Recent search terms
+                    </h4>
+                    <ul id="recent-terms">
+                        <li class="recent-term">
+                            test term
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <div id="import-records">
+                    <div class="col-sm-6">
+                        <form method="POST" action="#" enctype="multipart/form-data">
+                            <div class="form-group btn-group">
+                                <h3>Mode</h3>
+                                <!-- <h3 style="margin-left: 40px;">{{numTitlesAdded}}</h3> -->
+                                <div class="btn-wrap">
+                                    <label class="btn btn-default">
+                                        <input type="radio" class="single-title" name="when" value="single-title" checked="checked">
+                                        <strong>Add title</strong>
+                                    </label>
+                                    <!-- <label class="btn btn-default"> <input type="radio" class="multi-from-file" name="when" value="multi-from-file"> <strong>Process file</strong> </label> -->
+                                    <label class="btn btn-default">
+                                        <input type="radio" class="multi-from-dir" name="when" value="multi-from-dir">
+                                        <strong>Process directory</strong>
+                                    </label>
+                                    <!-- <label class="btn btn-default"> <input type="radio" class="multi-from-file-nc" name="when" value="multi-from-file-nc" checked> <strong>Process file, unattended</strong> </label> -->
+                                </div>
+                            </div>
+                            <!-- COMPONENT START -->
+                            <div class="form-group input-wrap">
+                                <div class="collapse single-title">
+                                    <h3>Add single title</h3>
+                                    <div class="input-group input-text-single" name="">
+                                        <!-- <input type="text" class="form-control single-title" ng-model="formData.title" id="title" uib-typeahead="title for title in getValue($viewValue) | limitTo:8"> -->
+                                        <input type="text" class="form-control single-title" ng-model="formData.title" id="single-title-input">
+                                        <input type="text" class="form-control single-title" ng-model="formData.dimensions" id="single-title-input-dimensions">
+                                        <input type="text" class="form-control single-title" ng-model="formData.size" id="single-title-input-size">
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-warning btn-add-single-title" type="button">Add single title</button>
+                                            <!-- <button class="btn btn-danger btn-add-everything" type="button">Add Everything</button> -->
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="collapse multi-from-file">
+                                    <h3>Add multiple titles from file</h3>
+                                    <div class="input-group input-file" name="">
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-default btn-choose-file" type="button">Choose</button>
+                                        </span>
+                                        <input type="text" class="form-control input-file-textfield" id="input-file-input" placeholder='Choose input file...'/>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-warning btn-start-processing-file" type="button">Process file</button>
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-text" name="">
+                                        <input type="text" class="form-control record-name" id="input-file-record-name"/>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-warning btn-add-title" type="button">Add title</button>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- <div class="collapse multi-from-file-nc"> <h3>Add multiple titles from file, no confirmation</h3> <div class="input-group input-file" name=""> <span class="input-group-btn"> <button class="btn btn-default btn-choose-file"
+                                type="button">Choose</button> </span> <input type="text" class="form-control input-file-textfield" placeholder='Choose input file...' /> <span class="input-group-btn"> <button class="btn btn-warning btn-start-processing-file" type="button">Process
+                                file</button> </span> </div> <div class="input-group input-text" name=""> <input type="text" class="form-control record-name" /> <span class="input-group-btn"> <button class="btn btn-warning btn-add-title" type="button">Start</button> </span> </div>
+                                </div> -->
+                                <div class="collapse multi-from-dir">
+                                    <h3>Process files in directory</h3>
+                                    <div class="input-group input-dir" name="">
+
+                                        <!-- <span class="input-group-btn"> <button class="btn btn-default btn-choose-dir" type="button">Choose</button> </span> -->
+                                        <!-- <input type="file" id="dir-select" class="form-control input-dir-textfield" webkitdirectory="webkitdirectory" mozdirectory="mozdirectory" msdirectory="msdirectory" odirectory="odirectory" directory="directory" multiple="multiple"/> -->
+                                        <!-- <input type="text" class="form-control input-dir-textfield" placeholder='/Volumes/Recorded 1/test/'/> -->
+                                        <input type="text" class="form-control input-dir-textfield" id="input-directory"/>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-warning btn-start-processing-dir" type="button">Process directory</button>
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-text" name="">
+                                        <input type="text" class="form-control dir-name"/>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-warning btn-add-dir" type="button">Add Directory</button>
+                                        </span>
+                                    </div>
+                                </div>
+                                <!-- <button class="btn btn-primary btn-refresh" type="button" ng-click="grid.appScope.refreshData()">Refresh grid</button> -->
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-sm-6">
+                        <h3 class="num-dupes">
+                            <span></span></h3>
+                        <h3>Duplicate(s)</h3>
+
+                        <div id="duplicates"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Modal -->
+            <div class="modal fade" id="directoryAddModal" tabindex="-1" role="dialog" aria-labelledby="directoryAddModalLabel">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title" id="myModalLabel">Modal title</h4>
+                        </div>
+                        <div class="modal-body">
+                            <div id="from-directory"></div>
+
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary btn-add-all-modal">Add All</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="clear:both;"></div>
+        </div>
+    </div>
+</div>

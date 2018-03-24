@@ -1,0 +1,42 @@
+// function editRow(grid, row) {
+//   $modal.open({
+//     templateUrl: 'edit-modal.html',
+//     controller: ['$modalInstance', 'grid', 'row', RowEditCtrl],
+//     controllerAs: 'vm',
+//     resolve: {
+//       grid: function () { return grid; },
+//       row: function () { return row; }
+//     }
+//   });
+// }
+
+// function RowEditCtrl($modalInstance, PersonSchema, grid, row) {
+//   var vm = this;
+
+//   vm.schema = PersonSchema;
+//   vm.entity = angular.copy(row.entity);
+//   vm.form = [
+//     'movie',
+//     'rating',
+//     'notes'
+//   ];
+
+//   vm.grid = grid;
+//   vm.row = row;
+//   vm.save = save;
+
+//   function save() {
+//     // Copy row values over
+//     row.entity = angular.extend(row.entity, vm.entity);
+//     $modalInstance.close(row.entity);
+//   }
+// }
+
+// .constant('PersonSchema', {
+//   type: 'object',
+//   properties: {
+//     name: { type: 'string', title: 'Name' },
+//     company: { type: 'string', title: 'Company' },
+//     phone: { type: 'string', title: 'Phone' },
+//     'address.city': { type: 'string', title: 'City' }
+//   }

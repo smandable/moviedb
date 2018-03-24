@@ -1,0 +1,16 @@
+get path, filename, filesize, extension and copy all into an array.
+
+Then preg_match $this file on extension, last dash, etc.
+
+Repeat all steps but then compare the cleaned name to the one before.
+
+If names are equal, then add filesize of 2nd to 1st and move to next.
+
+I should end up with a11 info.
+
+So.. I can still use arrays, I think that speed and array utilities will make up for the  readability of JSON.
+
+Array will consist of filename, filesize, file extension, and filepath.
+
+I'll really only be concerned with the names, for the db but I'll have the path, so if it's a dupe I can search the filesystem for another file of the same name
+and get back it's path, size, extension. See if there's a way to search with Finder, maybe. Otherwise I'd have to list them and have a "delete" button next to it or something. And an open or "preview" link as well. Well, ok, just a relative url.

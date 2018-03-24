@@ -1,0 +1,42 @@
+<div class="jumbotron">
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12">
+				<div class="movies">
+					<div ng-controller="MoviesCtrl" data-ng-init="init()">
+						<!-- <p class="movies-hdr">{{moviesHdr}}</p> -->
+						<div class="ui-widget">
+
+							<div class="form-inline">
+								<div class="form-group">
+									<label for="name" class="col-sm-2 control-label">Title</label>
+									<div class="col-sm-2">
+										<input id="title" type="text" ng-model="formData.title" uib-typeahead="title for title in getValue($viewValue) |  limitTo:8">
+									</div>
+								</div>
+								<div class="form-group">
+									<label for="notes" class="col-sm-2 control-label" style="line-height:50px;">Notes</label>
+									<div class="col-sm-2">
+										<input type="text" ng-model="formData.notes">
+									</div>
+								</div>
+								<button ng-click="addMovie()" class="btn btn-success" id="addBtn">Add</button>
+							</div>
+						</div>
+						<!-- <div ng-model="strainExists">  -->
+
+						<!-- <label for="existing-movie" id="existing-movie-label" ng-if="strainExists === true">Strain Exists: </label>
+						<input id="existing-movie" ng-if="strainExists === true"> -->
+						<!-- </div> -->
+						<!-- <textarea id="myMovies" class="form-control" rows="6"></textarea> -->
+
+						<div ui-grid="gridOptions" ui-grid-cellNav ui-grid-edit ui-grid-resize-columns ui-grid-pinning ui-grid-selection ui-grid-move-columns class="myMoviesGrid"></div>
+						<button id="refreshButton" type="button" class="btn btn-primary" ng-click="refreshData()">Refresh</button> <strong>Calls Pending:</strong> <span ng-bind="callsPending"></span>
+					</div>
+					<!-- End MoviesCtrl -->
+				</div>
+			</div>
+		</div>
+	</div>
+	<div style="clear:both;"></div>
+</div>
