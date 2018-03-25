@@ -11,7 +11,7 @@
   "dependencies": {
     "angular": "^1.6.9",
     "angular-route": "^1.6.9",
-    "angular-ui-grid": "^4.4.3",
+    "angular-ui-grid": "^4.4.4",
     "bootstrap-sass": "^3.3.7",
     "clipboard-polyfill": "^2.4.6",
     "colors": "^1.2.1",
