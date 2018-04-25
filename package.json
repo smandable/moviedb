@@ -9,20 +9,20 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "angular": "^1.6.9",
-    "angular-route": "^1.6.9",
-    "angular-ui-grid": "^4.4.4",
+    "angular": "^1.6.10",
+    "angular-route": "^1.6.10",
+    "angular-ui-grid": "^4.4.7",
     "bootstrap-sass": "^3.3.7",
     "clipboard-polyfill": "^2.4.6",
     "colors": "^1.2.1",
     "grunt-contrib-sass": "^1.0.0",
-    "grunt-contrib-watch": "^1.0.0",
+    "grunt-contrib-watch": "^1.0.1",
     "locutus": "^2.0.9",
-    "lodash": "^4.17.5"
+    "lodash": "^4.17.10"
   },
   "devDependencies": {
     "grunt": "^1.0.2",
     "node-bourbon": "^4.2.8",
-    "sass": "^1.0.0-rc.1"
+    "sass": "^1.2.1"
   }
 }

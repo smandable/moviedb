@@ -3,11 +3,10 @@
 // include('getPlayLength.php');
 include('getDimensions.php');
 //$dirName = "/Volumes/Recorded 2/recorded odd file types/";
-$dirName = "/Volumes/Recorded 3/names fixed/";
+$dirName = "/Volumes/Recorded 1/recorded to process/";
 echo "dirName: " . $dirName . "\n";
 
 $files = array();
-$files2 = array();
     $index = 0;
 
     $pattern1 = '/ - Scene.*/';
@@ -33,16 +32,14 @@ foreach (new DirectoryIterator($dirName) as $fileInfo) {
     $fileNameAndPath = $fileInfo->getPathname();
     $fileSize = filesize($fileInfo->getPathname());
 
-    $dimensions = getDimensions($fileNameAndPath, $dirName);
-
+    $dimensions = getDimensions($fileNameAndPath);
+    //$dimensions = "1280 x 1024";
     $files[] = array('Name' => $fileName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
 }
-
 $filesSorted = array();
 foreach ($files as $key => $row) {
     $filesSorted[$key] = $row['Path'];
 }
-
 array_multisort($filesSorted, SORT_ASC, $files);
 $keys = array_keys($files);
 
@@ -127,16 +124,15 @@ function checkDatabaseForMovie($title, $size, $dimensions)
         }
     } else {
         echo "\n\n$title contains neither " . "---------------------------------n\n";
-
-        $newTitle = $title . $numOne;
-        echo "newTitle: $newTitle \n";
-        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$newTitle'");
+        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
         if ($result->num_rows > 0) {
-            $title = $newTitle;
             updateDB($title, $dimensions, $size, $id, $mysqli);
         } else {
-            $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+            $newTitle = $title . $numOne;
+            echo "newTitle: $newTitle \n";
+            $result = $mysqli->query("SELECT * FROM movies WHERE title = '$newTitle'");
             if ($result->num_rows > 0) {
+                $title = $newTitle;
                 updateDB($title, $dimensions, $size, $id, $mysqli);
             } else {
                 addToDB($title, $dimensions, $size, $mysqli);

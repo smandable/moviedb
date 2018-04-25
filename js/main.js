@@ -18,13 +18,13 @@ function updateRecord(id, dataType, dataToUpdate) {
 function formatSize(size) {
     if (size >= 1073741824) {
         size = size / 1073741824;
-        size = number_format(size, 2, ',', '') + ' GB';
+        size = number_format(size, 2, '.', '') + ' GB';
     } else if (size >= 1048576) {
         size = size / 1048576;
-        size = number_format(size, 2, ',', '') + ' MB';
+        size = number_format(size, 2, '.', '') + ' MB';
     } else if (size >= 1024) {
         size = size / 1024;
-        size = number_format(size, 2, ',', '') + ' KB';
+        size = number_format(size, 2, '.', '') + ' KB';
     }
     return size;
 }

@@ -12,7 +12,7 @@ app.config(function ($routeProvider) {
             controller: 'MoviesCtrl'
         })
         .when('/utilities', {
-            templateUrl: 'partials/utilities.html',
+            templateUrl: 'partials/utilities.php',
             controller: 'UtilitiesCtrl'
         })
         .when('/config', {

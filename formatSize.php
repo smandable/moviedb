@@ -9,6 +9,5 @@ function formatSize($size)
     } elseif ($size >= 1024) {
         $size = number_format($size / 1024, 2) . ' KB';
     }
-
     return $size;
 }

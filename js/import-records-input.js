@@ -85,8 +85,11 @@ $('.btn-add-single-title').on("click", function (event) {
     if (stl) {
         var nameToAdd = $.trim($('#single-title-input').val());
         var dimensions = $.trim($('#single-title-input-dimensions').val());
+
         var size = $.trim($('#single-title-input-size').val());
-        size = size * 1073741824;
+        size = size.replace(new RegExp(",", "g"), "");
+        size = parseInt(size, 10);
+
         addMovie(nameToAdd, dimensions, size);
     } else {
         $('#single-title-input').css('border', '1px solid red');

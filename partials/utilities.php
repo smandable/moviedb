@@ -3,9 +3,9 @@
         <script type="text/javascript" src="js/utility-functions.js"></script>
         <div class="container">
             <div class="row">
-                <div class="col-xs-10">
+                <div class="col-xs-12">
                     <div ng-controller="UtilitiesCtrl" id="utilities-controller">
-                        <div class="col-xs-5">
+                        <div class="col-xs-3">
                             <div id="fix-names">
                                 <h2>
                                     Fix Names
@@ -19,30 +19,35 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-xs-5">
+                        <div class="col-xs-9">
+                            <div class="phpinfo-inner">
+
+
                             <?php
                             ob_start();
                             phpinfo();
 
-                            preg_match ('%<style type="text/css">(.*?)</style>.*?<body>(.*?)</body>%s', ob_get_clean(), $matches);
+                            preg_match('%<style type="text/css">(.*?)</style>.*?<body>(.*?)</body>%s', ob_get_clean(), $matches);
 
                             # $matches [1]; # Style information
                             # $matches [2]; # Body information
 
                             echo "<div class='phpinfodisplay'><style type='text/css'>\n",
-                                join( "\n",
+                                join(
+                                    "\n",
                                     array_map(
                                         create_function(
                                             '$i',
                                             'return ".phpinfodisplay " . preg_replace( "/,/", ",.phpinfodisplay ", $i );'
                                             ),
-                                        preg_split( '/\n/', trim(preg_replace( "/\nbody/", "\n", $matches[1])) )
+                                        preg_split('/\n/', trim(preg_replace("/\nbody/", "\n", $matches[1])))
                                         )
                                     ),
                                 "</style>\n",
                                 $matches[2],
                                 "\n</div>\n";
                             ?>
+                        </div>
                         </div>
                     </div>
                 </div>

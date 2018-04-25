@@ -38,7 +38,9 @@
       }
   }
   if ($dataType == 'Size') {
+      echo "dataToUpdate: $dataToUpdate\n";
       $size = $dataToUpdate;
+      $size = formatSize($size);
       $result = $mysqli->query("UPDATE movies SET filesize='$size' WHERE id='$id'");
       echo "Record updated successfully. Size changed to " . $size;
       if ($result === false) {
@@ -56,3 +58,15 @@
 
 
   $mysqli->close();
+
+
+function formatSize($size)
+{
+    echo "Unformatted size: $size\n";
+
+    $size = preg_replace('/,/', '', $size);
+
+    echo "Formatted size: $size\n";
+
+    return $size;
+}
