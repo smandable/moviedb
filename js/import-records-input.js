@@ -149,7 +149,8 @@ $('.btn-add-title').on("click", function (event) {
     }
 });
 
-$('#input-directory').val("/Volumes/Recorded 1/test/");
+//default
+$('#input-directory').val("/Users/sean/Download/tmp/names fixed/");
 
 $('.btn-start-processing-dir').on("click", function (event) {
     event.preventDefault();
@@ -165,8 +166,67 @@ $('.btn-start-processing-dir').on("click", function (event) {
     //     fullNames[i] = theFiles[i].name;
     //     //console.log('theFiles[i]: ', theFiles[i]);
     // }
-    processFileNames(dirName);
+    processFilesForDB(dirName);
 });
+
+function processFilesForDB(dirName) {
+    console.log('in processFilesForDB');
+    $.ajax({
+        async: true,
+        type: "POST",
+        url: "processFilesForDB.php",
+        dataType: "json",
+        data: { dirName: dirName },
+    }).always(function (data) {
+        handleProcessFilesForDBResult(data);
+    })
+}
+
+function handleProcessFilesForDBResult(data) {
+    //console.log('dirName');
+    console.log('data: ', data);
+
+    $('#mode').css('display', 'none');
+    $('#directory-results').css('display', 'block');
+
+    totalCount = data.length;
+    newMovies = 0;
+    duplicateMovies = 0;
+
+    for (i = 0; i < data.length; i++) {
+
+        var name = data[i]['Name'];
+        var dimensions = data[i]['Dimensions'];
+        var size = data[i]['Size'];
+        size = formatSize(size);
+        var isDuplicate = data[i]['Duplicate'];
+        var isLarger = data[i]['Larger'];
+        if (data[i]['Duplicate'] == false) {
+            ++newMovies;
+        } else if (data[i]['Duplicate'] == true) {
+            ++duplicateMovies;
+        }
+
+        var markup = "<tr><td>" + name + "</td><td>" + dimensions + "</td><td>" + size + "</td></tr>";
+
+        $("#directory-results table").append(markup);
+
+    }
+    $("#directory-results .col-xs-9").append("<span>Total: " + totalCount + "</span><span>New: " + newMovies + "</span>"
+        "<span>New: " + newMovies + "</span>");
+
+    // if (~isDupe.indexOf(true)) {
+    //     var duplicateTitle = isDupe.split(': ')[1];
+    //     $('#duplicates').prepend('<div class="input-group input-text"><input type="text" class="form-control duplicate-text" value="' + duplicateTitle + '" disabled/>' +
+    //         '<span class="input-group-btn"><button class="btn btn-warning btn-copy-title" type="button">Copy to clipboard</button><button class="btn btn-danger btn-find-file" type="button">Find file</button></span></div>');
+    //     $('#single-title-input').css('border', '1px solid red');
+    //     numDupes++;
+    //     $('.num-dupes span').text(numDupes);
+    // } else {
+    //     $('#single-title-input').css('border', '1px solid green');
+    // }
+    //angular.element($('#movie-controller')).scope().refreshData();
+}
 
 // function processFileNames(fullNames) {
 //     var cleanedNames = [];

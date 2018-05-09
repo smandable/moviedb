@@ -24,5 +24,15 @@
     "grunt": "^1.0.2",
     "node-bourbon": "^4.2.8",
     "sass": "^1.2.1"
-  }
+},
+"repository": {
+    "type": "git",
+    "url": "git+https://github.com/smandable/moviedb.git"
+  },
+  "author": "Sean Mandable",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/smandable/moviedb/issues"
+  },
+  "homepage": "https://github.com/smandable/moviedb#readme"
 }

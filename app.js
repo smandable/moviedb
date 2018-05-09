@@ -4,12 +4,10 @@ app.config(function ($routeProvider) {
     $routeProvider
         .when('/', {
             // title: 'Movies',
-            templateUrl: 'partials/movies.html',
-            controller: 'MoviesCtrl'
+            templateUrl: 'partials/movies.html'
         })
         .when('/movies', {
-            templateUrl: 'partials/movies.html',
-            controller: 'MoviesCtrl'
+            templateUrl: 'partials/movies.html'
         })
         .when('/utilities', {
             templateUrl: 'partials/utilities.php',
