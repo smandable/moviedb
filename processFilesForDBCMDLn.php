@@ -1,20 +1,28 @@
 <?php
 
+// include('getPlayLength.php');
 include('getDimensionsCMDln.php');
 include('formatSize.php');
+//$dirName = "/Volumes/Recorded 2/recorded odd file types/";
+//$dirName = "/Volumes/Misc 1/misc/";
+$dirName = "/Users/sean/Download/tmp/names fixed/";
+//$dirName = "/Users/sean/Download/tmp/test/";
+//echo "dirName: " . $dirName . "\n";
 
-$dirName = $_POST['dirName'];
-
-if (empty($_POST['dirName'])) {
-    echo 'Directory is required.';
-    exit();
-}
+// $dirName = $_POST['dirName'];
+//
+// if (empty($_POST['dirName'])) {
+//     echo 'Directory is required.';
+//     exit();
+// }
 
 $files = array();
 $files2 = array();
+    $index = 0;
 
     $pattern1 = '/ - Scene.*/';
     $pattern2 = '/ - CD.*/';
+    //$pattern3 = '/.\.m[a-z].*/';
     $pattern3 = '/.mp4.*/';
     $pattern4 = '/.mkv.*/';
     $pattern5 = '/.wmv.*/';
@@ -38,7 +46,8 @@ foreach (new DirectoryIterator($dirName) as $fileInfo) {
     $fileNameAndPath = $fileInfo->getPathname();
     $fileSize = filesize($fileInfo->getPathname());
 
-    $dimensions = getDimensions($fileNameAndPath);
+    $dimensions = getDimensions($fileNameAndPath, $dirName);
+
     $files[] = array('Name' => $fileName, 'baseName' => $baseName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
 }
 
@@ -100,20 +109,27 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
     $numOne = "# 01";
 
     if (preg_match('/# [0-9]+$/', $title)) {
+        //echo "$title contains number " . "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN \n";
         $tmpTitle = preg_split('/ # [0-9]+/', $title);
 
         $result = $mysqli->query("SELECT * FROM movies WHERE title = '$tmpTitle[0]'");
         if ($result->num_rows > 0) {
             $newTitle = $tmpTitle[0]." ".$numOne;
+            //echo "$tmpTitle[0] is in database, to be updated to $newTitle \n";
             $result = $mysqli->query("UPDATE movies SET title='$newTitle' WHERE title='$tmpTitle[0]'");
-            //echo "Title updated in DB from " . $tmpTitle[0] . " to " . $newTitle . "\n";
             updateDB($title, $mysqli, $id);
+            echo "Title updated in DB from " . $tmpTitle[0] . " to " . $newTitle . "\n";
+            //updateFile("upd", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
         }
     } else {
+        //echo "$title contains no number ---------------------------------\n";
         $newTitle = $title. " " .$numOne;
+        //echo "newTitle: $newTitle \n";
         $result = $mysqli->query("SELECT * FROM movies WHERE title = '$newTitle'");
         if ($result->num_rows > 0) {
-            //echo "$newTitle is in database\n";
+            echo "$newTitle is in database\n";
+            //updateFile("fid", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
+            //renameFile($title, $newTitle, $dirName, $files);
             moveDuplicateFile($title, $dirName, $files);
             $isDupe = true;
             return;
@@ -123,38 +139,79 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
     $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
 
     if ($result->num_rows > 0) {
-        //echo "$title is in database \n";
+        echo "$title is in database \n";
         compareFileSizeToDB($title, $titleInDB, $size, $sizeInDB, $dimensions, $dimensionsInDB, $isLarger, $dirName);
+        //updateFile("fid", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
         moveDuplicateFile($title, $dirName, $files);
         $isDupe = true;
     } else {
-        //echo "$title is not yet in database \n";
+        echo "$title is not yet in database\n";
         addToDB($title, $dimensions, $size, $mysqli);
+        //updateFile("nid", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
     }
 
     $mysqli->close();
 }
-function addToDB($title, $dimensions, $size, $mysqli)
-{
-    //echo "Not in database, so adding: " . stripslashes($title) . "\n";
-    $result = $mysqli->query("INSERT IGNORE INTO movies (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
-}
+
 function updateDB($title, $mysqli, $id)
 {
     //echo "In database, so updating: " . stripslashes($title) . "\n";
     $result = $mysqli->query("UPDATE movies SET title='$title' WHERE id='$id'");
 }
-function compareFileSizeToDB($title, $titleInDB, $size, $sizeInDB, $dimensions, $dimensionsInDB, &$isLarger, $dirName)
+
+function addToDB($title, $dimensions, $size, $mysqli)
 {
-    if (($sizeInDB > 0) && ($sizeInDB < $size)) {
-        $isLarger = true;
-    }
+    echo "Not in database, so adding: " . stripslashes($title) . "\n";
+    $result = $mysqli->query("INSERT IGNORE INTO movies (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
 }
 
-returnHTML($files2ReducedSizesSummed);
+function updateFile($status, $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB)
+{
+    $size = formatSize($size);
+    $sizeInDB = formatSize($sizeInDB);
+
+    if ($status == "fid") {
+        $myfile = fopen("$dirName/Duplicates.txt", "a") or die("Unable to open file!");
+        $txt = stripslashes($titleInDB) . " " . $dimensionsInDB . " " . $sizeInDB . "\n\n";
+    } elseif ($status == "nid") {
+        $myfile = fopen("$dirName/NotInDb.txt", "a") or die("Unable to open file!");
+        $txt = stripslashes($title) . " " . $dimensions . " " . $size . "\n\n";
+    //echo stripslashes($title) . " added to database \n ";
+    } elseif ($status == "upd") {
+        $myfile = fopen("$dirName/UpdatedInDb.txt", "a") or die("Unable to open file!");
+        $txt = "Title updated in DB from " . $titleInDB . " to " . $title . "\n\n";
+    }
+
+    fwrite($myfile, $txt);
+    fclose($myfile);
+}
+
+function compareFileSizeToDB($title, $titleInDB, $size, $sizeInDB, $dimensions, $dimensionsInDB, &$isLarger, $dirName)
+{
+    //$size = formatSize($size);
+    //$sizeInDB = formatSize($sizeInDB);
+    //echo "size: " . $size . "\n";
+    //echo "sizeInDB: " . $sizeInDB . "\n";
+
+    //$myfile = fopen("$dirName/SizeComparison.txt", "a") or die("Unable to open file!");
+    //$txt = "";
+    if (($sizeInDB > 0) && ($sizeInDB < $size)) {
+        //$txt = "Smaller than duplicate: " . stripslashes($titleInDB) . " " . $dimensionsInDB . " " . $sizeInDB . "  vs.  " . stripslashes($title) . " " . $dimensions . " " . $size . "\n";
+        $isLarger = true;
+    }
+
+    //fwrite($myfile, $txt);
+    //fclose($myfile);
+}
+
+//print_r($files2ReducedSizesSummed);
+
+//function returnHTML($title, $dimensions, $size, &$isDupe, &$isLarger, $dirName, $files)
+//returnHTML($files2ReducedSizesSummed);
 
 function returnHTML($files2ReducedSizesSummed)
 {
+    //echo "in returnedHTML function\n";
     $lengthFiles2ReducedSizesSummed = count($files2ReducedSizesSummed);
     $returnedArray = array();
 
@@ -166,9 +223,15 @@ function returnHTML($files2ReducedSizesSummed)
         $isd = $files2ReducedSizesSummed[$i]["Duplicate"];
         $isl = $files2ReducedSizesSummed[$i]["Larger"];
 
+        //if ($isd == false) {
         $returnedArray['data'][$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duplicate' => $isd, 'Larger' => $isl, 'Path' => $ph);
+        //}
     }
+
+    // if (!empty($returnedArray)) {
     echo json_encode($returnedArray);
+    //}
+    //echo $returnedArray;
 }
 
 function renameFile($title, $newTitle, $dirName, $files)
@@ -179,13 +242,10 @@ function renameFile($title, $newTitle, $dirName, $files)
         if (!is_file($file['Path'])) {
             continue;
         }
-
-        //$fileExtension =pathinfo($file['baseName'], PATHINFO_EXTENSION);
-        //$newTitle = $newTitle . "." . $fileExtension;
-
         if ($file['Name'] == $title) {
             $rename_file = $destination.$newTitle;
             rename($file['baseName'], $rename_file);
+            //echo "renamed file to $rename_file";
         }
     }
 }
@@ -201,30 +261,13 @@ function moveDuplicateFile($title, $dirName, $files)
             continue;
         }
         if ($file['Name'] == $title) {
+            //$newName = $file['baseName'];
             $rename_file = $destination.$file['baseName'];
             rename($file['Path'], $rename_file);
+            // echo "baseName: $baseName\n";
+            // echo "rename_file: $rename_file\n";
         }
     }
-}
-
-function updateFile($status, $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB)
-{
-    $size = formatSize($size);
-    $sizeInDB = formatSize($sizeInDB);
-
-    if ($status == "fid") {
-        $myfile = fopen("$dirName/Duplicates.txt", "a") or die("Unable to open file!");
-        $txt = stripslashes($titleInDB) . " " . $dimensionsInDB . " " . $sizeInDB . "\n\n";
-    } elseif ($status == "nid") {
-        $myfile = fopen("$dirName/NotInDb.txt", "a") or die("Unable to open file!");
-        $txt = stripslashes($title) . " " . $dimensions . " " . $size . "\n\n";
-    } elseif ($status == "upd") {
-        $myfile = fopen("$dirName/UpdatedInDb.txt", "a") or die("Unable to open file!");
-        $txt = "Title updated in DB from " . $titleInDB . " to " . $title . "\n\n";
-    }
-
-    fwrite($myfile, $txt);
-    fclose($myfile);
 }
 
 function super_unique($array, $key)

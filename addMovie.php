@@ -15,8 +15,6 @@
   $title = $_POST['title'];
   $title = $mysqli->real_escape_string($title);
 
-  // $errors = "";
-
   if (empty($_POST['title'])) {
       echo 'Title is required.';
       exit();

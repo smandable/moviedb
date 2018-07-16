@@ -2,8 +2,8 @@ body {
 	@media screen and (min-width: 768px) {
 		.container .jumbotron,
 		.container-fluid .jumbotron {
-			padding: 10px 10px 30px;
-			min-height: 1200px;
+			padding: 0 10px;
+			min-height: 1100px;
 		}
 	}
 
@@ -98,6 +98,10 @@ body {
 			padding-top: 5px;
 			padding-left: 10px;
 
+			.ngLabel {
+				margin-left: 10px;
+			}
+
 			#footer-btns {
 				display: none;
 				position: absolute;
@@ -162,30 +166,76 @@ body {
 		display: none;
 
 		.col-xs-9 {
-			max-height: 300px;
+			max-height: 340px;
 			overflow-y: scroll;
-		}
 
-		table {
-			margin-left: 85px;
-
-			tr {
-				&:odd {
-					background-color: #fff;
-				}
-				height: 33px;
+			#totals {
+				padding-left: 15px;
 				padding-top: 7px;
+				position: fixed;
+				background-color: #EEEEEE;
+				width: 987px;
 
-				td:first-of-type {
-					width: 375px;
+				span {
+					margin-left: 10px;
+					margin-bottom: 10px;
+					display: inline-block;
+
+					&:first-of-type {
+						margin-left: 0;
+					}
+
+					.num-span {
+						font-weight: bold;
+					}
 				}
+			}
+			//}
+			#table-wrap {
+				margin-top: 44px;
+				//overflow-y: scroll;
+				//height: 380px;
+				table {
+					margin-left: 10px;
 
-				td:nth-of-type(2) {
-					width: 110px;
-				}
+					tr {
+						&:nth-child(odd) {
+							background-color: #fff;
+						}
+						height: 33px;
+						padding-top: 7px;
+						border-left: 1px solid #ccc;
 
-				td:nth-of-type(3) {
-					width: 90px;
+						td {
+							border-right: 1px solid #ccc;
+							padding-left: 10px;
+
+							&:first-of-type {
+								width: 65px;
+								padding-left: 0;
+							}
+						}
+
+						td:nth-of-type(2) {
+							width: 375px;
+						}
+
+						td:nth-of-type(3) {
+							width: 110px;
+						}
+
+						td:nth-of-type(4) {
+							width: 90px;
+						}
+
+						td:nth-of-type(5) {
+							width: 95px;
+						}
+
+						td:nth-of-type(6) {
+							width: 200px;
+						}
+					}
 				}
 			}
 		}
@@ -364,7 +414,8 @@ body {
 }
 
 .config {
-	#db-setting {
+	#db-setting,
+	#tbl-setting {
 		hr {
 			margin-top: 0;
 			margin-bottom: 20px;
@@ -375,6 +426,10 @@ body {
 			margin-bottom: 5px;
 		}
 
+		.btn-wrapper {
+			display: inline-block;
+		}
+
 		#btn-test-db {
 			margin-right: 10px;
 		}
@@ -382,6 +437,17 @@ body {
 		.btn-active {
 			background-color: green;
 			color: white;
+		}
+	}
+
+	#active-tbl {
+		.btn-group > .btn {
+			margin-right: 20px;
+			border-radius: 4px;
+
+			&:last-child {
+				margin-right: 0;
+			}
 		}
 	}
 }

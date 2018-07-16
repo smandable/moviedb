@@ -2,9 +2,9 @@
 
 
 if (strpos(file_get_contents("config/config.php"), 'movieLibraryTEST') !== false) {
-    $result = "movieLibraryTEST";
+    $db_result = "movieLibraryTEST";
 } elseif (strpos(file_get_contents("config/config.php"), 'movieLibrary') !== false) {
-    $result = "movieLibrary";
+    $db_result = "movieLibrary";
 }
 // echo '$result: ' . $result . "\n";
 
@@ -15,4 +15,4 @@ if (strpos(file_get_contents("config/config.php"), 'movieLibraryTEST') !== false
 //
 // echo json_encode($result);
 
-echo $result;
+echo $db_result;

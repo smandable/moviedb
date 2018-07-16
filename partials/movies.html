@@ -2,6 +2,7 @@
     <div class="row">
         <div class="movies">
             <script type="text/javascript" src="js/import-records-input.js"></script>
+            <script type="text/javascript" src="js/main.js"></script>
             <div class="container movies-container">
                 <!-- <div class="row"> -->
                 <div class="col-xs-9">
@@ -52,8 +53,10 @@
     <div class="row" id="directory-results">
 
         <div class="col-xs-9">
-
-            <table></table>
+            <div id="totals"></div>
+            <div id="table-wrap">
+                <table></table>
+            </div>
 
         </div>
         <div class="col-xs-3"></div>
@@ -76,6 +79,8 @@
                                     <input type="radio" class="single-title" name="when" value="single-title">
                                     <strong>Add single title</strong>
                                 </label>
+                                <!-- <button class="btn btn-danger" ng-click="refreshDataButton.onClick(event)"> -->
+                                <!-- <button class="btn btn-danger" ng-click="justAButton.onClick()"> <i class="fa fa-edit" aria-hidden="true"></i> Refresh</button> -->
                                 <!-- <label class="btn btn-default"> <input type="radio" class="multi-from-file" name="when" value="multi-from-file"> <strong>Process file</strong> </label> -->
 
                                 <!-- <label class="btn btn-default"> <input type="radio" class="multi-from-file-nc" name="when" value="multi-from-file-nc" checked> <strong>Process file, unattended</strong> </label> -->
@@ -144,6 +149,7 @@
                     </form>
                 </div>
                 <div class="col-sm-6">
+                    <!-- <button class="btn btn-danger" ng-click="grid.appScope.refreshDataButtonClickHandler.onClick()"> <i class="fa fa-edit" aria-hidden="true"></i> Refresh</button> -->
                     <!-- <h3 class="num-dupes"> <span></span></h3> <h3>Duplicate(s)</h3> <div id="duplicates"></div> -->
                 </div>
             </div>

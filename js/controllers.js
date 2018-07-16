@@ -14,7 +14,7 @@ app.controller('UtilitiesCtrl', ['$scope', function ($scope) {
 
 app.controller('ConfigCtrl', ['$scope', function ($scope) {
     $scope.config = "Config";
-    getConfigFileState();
+    //getConfigFileState();
 }])
 
 app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$q', '$interval', '$httpParamSerializer',
@@ -101,6 +101,10 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                             $scope.gridOptions.data = response.data;
                         });
                     }
+                    // error: function (response) {
+                    //     console.log('no data returned');
+                    //     console.log('response: ', response);
+                    // }
                 });
             };
             getData();
@@ -141,7 +145,6 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                 clipboard.writeText($('.unformatted').val());
             });
 
-
             $scope.multipleDeleteButtonClickHandler = {
                 onClick: function () {
                     for (i = 0; i < $scope.rowsToDelete.length; i++) {
@@ -156,6 +159,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                     $scope.refreshData();
                 }
             };
+
             $scope.multipleSizesClickHandler = {
                 onClick: function () {
                     clipboard.writeText(sizeOfDeletedTitles);
@@ -179,6 +183,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                 $scope.gridOptions.myData = [];
                 getData();
             };
+
         }
     ])
 
