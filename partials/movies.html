@@ -21,29 +21,24 @@
                         <!--<button id="refreshButton" type="button" class="btn btn-primary">Refresh</button>-->
                         <!--<strong>Calls Pending:</strong> <span ng-bind="callsPending"></span>-->
                         <!-- <br /><strong>Last Cell Edited:</strong> {{msg.lastCellEdited}} -->
-                        <hr/>
+                        <!-- <hr/> -->
                     </div>
                 </div>
                 <div class="col-xs-3">
                     <!-- <div class="row"> -->
                     <div class="recent-terms">
-                        <h4 class="recent-terms-hdr">
-                            Recent search terms
-                        </h4>
-                        <ul>
-                            <li>
-                                test term
-                            </li>
-                        </ul>
+                        <div class="recent-terms-hdr">
+                            <h4>
+                                Recent search terms
+                            </h4>
+                            <button class="btn btn-warning">
+                                Clear
+                            </button>
+                        </div>
+                        <ul></ul>
                     </div>
                     <!-- </div> <div class="row"> -->
-                    <div class="total-size-area">
-                        <h4 class="total-size-area-hdr">
-                            Total size:
-                        </h4>
-                        <div class="total-size-results"></div>
-
-                    </div>
+                    <!-- <div class="total-size-area"> <h4 class="total-size-area-hdr"> Total size: </h4> <div class="total-size-results"></div> </div> -->
                     <!-- </div> -->
                 </div>
                 <!-- </div> -->
@@ -51,16 +46,15 @@
         </div>
     </div>
     <div class="row" id="directory-results">
-
         <div class="col-xs-9">
             <div id="totals"></div>
             <div id="table-wrap">
                 <table></table>
             </div>
-
+            <!-- <div ui-grid="resultsGridOptions" ui-grid-cellnav="ui-grid-cellNav" ui-grid-edit="ui-grid-edit" ui-grid-resize-columns="ui-grid-resize-columns" ui-grid-pinning="ui-grid-pinning" ui-grid-selection="ui-grid-selection"
+            ui-grid-move-columns="ui-grid-move-columns" external-scopes="clickHandlerDeleteButton" class="myMoviesResultsGrid"></div> -->
         </div>
         <div class="col-xs-3"></div>
-
     </div>
     <div class="row" id="mode">
         <div class="col-xs-12">
@@ -149,6 +143,7 @@
                     </form>
                 </div>
                 <div class="col-sm-6">
+                    <img id="loading-spinner" src="img/spinner2.gif"/>
                     <!-- <button class="btn btn-danger" ng-click="grid.appScope.refreshDataButtonClickHandler.onClick()"> <i class="fa fa-edit" aria-hidden="true"></i> Refresh</button> -->
                     <!-- <h3 class="num-dupes"> <span></span></h3> <h3>Duplicate(s)</h3> <div id="duplicates"></div> -->
                 </div>

@@ -1,28 +1,12 @@
 <?php
-    // $config = include('config/config.php');
-    //
-    // $mysqli = new mysqli($config->host, $config->username, $config->pass, $config->database);
-    // if ($mysqli->connect_errno) {
-    //     printf('Connect failed: %s\n', $mysqli->connect_error);
-    //     exit();
-    // }
-
-// $table = $config->table;
-// echo "$table\n";
-//echo $mysqli;
 
 include "db_connect.php";
-//echo "$table\n";
 
-    $results = $db->query("SELECT id, title, dimensions, filesize, date_created FROM `".$table."` ORDER BY title ASC");
-    //$results = $db->query("SELECT id, title, dimensions, filesize, date_created FROM movies_het ORDER BY title ASC");
+    $result = $db->query("SELECT id, title, dimensions, filesize, date_created FROM `".$table."` ORDER BY title ASC");
 
-print_r($results);
+    $options = array();
 
-$options = array();
-
-
-        while ($row_id = mysqli_fetch_assoc($results)) {
+        while ($row_id = mysqli_fetch_assoc($result)) {
             $options['data'][] = array(
               'id'      => $row_id['id'],
               'title'    => $row_id['title'],
@@ -31,8 +15,6 @@ $options = array();
               'date_created'    => $row_id['date_created']
           );
         }
-        $results->close();
-        $db->close();
      /*else {
         $options['data'][] = array('no data');
     }*/
@@ -43,3 +25,6 @@ $options = array();
      header('Content-type: application/json');
 
     echo json_encode($options);
+
+    $result->close();
+    $db->close();

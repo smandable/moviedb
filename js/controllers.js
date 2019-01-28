@@ -29,7 +29,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
             $scope.gridOptions = {
                 enableColumnResizing: true,
                 enableFiltering: true,
-                enableGridMenu: true,
+                // enableGridMenu: true,
                 showGridFooter: true,
                 showColumnFooter: false,
                 gridFooterTemplate: "<div class=\"ui-grid-footer-info ui-grid-grid-footer\"><span>{{'search.totalItems' | t}} {{grid.rows.length}}</span><span ng-if=\"grid.renderContainers.body.visibleRowCache.length !== grid.rows.length\" class=\"ngLabel\">({{\"search.showingItems\" | t}} {{grid.renderContainers.body.visibleRowCache.length}})</span><span id = \"footer-btns\"><button class=\"btn btn-danger\" ng-click=\"grid.appScope.multipleDeleteButtonClickHandler.onClick()\"><i class=\"fa fa-edit\"></i>Delete checked</button><button class=\"btn btn-warning btn-get-checked-sizes\">Copy total size</button></span></div>",
@@ -51,7 +51,8 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                     {
                         name: 'Title',
                         field: 'title',
-                        width: 375,
+                        // width: 450,
+                        width: 450,
                         enableCellEdit: true,
                         cellClass: 'cell-title'
                     },
@@ -81,7 +82,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                     },
                     {
                         name: 'Controls',
-                        width: 200,
+                        width: 170,
                         enableFiltering: false,
                         cellTemplate: 'partials/cell-controls-template.html',
                         enableCellEdit: false,
@@ -109,16 +110,108 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
             };
             getData();
 
+            //Results grid
+            // $scope.resultsGridOptions = {
+            //     enableColumnResizing: true,
+            //     enableFiltering: true,
+            //     // enableGridMenu: true,
+            //     showGridFooter: false,
+            //     showColumnFooter: false,
+            //     excessRows: 20,
+            //     onRegisterApi: function (resultsGridApi) {
+            //         // console.log('in onRegisterApi');
+            //         $scope.resultsGridApi = resultsGridApi;
+            //         $scope.resultsGridApi.edit.on.afterCellEdit($scope, function (rowEntity, colDef, newValue) {
+            //             updateRecord(rowEntity.id, colDef.name, newValue);
+            //         });
+            //     },
+            //     columnDefs: [{
+            //             name: 'Id',
+            //             field: 'id',
+            //             width: 65,
+            //             enableCellEdit: false,
+            //             cellClass: 'cell-id'
+            //         },
+            //         {
+            //             name: 'Title',
+            //             field: 'title',
+            //             // width: 450,
+            //             width: 400,
+            //             enableCellEdit: true,
+            //             cellClass: 'cell-title'
+            //         },
+            //         {
+            //             name: 'Dimensions',
+            //             field: 'dimensions',
+            //             width: 110,
+            //             // enableFiltering: false,
+            //             enableCellEdit: true,
+            //             cellClass: 'cell-dimensions'
+            //         },
+            //         {
+            //             name: 'Size',
+            //             field: 'filesize',
+            //             width: 90,
+            //             enableCellEdit: true,
+            //             cellClass: 'cell-size',
+            //             cellFilter: 'sizeFilter'
+            //         },
+            //         {
+            //             name: 'Duplicate',
+            //             field: 'isDupe',
+            //             width: 95,
+            //             enableCellEdit: false,
+            //             cellClass: 'cell-is-duplicate'
+            //         },
+            //         {
+            //             name: 'Larger',
+            //             width: 180,
+            //             enableFiltering: false,
+            //             enableCellEdit: false,
+            //             cellClass: 'cell-is-larger'
+            //         }
+            //     ]
+            // };
+
+            // var getResultsData = function () {
+            //     $.ajax({
+            //         url: "getAllMovies.php",
+            //         type: 'GET',
+            //         dataType: "json",
+            //         success: function (response) {
+            //
+            //             $timeout(function () {
+            //                 $scope.gridOptions.data = response.data;
+            //             });
+            //         }
+            //         // error: function (response) {
+            //         //     console.log('no data returned');
+            //         //     console.log('response: ', response);
+            //         // }
+            //     });
+            // };
+            //END results grid
+
+
             $scope.deleteButtonClickHandler = {
                 onClick: function (id) {
-                    console.log('deleteButtonClickHandler');
+                    //console.log('deleteButtonClickHandler');
                     deleteRow(id);
+                    $scope.refreshData();
+                }
+            };
+
+            $scope.pasteResultsButtonClickHandler = {
+                onClick: function (id) {
+                    // console.log('pasteResultsButtonClickHandler');
+                    pasteResults(id);
                     $scope.refreshData();
                 }
             };
 
             $scope.rowCheckboxHandler = {
                 onClick: function (id, size) {
+
                     chkbx = $(event.target).closest('.ui-grid-cell-contents').find('.row-select-checkbox');
                     size = parseInt(size, 10);
                     if ($(chkbx).is(':checked')) {
@@ -179,7 +272,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
             };
 
             $scope.refreshData = function () {
-                console.log('refreshData');
+                //console.log('refreshData');
                 $scope.gridOptions.myData = [];
                 getData();
             };

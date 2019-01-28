@@ -70,21 +70,11 @@ for ($i=0;$i<$lengthFiles2;$i++) {
 
 function checkDatabaseForMovie($title, $size, $dimensions)
 {
-    $config = include('config/config.php');
-    $mysqli = new mysqli($config->host, $config->username, $config->pass, $config->database);
+    include "db_connect.php";
 
-    if (mysqli_connect_errno()) {
-        printf("Connect failed: %s\n", mysqli_connect_error());
-        exit();
-    }
-    if (!$mysqli->set_charset('utf8')) {
-        printf("Error loading character set utf8: %s\n", $mysqli->error);
-        exit();
-    }
+    $title = $db->real_escape_string($title);
 
-    $title = $mysqli->real_escape_string($title);
-
-    $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+    $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
     $row = mysqli_fetch_assoc($result);
     $id = $row['id'];
 
@@ -92,15 +82,15 @@ function checkDatabaseForMovie($title, $size, $dimensions)
 
     if (strpos($title, $numOne) !== false) {
         echo "\n\n$title contains $numOne " . "11111111111111111111111111111 \n\n";
-        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+        $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
         if ($result->num_rows > 0) {
-            updateDB($title, $dimensions, $size, $id, $mysqli);
+            updateDB($title, $dimensions, $size, $id, $db);
         } else {
             $tmpTitle = explode("$numOne", $title);
             echo "tmp title: " . $tmpTitle[0] . "\n";
-            $result = $mysqli->query("SELECT * FROM movies WHERE title = '$tmpTitle[0]'");
+            $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle[0]'");
             if ($result->num_rows > 0) {
-                updateDB($title, $dimensions, $size, $id, $mysqli);
+                updateDB($title, $dimensions, $size, $id, $db);
                 echo "Title updated from " . $tmpTitle[0] . " to " . $title . "\n";
             }
         }
@@ -108,50 +98,51 @@ function checkDatabaseForMovie($title, $size, $dimensions)
         echo "\n\n$title contains number other than 01 " . "2222222222222222222222222222 \n\n";
         $tmpTitle = preg_split('/# [0-9]+/', $title);
         //echo "tmp title other than one: " . $tmpTitle[0] . "\n";
-        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$tmpTitle[0]'");
+        $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle[0]'");
         if ($result->num_rows > 0) {
             $newTitle = $tmpTitle[0] . $numOne;
             echo "newTitle: $newTitle \n";
-            $result = $mysqli->query("UPDATE movies SET title='$newTitle' WHERE title='$tmpTitle[0]'");
+            $result = $db->query("UPDATE `".$table."` SET title='$newTitle' WHERE title='$tmpTitle[0]'");
             echo "Title updated from " . $tmpTitle[0] . " to " . $newTitle . "\n";
-            //updateDB($newTitle, $dimensions, $size, $id, $mysqli);
+            //updateDB($newTitle, $dimensions, $size, $id, $db);
         }
-        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+        $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
         if ($result->num_rows > 0) {
-            updateDB($title, $dimensions, $size, $id, $mysqli);
+            updateDB($title, $dimensions, $size, $id, $db);
         } else {
-            addToDB($title, $dimensions, $size, $mysqli);
+            addToDB($title, $dimensions, $size, $db);
         }
     } else {
         echo "\n\n$title contains neither " . "---------------------------------n\n";
-        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+        $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
         if ($result->num_rows > 0) {
-            updateDB($title, $dimensions, $size, $id, $mysqli);
+            updateDB($title, $dimensions, $size, $id, $db);
         } else {
             $newTitle = $title . $numOne;
             echo "newTitle: $newTitle \n";
-            $result = $mysqli->query("SELECT * FROM movies WHERE title = '$newTitle'");
+            $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$newTitle'");
             if ($result->num_rows > 0) {
                 $title = $newTitle;
-                updateDB($title, $dimensions, $size, $id, $mysqli);
+                updateDB($title, $dimensions, $size, $id, $db);
             } else {
-                addToDB($title, $dimensions, $size, $mysqli);
+                addToDB($title, $dimensions, $size, $db);
             }
         }
     }
-    $mysqli->close();
+    $results->close();
+    $db->close();
 }
-function updateDB($title, $dimensions, $size, $id, $mysqli)
+function updateDB($title, $dimensions, $size, $id, $db)
 {
     echo "In database: " . stripslashes($title) . "\n";
-    $result = $mysqli->query("UPDATE movies SET title='$title', dimensions='$dimensions', filesize='$size' WHERE id='$id'");
+    $result = $db->query("UPDATE `".$table."` SET title='$title', dimensions='$dimensions', filesize='$size' WHERE id='$id'");
     updateFile("upd", $title, $dimensions, $size);
 }
 
-function addToDB($title, $dimensions, $size, $mysqli)
+function addToDB($title, $dimensions, $size, $db)
 {
     echo "Not in database: " . stripslashes($title) . "\n";
-    $result = $mysqli->query("INSERT IGNORE INTO movies (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
+    $result = $db->query("INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
     updateFile("nid", $title, $dimensions, $size);
 }
 

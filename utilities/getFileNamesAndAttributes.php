@@ -4,7 +4,7 @@ include('getPlayLength.php');
 include('getDimensions.php');
 
 // $dirName = $_POST['dirName'];
-// $dirName = $mysqli->real_escape_string($dirName);\
+// $dirName = $db->real_escape_string($dirName);\
 
 $dirName = "/Volumes/Recorded 1/test/";
 echo "dirName: " . $dirName . "\n";
@@ -87,21 +87,11 @@ function checkDatabaseForMovie($title, $size, $dimensions)
     echo "$title \n";
     echo "$size \n";
     echo "$dimensions \n";
-    $config = include('config/config.php');
-    $mysqli = new mysqli($config->host, $config->username, $config->pass, $config->database);
+    include "db_connect.php";
 
-    if (mysqli_connect_errno()) {
-        printf("Connect failed: %s\n", mysqli_connect_error());
-        exit();
-    }
-    if (!$mysqli->set_charset('utf8')) {
-        printf("Error loading character set utf8: %s\n", $mysqli->error);
-        exit();
-    }
+    $title = $db->real_escape_string($title);
 
-    $title = $mysqli->real_escape_string($title);
-
-    $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+    $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
 
     $row = mysqli_fetch_assoc($result);
 
@@ -109,20 +99,20 @@ function checkDatabaseForMovie($title, $size, $dimensions)
     print_r($row) . "\n";
 
     if (!$result) {
-        die($mysqli->error);
+        die($db->error);
     }
 
     if ($result->num_rows > 0) {
         // echo "In database: " . stripslashes($title) . "\n";
 
-        $result = $mysqli->query("UPDATE movies SET filesize='$size', dimensions='$dimensions' WHERE title='$title'");
+        $result = $db->query("UPDATE `".$table."` SET filesize='$size', dimensions='$dimensions' WHERE title='$title'");
         echo "Size of " . stripslashes($title) . " updated to " . $size . "\n";
         $myfile = fopen("UpdatedInDB.txt", "a") or die("Unable to open file!");
         $txt = stripslashes($title) . " " . $size . " " . $dimensions;
         fwrite($myfile, $txt . "\n");
         fclose($myfile);
     } else {
-        $result = $mysqli->query("INSERT IGNORE INTO movies (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$filesize', NOW())");
+        $result = $db->query("INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$filesize', NOW())");
 
         echo "New record " . stripslashes($title) . " created successfully";
 
@@ -132,7 +122,8 @@ function checkDatabaseForMovie($title, $size, $dimensions)
         fclose($myfile);
     }
 
-    $mysqli->close();
+    $results->close();
+$db->close();
 }
 
 function super_unique($array, $key)

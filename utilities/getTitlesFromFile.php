@@ -40,32 +40,28 @@ $theArray = object_to_array($json_a);
 
 echo count($theArray['Title']) . "<br />";
 
-$mysqli = new mysqli("localhost", "root", "spm024", "movieLibrary");
+$db = new mysqli("localhost", "root", "spm024", "movieLibrary");
   // check connection
-  if ($mysqli->connect_errno){
-    printf("Connect failed: %s\n", $mysqli->connect_error);
-    exit();
+  if ($db->connect_errno) {
+      printf("Connect failed: %s\n", $db->connect_error);
+      exit();
   }
 
-for($i = 0; $i < count($theArray['Title']); $i++) {
+for ($i = 0; $i < count($theArray['Title']); $i++) {
+    $vals = array_values($theArray['Title'][$i]);
+    $title = $vals[16];
 
-  $vals = array_values($theArray['Title'][$i]);
-  $title = $vals[16];
+    if (strtolower($title) != strtolower($blacklist1) || strtolower($name) != strtolower($blacklist2)) {
+        $name = $db->real_escape_string($name);
+        $sql = "REPLACE INTO `".$table."` (title) VALUES ('$name')";
 
-  if(strtolower($title) != strtolower($blacklist1) || strtolower($name) != strtolower($blacklist2)){
-
-   $name = $mysqli->real_escape_string($name);
-   $sql = "REPLACE INTO movies (title) VALUES ('$name')";
-
-    if ($mysqli->query($sql) === TRUE) {
-        echo "New record " . $name . " created successfully<br>";
-      } else {
-          echo "Error: " . $sql . "<br>" . $mysqli->error;
-      }
-  }
+        if ($db->query($sql) === true) {
+            echo "New record " . $name . " created successfully<br>";
+        } else {
+            echo "Error: " . $sql . "<br>" . $db->error;
+        }
+    }
 }
 
-$mysqli->close();
-
-
-?>
+$results->close();
+$db->close();

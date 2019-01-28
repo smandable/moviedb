@@ -67,35 +67,26 @@ function findMovie($title, $size)
 {
     echo "in findMovie() \n";
     echo "$title \n";
-    $config = include('config/config.php');
-    $mysqli = new mysqli($config->host, $config->username, $config->pass, $config->database);
+    include "db_connect.php";
 
-    if (mysqli_connect_errno()) {
-        printf("Connect failed: %s\n", mysqli_connect_error());
-        exit();
-    }
-    if (!$mysqli->set_charset('utf8')) {
-        printf("Error loading character set utf8: %s\n", $mysqli->error);
-        exit();
-    }
+    $title = $db->real_escape_string($title);
 
-    $title = $mysqli->real_escape_string($title);
-
-    $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+    $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
 
     if (!$result) {
-        die($mysqli->error);
+        die($db->error);
     }
 
     if ($result->num_rows > 0) {
         echo "In database: " . stripslashes($title) . "\n";
         formatSize($size);
         //getTheID3($filename)
-        $result = $mysqli->query("INSERT IGNORE INTO movies (size) VALUES ($size");
-        echo "Size of " . stripslashes($title) . " updated to " . $size;
+        $result = $db->query("INSERT IGNORE INTO `".$table."` (size) VALUES ($size)");
+        echo "Size of stripslashes($title) updated to $size\n";
     }
 
-    $mysqli->close();
+    $results->close();
+    $db->close();
 }
 
 function formatSize($size)

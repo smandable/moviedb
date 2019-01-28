@@ -106,16 +106,10 @@ array_multisort($filesSorted, SORT_ASC, $files);
 
 function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
 {
-    $config = include('config/config.php');
-    $mysqli = new mysqli($config->host, $config->username, $config->pass, $config->database);
+    include "db_connect.php";
 
-    if (mysqli_connect_errno()) {
-        printf("Connect failed: %s\n", mysqli_connect_error());
-        exit();
-    }
-
-    $title = $mysqli->real_escape_string($title);
-    $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+    $title = $db->real_escape_string($title);
+    $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
     $row = mysqli_fetch_assoc($result);
     $id = $row['id'];
     $titleInDB = $row['title'];
@@ -128,12 +122,12 @@ function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
         echo "$title contains number " . "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN \n";
         $tmpTitle = preg_split('/ # [0-9]+/', $title);
 
-        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$tmpTitle[0]'");
+        $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle[0]'");
         if ($result->num_rows > 0) {
             $newTitle = $tmpTitle[0]." ".$numOne;
             echo "$tmpTitle[0] is in database, to be updated to $newTitle \n";
-            $result = $mysqli->query("UPDATE movies SET title='$newTitle' WHERE title='$tmpTitle[0]'");
-            updateDB($title, $mysqli, $id);
+            $result = $db->query("UPDATE `".$table."` SET title='$newTitle' WHERE title='$tmpTitle[0]'");
+            updateDB($title, $db, $id);
             echo "Title updated in DB from " . $tmpTitle[0] . " to " . $newTitle . "\n";
             updateFile("upd", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
         }
@@ -141,7 +135,7 @@ function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
         echo "$title contains no number ---------------------------------\n";
         $newTitle = $title. " " .$numOne;
         echo "newTitle: $newTitle \n";
-        $result = $mysqli->query("SELECT * FROM movies WHERE title = '$newTitle'");
+        $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$newTitle'");
         if ($result->num_rows > 0) {
             echo "$newTitle is in database\n";
             updateFile("fid", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
@@ -151,7 +145,7 @@ function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
         }
     }
 
-    $result = $mysqli->query("SELECT * FROM movies WHERE title = '$title'");
+    $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
 
     if ($result->num_rows > 0) {
         echo "$title is in database \n";
@@ -160,23 +154,24 @@ function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
         moveDuplicateFile($title, $dirName, $files);
     } else {
         echo "$title is not yet in database\n";
-        addToDB($title, $dimensions, $size, $mysqli);
+        addToDB($title, $dimensions, $size, $db);
         updateFile("nid", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
     }
 
-    $mysqli->close();
+    $results->close();
+    $db->close();
 }
 
-function updateDB($title, $mysqli, $id)
+function updateDB($title, $db, $id)
 {
     echo "In database, so updating: " . stripslashes($title) . "\n";
-    $result = $mysqli->query("UPDATE movies SET title='$title' WHERE id='$id'");
+    $result = $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
 }
 
-function addToDB($title, $dimensions, $size, $mysqli)
+function addToDB($title, $dimensions, $size, $db)
 {
     echo "Not in database, so adding: " . stripslashes($title) . "\n";
-    $result = $mysqli->query("INSERT IGNORE INTO movies (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
+    $result = $db->query("INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
 }
 
 function updateFile($status, $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB)

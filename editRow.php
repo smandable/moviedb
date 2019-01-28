@@ -1,72 +1,45 @@
 <?php
 
-  $config = include('config/config.php');
-  $mysqli = new mysqli($config->host, $config->username, $config->pass, $config->database);
-
-  if ($mysqli->connect_errno) {
-      printf("Connect failed: %s\n", $mysqli->connect_error);
-      exit();
-  }
+include "db_connect.php";
 
   $id = $_POST['id'];
-  $id = $mysqli->real_escape_string($id);
+  $id = $db->real_escape_string($id);
 
   if (empty($_POST['id'])) {
-      echo 'Id is required.';
+      echo 'ID is required.';
       die();
   }
   $dataType = $_POST['dataType'];
-  $dataType = $mysqli->real_escape_string($dataType);
+  $dataType = $db->real_escape_string($dataType);
 
   $dataToUpdate = $_POST['dataToUpdate'];
-  $dataToUpdate = $mysqli->real_escape_string($dataToUpdate);
+  $dataToUpdate = $db->real_escape_string($dataToUpdate);
 
   if ($dataType == 'Title') {
       $title = $dataToUpdate;
-      $result = $mysqli->query("UPDATE movies SET title='$title' WHERE id='$id'");
-      echo "Record updated successfully. Title changed to " . $title;
-      if ($result === false) {
-          echo "SQL error:".$mysqli->error;
-      }
+      $result = $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
   }
   if ($dataType == 'Dimensions') {
       $dimensions = $dataToUpdate;
-      $result = $mysqli->query("UPDATE movies SET dimensions='$dimensions' WHERE id='$id'");
-      echo "Record updated successfully. Dimensions changed to " . $dimensions;
-      if ($result === false) {
-          echo "SQL error:".$mysqli->error;
-      }
+      $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE id='$id'");
   }
   if ($dataType == 'Size') {
-      echo "dataToUpdate: $dataToUpdate\n";
       $size = $dataToUpdate;
       $size = formatSize($size);
-      $result = $mysqli->query("UPDATE movies SET filesize='$size' WHERE id='$id'");
-      echo "Record updated successfully. Size changed to " . $size;
-      if ($result === false) {
-          echo "SQL error:".$mysqli->error;
-      }
+      $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE id='$id'");
   }
   if ($dataType == 'Date Added') {
       $date_created = $dataToUpdate;
-      $result = $mysqli->query("UPDATE movies SET date_created='$dataToUpdate' WHERE id='$id'");
-      echo "Record updated successfully. Date changed to " . $date_created;
-      if ($result === false) {
-          echo "SQL error:".$mysqli->error;
-      }
+      $result = $db->query("UPDATE `".$table."` SET date_created='$dataToUpdate' WHERE id='$id'");
+  } elseif ($result === false) {
+      echo "SQL error:" . $db->error;
   }
 
-
-  $mysqli->close();
-
+  $result->close();
+  $db->close();
 
 function formatSize($size)
 {
-    echo "Unformatted size: $size\n";
-
     $size = preg_replace('/,/', '', $size);
-
-    echo "Formatted size: $size\n";
-
     return $size;
 }

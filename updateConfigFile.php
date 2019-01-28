@@ -22,4 +22,4 @@ $fp = fopen('config/config.php', 'w');
 fwrite($fp, $str, strlen($str));
 fclose($fp);
 
-echo "Updated: $configUpdate\n";
+//echo "Updated: $configUpdate\n";

@@ -1,28 +1,22 @@
 <?php
-    $config = include('config/config.php');
-    $mysqli = new mysqli($config->host, $config->username, $config->pass, $config->database);
-    if ($mysqli->connect_errno) {
-        printf('Connect failed: %s\n', $mysqli->connect_error);
-        exit();
-    }
+    include "db_connect.php";
 
     $sortOrder = $_POST['sortOrder'];
     $options = array();
     echo "sortOrder:  " . $sortOrder . "\n\n";
     if ($sortOrder == "IDDESC") {
         // echo "sortOrder:  " . $sortOrder . "\n\n";
-        // $results = $mysqli->query('SELECT id, title, notes, date_created FROM movies ORDER BY id DESC');
+        // $result = $db->query('SELECT id, title, notes, date_created FROM `".$table."` ORDER BY id DESC');
         $sortOrder = "id DESC";
-    }
-    else {
+    } else {
         // echo "sortOrder:  " . $sortOrder . "\n\n";
-    // $results = $mysqli->query('SELECT id, title, notes, date_created FROM movies ORDER BY title ASC');
-    $sortOrder = "title ASC";
+        // $result = $db->query('SELECT id, title, notes, date_created FROM `".$table."` ORDER BY title ASC');
+        $sortOrder = "title ASC";
     }
-    $results = $mysqli->query("SELECT id, title, notes, date_created FROM movies ORDER BY '$sortOrder'");
+    $result = $db->query("SELECT id, title, notes, date_created FROM `".$table."` ORDER BY '$sortOrder'");
 
-    if ($results->num_rows > 0) {
-        while ($row_id = $results->fetch_array()) {
+    if ($result->num_rows > 0) {
+        while ($row_id = $result->fetch_array()) {
             $options['myData'][] = array(
               'id'      => $row_id['id'],
               'title'    => $row_id['title'],

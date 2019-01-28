@@ -16,7 +16,6 @@ function getConfigFileState() {
             $('#btn-test-db').removeClass('btn-active');
             $('#btn-prod-db').addClass('btn-active');
         }
-
         return;
     }
 }
@@ -40,22 +39,10 @@ function updateConfigFile(configUpdate) {
     }
 }
 
-// $('#db-setting').on("click", '#btn-test-db', function (event) {
-//     event.preventDefault();
-//     var newDBState = "testDB";
-//     updateConfigFile(newDBState);
-// });
-//
-// $('#db-setting').on("click", '#btn-prod-db', function (event) {
-//     event.preventDefault();
-//     var newDBState = "prodDB";
-//     updateConfigFile(newDBState);
-// });
-
 $('#db-setting .btn-wrapper').click(function (e) {
     //e.preventDefault();
     var btnClicked = $(this).find('.btn').attr('id');
-    console.log("btnClicked: ", btnClicked);
+    //console.log("btnClicked: ", btnClicked);
     if (btnClicked == 'btn-prod-db') {
         var configUpdate = "prodDB";
         updateConfigFile(configUpdate);
@@ -66,27 +53,25 @@ $('#db-setting .btn-wrapper').click(function (e) {
     //$('#output').append($('<div>').html('clicked ' + name));
 })
 
-
 $('#tbl-setting .btn-wrapper').click(function (e) {
     //e.preventDefault();
     var btnClicked = $(this).find('.btn').attr('id');
-    console.log("btnClicked: ", btnClicked);
+    //console.log("btnClicked: ", btnClicked);
     if (btnClicked == 'btn-het') {
         var configUpdate = "movies_het";
         updateConfigFile(configUpdate);
-        console.log("configUpdate: ", configUpdate);
+        //console.log("configUpdate: ", configUpdate);
     } else if (btnClicked == 'btn-bi') {
         var configUpdate = "movies_bi";
         updateConfigFile(configUpdate);
-        console.log("configUpdate: ", configUpdate);
+        //console.log("configUpdate: ", configUpdate);
     } else if (btnClicked == 'btn-gay') {
         var configUpdate = "movies_gay";
         updateConfigFile(configUpdate);
-        console.log("configUpdate: ", configUpdate);
+        //console.log("configUpdate: ", configUpdate);
     } else if (btnClicked == 'btn-misc') {
         var configUpdate = "movies_misc";
         updateConfigFile(configUpdate);
-        console.log("configUpdate: ", configUpdate);
+        //console.log("configUpdate: ", configUpdate);
     }
-    //$('#output').append($('<div>').html('clicked ' + name));
 })
