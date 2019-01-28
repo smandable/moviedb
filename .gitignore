@@ -9,6 +9,6 @@ doc
 js/vendor/
 libraries/
 test/
-sass-cache/
+.sass-cache/
 etc/
 data/
