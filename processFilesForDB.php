@@ -110,19 +110,22 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
         //$tmpTitle = $title." "."#";
         $tmpTitle = $title." ".$numOne;
         $result2 = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle'");
+        $row2 = mysqli_fetch_assoc($result2);
         if ($result2->num_rows > 0) {
-            compareFileSizeToDB($size, $sizeInDB, $isLarger);
-            //moveDuplicateFile($titleUe, $dirName, $files);
             $isDupe = true;
+            $dateCreatedInDB = $row2['date_created'];
+            compareFileSizeToDB($size, $sizeInDB, $isLarger);
+            moveDuplicateFile($titleUe, $dirName, $files);
+
             return;
         }
     }
 
     if ($result->num_rows > 0) {
-        compareFileSizeToDB($size, $sizeInDB, $isLarger);
-        updateSizeDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
-        //moveDuplicateFile($titleUe, $dirName, $files);
         $isDupe = true;
+        compareFileSizeToDB($size, $sizeInDB, $isLarger);
+        //updateSizeDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
+        moveDuplicateFile($titleUe, $dirName, $files);
     } else {
         addToDB($title, $dimensions, $size, $db, $table);
     }

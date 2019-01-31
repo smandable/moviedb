@@ -4,7 +4,6 @@
 
 node_modules/
 bower_components/
-css
 doc
 js/vendor/
 libraries/
