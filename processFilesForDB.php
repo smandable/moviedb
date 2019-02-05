@@ -37,7 +37,6 @@ $iterator = new \RecursiveIteratorIterator($directory);
         $fileExtension =pathinfo($fileInfo->getBasename(), PATHINFO_EXTENSION);
 
         $dimensions = getDimensions($fileNameAndPath);
-        //echo "$dimensions\n";
 
         $files[] = array('Name' => $fileName, 'baseName' => $baseName, 'fileExtension' => $fileExtension, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
     }
@@ -114,8 +113,14 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
         if ($result2->num_rows > 0) {
             $isDupe = true;
             $dateCreatedInDB = $row2['date_created'];
+
+            //Caution here.. this is for normalization, really...
+            $sizeInDB = $row2['filesize'];
             compareFileSizeToDB($size, $sizeInDB, $isLarger);
-            moveDuplicateFile($titleUe, $dirName, $files);
+            updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
+            //End caution...
+
+            //moveDuplicateFile($titleUe, $dirName, $files);
 
             return;
         }
@@ -124,8 +129,8 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
     if ($result->num_rows > 0) {
         $isDupe = true;
         compareFileSizeToDB($size, $sizeInDB, $isLarger);
-        //updateSizeDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
-        moveDuplicateFile($titleUe, $dirName, $files);
+        updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
+    //moveDuplicateFile($titleUe, $dirName, $files);
     } else {
         addToDB($title, $dimensions, $size, $db, $table);
     }
@@ -138,14 +143,16 @@ function addToDB($title, $dimensions, $size, $db, $table)
 {
     $result = $db->query("INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
 }
-function updateSizeDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName)
+function updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName)
 {
-    if ($dimensionsInDB == null) {
-        $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
-        //quickLogFile($title, $dimensions, $dirName);
-    }
-    if ($sizeInDB == null) {
-        $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE title='$title'");
+    //if ($dimensionsInDB == null) {
+    //$result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
+    //quickLogFile($title, $dimensions, $dirName);
+    //}
+    //if ($sizeInDB == null) {
+    //if (($sizeInDB == null) || ($sizeInDB < $size)) {
+    if (($sizeInDB < $size)) {
+        $result = $db->query("UPDATE `".$table."` SET filesize='$size', dimensions='$dimensions' WHERE title='$title'");
         //quickLogFile($title, $size, $dirName);
     }
 }
@@ -182,25 +189,6 @@ function returnHTML($files2ReducedSizesSummed)
     echo json_encode($returnedArray);
 }
 
-function renameFile($title, $newTitle, $dirName, $files)
-{
-    $destination = $dirName;
-
-    foreach ($files as $file) {
-        if (!is_file($file['Path'])) {
-            continue;
-        }
-
-        //$fileExtension =pathinfo($file['baseName'], PATHINFO_EXTENSION);
-        //$newTitle = $newTitle . "." . $fileExtension;
-
-        if ($file['Name'] == $title) {
-            $rename_file = $destination.$newTitle;
-            rename($file['baseName'], $rename_file);
-        }
-    }
-}
-
 function moveDuplicateFile($titleUe, $dirName, $files)
 {
     $destination = $dirName.'duplicates/';
@@ -216,6 +204,25 @@ function moveDuplicateFile($titleUe, $dirName, $files)
             str_replace("'", "\'", $rename_file);
             //quickFile($dirName, $titleUe, $rename_file);
             rename($file['Path'], $rename_file);
+        }
+    }
+}
+
+function renameFile($title, $newTitle, $dirName, $files)
+{
+    $destination = $dirName;
+
+    foreach ($files as $file) {
+        if (!is_file($file['Path'])) {
+            continue;
+        }
+
+        //$fileExtension =pathinfo($file['baseName'], PATHINFO_EXTENSION);
+        //$newTitle = $newTitle . "." . $fileExtension;
+
+        if ($file['Name'] == $title) {
+            $rename_file = $destination.$newTitle;
+            rename($file['baseName'], $rename_file);
         }
     }
 }
@@ -260,6 +267,7 @@ function super_unique($array, $key)
     $array = array_values($temp_array);
     return $array;
 }
+
 function multi_array_key_exists($needle, $haystack)
 {
     foreach ($haystack as $key => $value) :

@@ -181,7 +181,7 @@ $('.btn-add-single-title').on("click", function(event) {
 //default
 $('#input-directory').val("/Users/sean/Download/names fixed/");
 //$('#input-directory').val("/Volumes/Recorded 1/test/");
-//$('#input-directory').val("/Volumes/Tmp/recorded//");
+//$('#input-directory').val("/Volumes/Tmp/keep/");
 
 $('.btn-start-processing-dir').on("click", function(event) {
     event.preventDefault();
@@ -214,6 +214,8 @@ function handleProcessFilesForDBResult(response) {
     totalCount = response.data.length;
     newMovies = 0;
     numDuplicates = 0;
+    totalSizeNew = 0;
+    totalSizeDuplicate = 0;
 
     for (i = 0; i < response.data.length; i++) {
         var name = response.data[i]['Name'];
@@ -230,10 +232,14 @@ function handleProcessFilesForDBResult(response) {
 
         if (response.data[i]['Duplicate'] == false) {
             ++newMovies;
+            totalSizeNew += size;
+            //formatSize(totalSizeNew);
 
             var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
         } else if (response.data[i]['Duplicate'] == true) {
             ++numDuplicates;
+            totalSizeDuplicate += size;
+            //formatSize(totalSizeDuplicate);
 
             if (response.data[i]['Larger'] == true) {
                 var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <i class="fas fa-angle-double-up"></i><span class="tsize">' + size + '</span></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</i></button></td></tr>';
@@ -244,7 +250,7 @@ function handleProcessFilesForDBResult(response) {
         $("#directory-results table").append(markup);
     }
 
-    $("#directory-results #totals").html('<span>Total: <span class="num-span">' + totalCount + '</span></span><span>New: <span class="num-span">' + newMovies + '</span></span><span>Duplicates: <span class="num-span">' + numDuplicates + '</span></span>');
+    $("#directory-results #totals").html('<span>Total: <span class="num-span">' + totalCount + '</span></span><span>New: <span class="num-span">' + newMovies + ' (' + formatSize(totalSizeNew) + ')</span></span><span>Duplicates: <span class="num-span">' + numDuplicates + ' (' + formatSize(totalSizeDuplicates) + ')</span></span>');
     angular.element($('#movie-controller')).scope().refreshData();
 
     $("#directory-results .col-xs-3").html('<button class="btn btn-default btn-refresh" type="button">Refresh</button>');

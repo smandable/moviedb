@@ -8,16 +8,8 @@
                 <div class="col-xs-9">
                     <div ng-controller="MoviesCtrl" data-ng-init="init()" id="movie-controller">
                         <p class="movies-hdr">{{moviesHdr}}</p>
-                        <div
-                            ui-grid="gridOptions"
-                            ui-grid-cellnav="ui-grid-cellNav"
-                            ui-grid-edit="ui-grid-edit"
-                            ui-grid-resize-columns="ui-grid-resize-columns"
-                            ui-grid-pinning="ui-grid-pinning"
-                            ui-grid-selection="ui-grid-selection"
-                            ui-grid-move-columns="ui-grid-move-columns"
-                            external-scopes="clickHandlerDeleteButton"
-                            class="myMoviesGrid"></div>
+                        <div ui-grid="gridOptions" ui-grid-cellnav="ui-grid-cellNav" ui-grid-edit="ui-grid-edit" ui-grid-resize-columns="ui-grid-resize-columns" ui-grid-pinning="ui-grid-pinning" ui-grid-selection="ui-grid-selection"
+                          ui-grid-move-columns="ui-grid-move-columns" external-scopes="clickHandlerDeleteButton" class="myMoviesGrid"></div>
                         <!--<button id="refreshButton" type="button" class="btn btn-primary">Refresh</button>-->
                         <!--<strong>Calls Pending:</strong> <span ng-bind="callsPending"></span>-->
                         <!-- <br /><strong>Last Cell Edited:</strong> {{msg.lastCellEdited}} -->
@@ -94,13 +86,13 @@
                                     <!-- <span class="input-group-btn"> <button class="btn btn-default btn-choose-dir" type="button">Choose</button> </span> -->
                                     <!-- <input type="file" id="dir-select" class="form-control input-dir-textfield" webkitdirectory="webkitdirectory" mozdirectory="mozdirectory" msdirectory="msdirectory" odirectory="odirectory" directory="directory" multiple="multiple"/> -->
                                     <!-- <input type="text" class="form-control input-dir-textfield" placeholder='/Volumes/Recorded 1/test/'/> -->
-                                    <input type="text" class="form-control input-dir-textfield" id="input-directory"/>
+                                    <input type="text" class="form-control input-dir-textfield" id="input-directory" />
                                     <span class="input-group-btn">
                                         <button class="btn btn-warning btn-start-processing-dir" type="button">Process directory</button>
                                     </span>
                                 </div>
                                 <div class="input-group input-text" name="">
-                                    <input type="text" class="form-control dir-name"/>
+                                    <input type="text" class="form-control dir-name" />
                                     <span class="input-group-btn">
                                         <button class="btn btn-warning btn-add-dir" type="button">Add Directory</button>
                                     </span>
@@ -126,13 +118,13 @@
                                     <span class="input-group-btn">
                                         <button class="btn btn-default btn-choose-file" type="button">Choose</button>
                                     </span>
-                                    <input type="text" class="form-control input-file-textfield" id="input-file-input" placeholder='Choose input file...'/>
+                                    <input type="text" class="form-control input-file-textfield" id="input-file-input" placeholder='Choose input file...' />
                                     <span class="input-group-btn">
                                         <button class="btn btn-warning btn-start-processing-file" type="button">Process file</button>
                                     </span>
                                 </div>
                                 <div class="input-group input-text" name="">
-                                    <input type="text" class="form-control record-name" id="input-file-record-name"/>
+                                    <input type="text" class="form-control record-name" id="input-file-record-name" />
                                     <span class="input-group-btn">
                                         <button class="btn btn-warning btn-add-title" type="button">Add title</button>
                                     </span>
@@ -143,7 +135,7 @@
                     </form>
                 </div>
                 <div class="col-sm-6">
-                    <img id="loading-spinner" src="img/spinner2.gif"/>
+                    <img id="loading-spinner" src="img/spinner2.gif" />
                     <!-- <button class="btn btn-danger" ng-click="grid.appScope.refreshDataButtonClickHandler.onClick()"> <i class="fa fa-edit" aria-hidden="true"></i> Refresh</button> -->
                     <!-- <h3 class="num-dupes"> <span></span></h3> <h3>Duplicate(s)</h3> <div id="duplicates"></div> -->
                 </div>
