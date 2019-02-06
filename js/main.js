@@ -234,13 +234,11 @@ function handleProcessFilesForDBResult(response) {
         if (response.data[i]['Duplicate'] == false) {
             ++newMovies;
             totalSizeNew += size;
-            //formatSize(totalSizeNew);
 
             var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
         } else if (response.data[i]['Duplicate'] == true) {
             ++numDuplicates;
             totalSizeDuplicates += size;
-            //formatSize(totalSizeDuplicate);
 
             if (response.data[i]['Larger'] == true) {
                 var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) + '"><i class="fas fa-angle-double-up"></i></a></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</i></button></td></tr>';
