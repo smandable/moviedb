@@ -58,8 +58,9 @@ for ($i=0;$i<$lengthFiles;$i++) {
     $ph = $files[$i]["Path"];
     $isDupe = false;
     $isLarger = false;
+    $sizeInDB = '';
     $dateCreatedInDB = '';
-    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'Date Created' => $dateCreatedInDB);
+    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'Size in DB' => $sizeInDB,'Date Created' => $dateCreatedInDB);
 }
 
 $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
@@ -76,10 +77,10 @@ $lengthFiles2 = count($files2ReducedSizesSummed);
 
 for ($i=0;$i<$lengthFiles2;$i++) {
     //checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $dirName, $files);
-    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Date Created"], $dirName, $files);
+    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Date Created"], $dirName, $files);
 }
 
-function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger, &$dateCreatedInDB, $dirName, $files)
+function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger, &$sizeInDB, &$dateCreatedInDB, $dirName, $files)
 {
     include "db_connect.php";
     $titleUe = $title;
@@ -114,13 +115,14 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
             $isDupe = true;
             $dateCreatedInDB = $row2['date_created'];
 
-            //Caution here.. this is for normalization, really...
             $sizeInDB = $row2['filesize'];
             compareFileSizeToDB($size, $sizeInDB, $isLarger);
-            updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
+
+            //Caution here.. this is for normalization, really...
+            //updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
             //End caution...
 
-            //moveDuplicateFile($titleUe, $dirName, $files);
+            moveDuplicateFile($titleUe, $dirName, $files);
 
             return;
         }
@@ -129,8 +131,12 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
     if ($result->num_rows > 0) {
         $isDupe = true;
         compareFileSizeToDB($size, $sizeInDB, $isLarger);
-        updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
-    //moveDuplicateFile($titleUe, $dirName, $files);
+
+        //Caution here.. this is for normalization, really...
+        //updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
+        //End caution...
+
+        moveDuplicateFile($titleUe, $dirName, $files);
     } else {
         addToDB($title, $dimensions, $size, $db, $table);
     }
@@ -145,15 +151,10 @@ function addToDB($title, $dimensions, $size, $db, $table)
 }
 function updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName)
 {
-    //if ($dimensionsInDB == null) {
-    //$result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
-    //quickLogFile($title, $dimensions, $dirName);
-    //}
-    //if ($sizeInDB == null) {
-    //if (($sizeInDB == null) || ($sizeInDB < $size)) {
-    if (($sizeInDB < $size)) {
-        $result = $db->query("UPDATE `".$table."` SET filesize='$size', dimensions='$dimensions' WHERE title='$title'");
-        //quickLogFile($title, $size, $dirName);
+    if (($sizeInDB == null) || ($sizeInDB < $size)) {
+        $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
+        $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE title='$title'");
+        quickLogFile($title, $size, $sizeInDB, $dimensions, $dimensionsInDB, $dirName);
     }
 }
 
@@ -183,8 +184,9 @@ function returnHTML($files2ReducedSizesSummed)
         $ph = $files2ReducedSizesSummed[$i]["Path"];
         $isd = $files2ReducedSizesSummed[$i]["Duplicate"];
         $isl = $files2ReducedSizesSummed[$i]["Larger"];
+        $sdb = $files2ReducedSizesSummed[$i]['Size in DB'];
         $dcd = $files2ReducedSizesSummed[$i]["Date Created"];
-        $returnedArray['data'][$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph, 'Duplicate' => $isd, 'Larger' => $isl, 'Date Created' => $dcd);
+        $returnedArray['data'][$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph, 'Duplicate' => $isd, 'Larger' => $isl, 'Size in DB' => $sdb, 'Date Created' => $dcd);
     }
     echo json_encode($returnedArray);
 }
@@ -227,10 +229,10 @@ function renameFile($title, $newTitle, $dirName, $files)
     }
 }
 
-function quickLogFile($title, $updated, $dirName)
+function quickLogFile($title, $size, $sizeInDB, $dimensions, $dimensionsInDB, $dirName)
 {
     $myfile = fopen("$dirName/updated.txt", "a") or die("Unable to open file!");
-    $txt = "$title\t\t $updated\n";
+    $txt = "$title\t\t  . 'size in db: ' . $sizeInDB . 'new size: ' . $size  . 'dimensions in db: ' . $dimensionsInDB  . 'new dimensions: ' . \t\t\n";
 
     fwrite($myfile, $txt);
     fclose($myfile);

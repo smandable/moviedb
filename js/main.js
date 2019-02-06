@@ -215,7 +215,7 @@ function handleProcessFilesForDBResult(response) {
     newMovies = 0;
     numDuplicates = 0;
     totalSizeNew = 0;
-    totalSizeDuplicate = 0;
+    totalSizeDuplicates = 0;
 
     for (i = 0; i < response.data.length; i++) {
         var name = response.data[i]['Name'];
@@ -223,6 +223,7 @@ function handleProcessFilesForDBResult(response) {
         var size = response.data[i]['Size'];
         var isDuplicate = response.data[i]['Duplicate'];
         var isLarger = response.data[i]['Larger'];
+        var sizeInDB = response.data[i]['Size in DB'];
         var dateCreated = response.data[i]['Date Created'];
         var path = response.data[i]['Path'];
 
@@ -238,11 +239,11 @@ function handleProcessFilesForDBResult(response) {
             var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
         } else if (response.data[i]['Duplicate'] == true) {
             ++numDuplicates;
-            totalSizeDuplicate += size;
+            totalSizeDuplicates += size;
             //formatSize(totalSizeDuplicate);
 
             if (response.data[i]['Larger'] == true) {
-                var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <i class="fas fa-angle-double-up"></i><span class="tsize">' + size + '</span></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</i></button></td></tr>';
+                var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) + '"><i class="fas fa-angle-double-up"></i></a></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</i></button></td></tr>';
             } else {
                 var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
             }
@@ -255,6 +256,9 @@ function handleProcessFilesForDBResult(response) {
 
     $("#directory-results .col-xs-3").html('<button class="btn btn-default btn-refresh" type="button">Refresh</button>');
 }
+$(document).ready(function() {
+    $('[data-toggle="tooltip"]').tooltip();
+});
 
 $('#directory-results').on("click", ".btn-refresh", function(event) {
     $("#directory-results table tr").remove();
