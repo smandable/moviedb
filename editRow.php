@@ -27,15 +27,11 @@ include "db_connect.php";
       $size = $dataToUpdate;
       $size = formatSize($size);
       $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE id='$id'");
-  }
-  if ($dataType == 'Date Added') {
-      $date_created = $dataToUpdate;
-      $result = $db->query("UPDATE `".$table."` SET date_created='$dataToUpdate' WHERE id='$id'");
   } elseif ($result === false) {
       echo "SQL error:" . $db->error;
   }
 
-  $result->close();
+  // $result->close();
   $db->close();
 
 function formatSize($size)

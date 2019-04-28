@@ -1,17 +1,22 @@
 <?php
 
-if (strpos(file_get_contents("config/config.php"), 'movieLibraryTEST') !== false) {
-    $db_result = "movieLibraryTEST";
-} elseif (strpos(file_get_contents("config/config.php"), 'movieLibrary') !== false) {
-    $db_result = "movieLibrary";
+if (strpos(file_get_contents("config/config.php"), 'movieLibraryPROD') !== false) {
+    $currentDB = "movieLibraryPROD";
+} elseif (strpos(file_get_contents("config/config.php"), 'movieLibraryTEST') !== false) {
+    $currentDB = "movieLibraryTEST";
 }
-echo $db_result;
 
-// echo '$result: ' . $result . "\n";
+if (strpos(file_get_contents("config/config.php"), 'movies_het') !== false) {
+    $currentTable = "movies_het";
+} elseif (strpos(file_get_contents("config/config.php"), 'movies_bi') !== false) {
+    $currentTable = "movies_bi";
+} elseif (strpos(file_get_contents("config/config.php"), 'movies_gay') !== false) {
+    $currentTable = "movies_gay";
+} elseif (strpos(file_get_contents("config/config.php"), 'movies_ts') !== false) {
+    $currentTable = "movies_ts";
+} elseif (strpos(file_get_contents("config/config.php"), 'movies_misc') !== false) {
+    $currentTable = "movies_misc";
+}
+// echo $db_result;
 
-// // modify http header to json
-//  header('Cache-Control: no-cache, must-revalidate');
-//  header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-//  header('Content-type: application/json');
-//
-// echo json_encode($result);
+echo json_encode(array('currentDB' => $currentDB, 'currentTable' => $currentTable));

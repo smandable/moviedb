@@ -1,24 +1,22 @@
-app.controller('HeaderCtrl', function ($scope, $location, $http) {
-    $scope.isActive = function (viewLocation) {
+app.controller('HeaderCtrl', function($scope, $location, $http) {
+    $scope.isActive = function(viewLocation) {
         return viewLocation === $location.path();
     };
 });
 
-app.controller('Home', ['$scope', function ($scope) {
+app.controller('Home', ['$scope', function($scope) {
     $scope.home = "Home";
 }])
-app.controller('UtilitiesCtrl', ['$scope', function ($scope) {
+app.controller('UtilitiesCtrl', ['$scope', function($scope) {
     $scope.config = "Utilities";
-    console.log("UtilitiesCtrl");
 }])
 
-app.controller('ConfigCtrl', ['$scope', function ($scope) {
+app.controller('ConfigCtrl', ['$scope', function($scope) {
     $scope.config = "Config";
-    //getConfigFileState();
 }])
 
 app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$q', '$interval', '$httpParamSerializer',
-        function ($scope, $http, $timeout, uiGridConstants, $q, $interval, $httpParamSerializer) {
+        function($scope, $http, $timeout, uiGridConstants, $q, $interval, $httpParamSerializer) {
 
             $scope.movies = "Movies";
 
@@ -34,10 +32,10 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                 showColumnFooter: false,
                 gridFooterTemplate: "<div class=\"ui-grid-footer-info ui-grid-grid-footer\"><span>{{'search.totalItems' | t}} {{grid.rows.length}}</span><span ng-if=\"grid.renderContainers.body.visibleRowCache.length !== grid.rows.length\" class=\"ngLabel\">({{\"search.showingItems\" | t}} {{grid.renderContainers.body.visibleRowCache.length}})</span><span id = \"footer-btns\"><button class=\"btn btn-danger\" ng-click=\"grid.appScope.multipleDeleteButtonClickHandler.onClick()\"><i class=\"fa fa-edit\"></i>Delete checked</button><button class=\"btn btn-warning btn-get-checked-sizes\">Copy total size</button></span></div>",
                 excessRows: 20,
-                onRegisterApi: function (gridApi) {
+                onRegisterApi: function(gridApi) {
                     // console.log('in onRegisterApi');
                     $scope.gridApi = gridApi;
-                    $scope.gridApi.edit.on.afterCellEdit($scope, function (rowEntity, colDef, newValue) {
+                    $scope.gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue) {
                         updateRecord(rowEntity.id, colDef.name, newValue);
                     });
                 },
@@ -52,7 +50,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                         name: 'Title',
                         field: 'title',
                         // width: 450,
-                        width: 450,
+                        width: 525,
                         enableCellEdit: true,
                         cellClass: 'cell-title'
                     },
@@ -67,7 +65,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                     {
                         name: 'Size',
                         field: 'filesize',
-                        width: 90,
+                        width: 80,
                         enableCellEdit: true,
                         cellClass: 'cell-size',
                         cellFilter: 'sizeFilter'
@@ -75,7 +73,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                     {
                         name: 'Added',
                         field: 'date_created',
-                        width: 95,
+                        width: 90,
                         enableCellEdit: false,
                         type: 'date',
                         cellClass: 'cell-date-created'
@@ -91,126 +89,37 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                 ]
             };
 
-            var getData = function () {
+            var getData = function() {
                 $.ajax({
                     url: "getAllMovies.php",
                     type: 'GET',
                     dataType: "json",
-                    success: function (response) {
+                    success: function(response) {
 
-                        $timeout(function () {
+                        $timeout(function() {
                             $scope.gridOptions.data = response.data;
                         });
                     }
-                    // error: function (response) {
-                    //     console.log('no data returned');
-                    //     console.log('response: ', response);
-                    // }
                 });
             };
             getData();
 
-            //Results grid
-            // $scope.resultsGridOptions = {
-            //     enableColumnResizing: true,
-            //     enableFiltering: true,
-            //     // enableGridMenu: true,
-            //     showGridFooter: false,
-            //     showColumnFooter: false,
-            //     excessRows: 20,
-            //     onRegisterApi: function (resultsGridApi) {
-            //         // console.log('in onRegisterApi');
-            //         $scope.resultsGridApi = resultsGridApi;
-            //         $scope.resultsGridApi.edit.on.afterCellEdit($scope, function (rowEntity, colDef, newValue) {
-            //             updateRecord(rowEntity.id, colDef.name, newValue);
-            //         });
-            //     },
-            //     columnDefs: [{
-            //             name: 'Id',
-            //             field: 'id',
-            //             width: 65,
-            //             enableCellEdit: false,
-            //             cellClass: 'cell-id'
-            //         },
-            //         {
-            //             name: 'Title',
-            //             field: 'title',
-            //             // width: 450,
-            //             width: 400,
-            //             enableCellEdit: true,
-            //             cellClass: 'cell-title'
-            //         },
-            //         {
-            //             name: 'Dimensions',
-            //             field: 'dimensions',
-            //             width: 110,
-            //             // enableFiltering: false,
-            //             enableCellEdit: true,
-            //             cellClass: 'cell-dimensions'
-            //         },
-            //         {
-            //             name: 'Size',
-            //             field: 'filesize',
-            //             width: 90,
-            //             enableCellEdit: true,
-            //             cellClass: 'cell-size',
-            //             cellFilter: 'sizeFilter'
-            //         },
-            //         {
-            //             name: 'Duplicate',
-            //             field: 'isDupe',
-            //             width: 95,
-            //             enableCellEdit: false,
-            //             cellClass: 'cell-is-duplicate'
-            //         },
-            //         {
-            //             name: 'Larger',
-            //             width: 180,
-            //             enableFiltering: false,
-            //             enableCellEdit: false,
-            //             cellClass: 'cell-is-larger'
-            //         }
-            //     ]
-            // };
-
-            // var getResultsData = function () {
-            //     $.ajax({
-            //         url: "getAllMovies.php",
-            //         type: 'GET',
-            //         dataType: "json",
-            //         success: function (response) {
-            //
-            //             $timeout(function () {
-            //                 $scope.gridOptions.data = response.data;
-            //             });
-            //         }
-            //         // error: function (response) {
-            //         //     console.log('no data returned');
-            //         //     console.log('response: ', response);
-            //         // }
-            //     });
-            // };
-            //END results grid
-
-
             $scope.deleteButtonClickHandler = {
-                onClick: function (id) {
-                    //console.log('deleteButtonClickHandler');
+                onClick: function(id) {
                     deleteRow(id);
                     $scope.refreshData();
                 }
             };
 
             $scope.pasteResultsButtonClickHandler = {
-                onClick: function (id) {
-                    // console.log('pasteResultsButtonClickHandler');
+                onClick: function(id) {
                     pasteResults(id);
                     $scope.refreshData();
                 }
             };
 
             $scope.rowCheckboxHandler = {
-                onClick: function (id, size) {
+                onClick: function(id, size) {
 
                     chkbx = $(event.target).closest('.ui-grid-cell-contents').find('.row-select-checkbox');
                     size = parseInt(size, 10);
@@ -233,13 +142,13 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                 }
             };
 
-            $('#footer-btns').on("click", ".btn-get-checked-sizes", function (event) {
+            $('#footer-btns').on("click", ".btn-get-checked-sizes", function(event) {
                 console.log('clicked');
                 clipboard.writeText($('.unformatted').val());
             });
 
             $scope.multipleDeleteButtonClickHandler = {
-                onClick: function () {
+                onClick: function() {
                     for (i = 0; i < $scope.rowsToDelete.length; i++) {
                         console.log('rowsToDelete[i]: ', $scope.rowsToDelete[i]);
                         deleteRow($scope.rowsToDelete[i]);
@@ -254,7 +163,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
             };
 
             $scope.multipleSizesClickHandler = {
-                onClick: function () {
+                onClick: function() {
                     clipboard.writeText(sizeOfDeletedTitles);
                     $scope.rowsToDelete = [];
 
@@ -265,14 +174,13 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
             };
 
             $scope.numTitlesAdded = 0;
-            $scope.updateNumTitlesAdded = function () {
+            $scope.updateNumTitlesAdded = function() {
                 console.log("$scope.numTitlesAdded: ", $scope.numTitlesAdded);
 
                 $scope.numTitlesAdded++;
             };
 
-            $scope.refreshData = function () {
-                //console.log('refreshData');
+            $scope.refreshData = function() {
                 $scope.gridOptions.myData = [];
                 getData();
             };
@@ -280,8 +188,8 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
         }
     ])
 
-    .filter('sizeFilter', function () {
-        return function (value) {
+    .filter('sizeFilter', function() {
+        return function(value) {
             if (value != 0) {
                 return formatSize(value);
             } else {

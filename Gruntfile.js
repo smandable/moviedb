@@ -1,4 +1,4 @@
-module.exports = function (grunt) {
+module.exports = function(grunt) {
     grunt.initConfig({
         sass: {
             // this is the "dev" Sass config used with "grunt watch" command
@@ -10,7 +10,7 @@ module.exports = function (grunt) {
                 },
                 files: {
                     // the first path is the output and the second is the input
-                    'css/moviedb.css': 'scss/moviedb.scss'
+                    'css/main.css': 'scss/main.scss'
                 }
             },
             // this is the "production" Sass config used with the "grunt buildprod" command
@@ -20,7 +20,7 @@ module.exports = function (grunt) {
                     loadPath: 'node_modules/bootstrap-sass/assets/stylesheets'
                 },
                 files: {
-                    'css/moviedb.css': 'scss/moviedb.scss'
+                    'css/main.css': 'scss/main.scss'
                 }
             }
         },

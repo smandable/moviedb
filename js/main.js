@@ -6,7 +6,7 @@ var currentLineIndex = 0;
 var numDupes = 0;
 var cleanedNamesDeDuped = [];
 var numTitlesFromDirectory = 0;
-var copyResultRowValues = {};
+var copyResultRowValues = [];
 
 function updateRecord(id, dataType, dataToUpdate) {
 
@@ -24,7 +24,7 @@ function updateRecord(id, dataType, dataToUpdate) {
     })
 
     function handleResponse(data) {
-        refreshData();
+        angular.element($('#movie-controller')).scope().refreshData();
         return;
     }
 }
@@ -33,31 +33,23 @@ $(document).ready(function() {
     var intervalId;
 
     function copy_search_term(e) {
-        intervalId = setTimeout(function() {
-            var tst = $.trim($('.ui-grid-coluiGrid-0005').find('input[type=text]').val());
-            if (tst) {
-                $('.recent-terms ul').append('<li>' + tst + '</li>');
+        var tst = $.trim($('.ui-grid-coluiGrid-0005').find('input[type=text]').val());
+        if (tst) {
+            var exists = $('.recent-terms ul li:contains(' + tst + ')').length;
+            if (!exists) {
+                $('.recent-terms ul').prepend('<li>' + tst + '</li>');
             }
-        }, 2000);
+        }
     }
 
-    $('.ui-grid-coluiGrid-0005').find('input[type=text]').on('keydown', _.debounce(copy_search_term, 1300));
+    $('.ui-grid-coluiGrid-0005').on('keydown', _.debounce(copy_search_term, 800));
 
     $('.recent-terms ul').on('click', 'li', function(event) {
         var recentTerm = $(this).text();
-        //console.log(recentTerm);
-        // $('.ui-grid-coluiGrid-0005').find('input[type=text]').val(recentTerm);
         var input = $('.ui-grid-coluiGrid-0005').find('input[type=text]');
+
         $(input).val(recentTerm);
         input.focus();
-
-        function dispatchTheEvent(event) {
-            input.dispatchEvent(new KeyboardEvent('keypress', {
-                'key': '32'
-            }));
-        }
-        input.addEventListener('keypress', dispatchTheEvent);
-        //el.dispatchEvent(new KeyboardEvent('keypress', { 'key': '32' }));
     })
 
     $('.recent-terms button').on("click", function(event) {
@@ -68,31 +60,41 @@ $(document).ready(function() {
 
 function deleteRow(id) {
 
-    function deleteIt() {
+    //function deleteIt() {
 
-        return $.ajax({
-            type: "POST",
-            url: "deleteRow.php",
-            dataType: "json",
-            data: {
-                id: id
-            },
-            success: handleResponse
-        })
-    }
+    return $.ajax({
+        type: "POST",
+        url: "deleteRow.php",
+        dataType: "json",
+        data: {
+            id: id
+        },
+        success: handleResponse
+    })
+    //}
 
     function handleResponse(data) {
         angular.element($('#movie-controller')).scope().refreshData();
         return;
     }
-    deleteIt();
+    //deleteIt();
 }
 
-function pasteResults(id) {
+// $(document).ready(function () {
+$('#directory-results table').on("click", ".btn-copy-result", function(event) {
 
-    delete copyResultRowValues['Title'];
-    delete copyResultRowValues['Dimensions'];
-    delete copyResultRowValues['Size'];
+    var row = $(this).closest("tr");
+    copyResultRowValues['Title'] = row.find("td:nth-child(2)").text();
+    copyResultRowValues['Dimensions'] = row.find("td:nth-child(3)").text();
+    copyResultRowValues['Size'] = row.find("td:nth-child(4) .tsize").text();
+    //copyResultRowValues = [row.find("td:nth-child(2)"), row.find("td:nth-child(3)"), row.find("td:nth-child(4)")];
+
+    console.log("copyResultRowValues['Title']" + copyResultRowValues['Title'] + "\n");
+    console.log("copyResultRowValues['Dimensions']" + copyResultRowValues['Dimensions'] + "\n");
+    console.log("copyResultRowValues['Size']" + copyResultRowValues['Size'] + "\n");
+});
+
+function pasteResults(id) {
 
     function pasteIt() {
         var row = $(this).closest(".ui-grid-row");
@@ -118,6 +120,9 @@ function pasteResults(id) {
             },
             success: handleResponse
         })
+        // delete copyResultRowValues['Title'];
+        // delete copyResultRowValues['Dimensions'];
+        // delete copyResultRowValues['Size'];
     }
 
     function handleResponse(data) {
@@ -125,31 +130,43 @@ function pasteResults(id) {
         angular.element($('#movie-controller')).scope().refreshData();
         return;
     }
-    pasteIt();
+    if ((typeof copyResultRowValues['Title'] != "undefined") && (typeof copyResultRowValues['Dimensions'] != "undefined") && (typeof copyResultRowValues['Size'] != "undefined")) {
+        pasteIt();
+    } else {
+        alert("Either Title, Dimensions, or Size is empty");
+
+    }
 }
 
-// $(document).ready(function () {
-$('#directory-results').on("click", ".btn-copy-result", function(event) {
+// $('#directory-results #table-wrap table').on("dblclick", "td:nth-of-type(2)", function(event) {
 
-    // delete copyResultRowValues['Title'];
-    // delete copyResultRowValues['Dimensions'];
-    // delete copyResultRowValues['Size'];
+// console.info("clicked");
+//
+// var newTitle = $(this).text();
+// console.info("newTitle: ", newTitle);
+//
+//
+// copyResultRowValues['Title'] = row.find("td:nth-child(2)").text();
+// copyResultRowValues['Dimensions'] = row.find("td:nth-child(3)").text();
+// copyResultRowValues['Size'] = row.find("td:nth-child(4) .tsize").text();
+// //copyResultRowValues = [row.find("td:nth-child(2)"), row.find("td:nth-child(3)"), row.find("td:nth-child(4)")];
+//
+// console.log("copyResultRowValues['Title']" + copyResultRowValues['Title'] + "\n");
+// console.log("copyResultRowValues['Dimensions']" + copyResultRowValues['Dimensions'] + "\n");
+// console.log("copyResultRowValues['Size']" + copyResultRowValues['Size'] + "\n");
+// });
 
-    var row = $(this).closest("tr");
-    copyResultRowValues['Title'] = row.find("td:nth-child(2)").text();
-    copyResultRowValues['Dimensions'] = row.find("td:nth-child(3)").text();
-    copyResultRowValues['Size'] = row.find("td:nth-child(4) .tsize").text();
-    //copyResultRowValues = [row.find("td:nth-child(2)"), row.find("td:nth-child(3)"), row.find("td:nth-child(4)")];
-});
+
 
 $(document).ready(function() {
-    $('.ui-grid-row .cell-size').on("click", ".ui-grid-cell-contents", function(event) {
-        console.log("cell-size handler");
-        var size = $.trim($('.cell-size').val());
+    $('#movie-controller').on("click", ".cell-size .ui-grid-cell-contents", function(event) {
+
+        var size = $(this).val();
         size = size.replace(new RegExp(",", "g"), "");
-        size = parseInt(size, 10);
-        $('.cell-size').val(size);
-        console.log("size: ", size);
+        size = parseFloat(size);
+        $(this).val(size);
+        // console.log("typeof size: " + typeof size + "\n");
+        // console.log(size);
     })
 });
 
@@ -226,7 +243,9 @@ function handleProcessFilesForDBResult(response) {
         var sizeInDB = response.data[i]['Size in DB'];
         var dateCreated = response.data[i]['Date Created'];
         var path = response.data[i]['Path'];
-
+        // var newId = response.data[i]['NewId'];
+        var id = response.data[i]['Id'];
+        //console.info("response.data: ", response.data);
         if (name.length > 80) {
             name = name.substring(0, 80);
         }
@@ -235,15 +254,15 @@ function handleProcessFilesForDBResult(response) {
             ++newMovies;
             totalSizeNew += size;
 
-            var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
+            var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
         } else if (response.data[i]['Duplicate'] == true) {
             ++numDuplicates;
             totalSizeDuplicates += size;
 
             if (response.data[i]['Larger'] == true) {
-                var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) + '"><i class="fas fa-angle-double-up"></i></a></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</i></button></td></tr>';
+                var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) + '"><i class="fas fa-angle-double-up"></i></a></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</i></button></td></tr>';
             } else {
-                var markup = '<tr><td></td><td>' + name + '</td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
+                var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
             }
         }
         $("#directory-results table").append(markup);
@@ -252,10 +271,29 @@ function handleProcessFilesForDBResult(response) {
     $("#directory-results #totals").html('<span>Total: <span class="num-span">' + totalCount + '</span></span><span>New: <span class="num-span">' + newMovies + ' (' + formatSize(totalSizeNew) + ')</span></span><span>Duplicates: <span class="num-span">' + numDuplicates + ' (' + formatSize(totalSizeDuplicates) + ')</span></span>');
     angular.element($('#movie-controller')).scope().refreshData();
 
-    $("#directory-results .col-xs-3").html('<button class="btn btn-default btn-refresh" type="button">Refresh</button>');
+    $("#directory-results .col-lg-2").html('<button class="btn btn-success btn-refresh" type="button">Refresh</button>');
 }
 $(document).ready(function() {
     $('[data-toggle="tooltip"]').tooltip();
+
+    $.fn.editable.defaults.mode = 'inline';
+
+    $("#directory-results table").on("click", "a", function(e) {
+        e.preventDefault();
+
+        var pk = $(this).closest("tr").find("td:nth-of-type(1)").text();
+
+        $(this).editable({
+            type: 'text',
+            pk: pk,
+            name: 'title',
+            url: "editRowInResultsTable.php",
+            success: function(response) {
+                console.log("response: ", response);
+            }
+        });
+    });
+
 });
 
 $('#directory-results').on("click", ".btn-refresh", function(event) {
