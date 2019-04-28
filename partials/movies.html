@@ -42,56 +42,58 @@
         <div id="import-records">
             <div class="row" id="mode">
                 <div class="col-xs-12">
-                    <div class="row">
-                        <div class="col-xs-12 col-lg-8">
-                            <form method="POST" action="#" enctype="multipart/form-data">
-                                <div class="form-group btn-group">
-                                    <h3>Mode</h3>
+                    <div ng-controller="ModeCtrl" id="mode-controller">
+                        <div class="row">
+                            <div class="col-xs-12 col-lg-8">
+                                <form method="POST" action="#" enctype="multipart/form-data">
+                                    <div class="form-group btn-group">
+                                        <h3>Mode</h3>
 
-                                    <div class="btn-wrap">
-                                        <label class="btn btn-success">
-                                            <input type="radio" class="multi-from-dir" name="when" value="multi-from-dir" checked="checked">
-                                            <strong>Process directory</strong>
-                                        </label>
-                                        <label class="btn btn-success">
-                                            <input type="radio" class="single-title" name="when" value="single-title">
-                                            <strong>Add single title</strong>
-                                        </label>
+                                        <div class="btn-wrap">
+                                            <label class="btn btn-success">
+                                                <input type="radio" class="multi-from-dir" name="when" value="multi-from-dir" checked="checked">
+                                                <strong>Process directory</strong>
+                                            </label>
+                                            <label class="btn btn-success">
+                                                <input type="radio" class="single-title" name="when" value="single-title">
+                                                <strong>Add single title</strong>
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div class="form-group input-wrap">
-                                    <div class="col-xs-8 col-lg-6">
-                                        <div class="collapse multi-from-dir">
-                                            <h3>Directory to process</h3>
-                                            <div class="input-group input-dir">
-                                                <input type="text" class="form-control input-dir-textfield" id="input-directory" />
-                                                <span class="input-group-btn">
-                                                    <button class="btn btn-warning btn-start-processing-dir" type="button"><i class="fas fa-cogs"></i>Process</button>
-                                                </span>
+                                    <div class="form-group input-wrap">
+                                        <div class="col-xs-8 col-lg-6">
+                                            <div class="collapse multi-from-dir">
+                                                <h3>Directory to process</h3>
+                                                <div class="input-group input-dir">
+                                                    <input type="text" class="form-control input-dir-textfield" id="input-directory" />
+                                                    <span class="input-group-btn">
+                                                        <button class="btn btn-warning btn-start-processing-dir" type="button"><i class="fas fa-cogs"></i>Process</button>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-12 col-lg-10">
+                                            <div class="collapse single-title">
+                                                <h3>Title</h3>
+                                                <h3>Dimensions</h3>
+                                                <h3>Size</h3>
+                                                <div class="input-group input-text-single">
+                                                    <input type="text" class="form-control single-title" ng-model="formData.title" id="single-title-input" placeholder="Ex: Yank My Doodle, It's a Dandy!">
+                                                    <input type="text" class="form-control single-title" ng-model="formData.dimensions" id="single-title-input-dimensions">
+                                                    <input type="text" class="form-control single-title" ng-model="formData.size" id="single-title-input-size">
+                                                    <span class="input-group-btn">
+                                                        <button class="btn btn-warning btn-add-single-title" type="button"><i class="fas fa-level-up-alt"></i>Add Title</button>
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-xs-12 col-lg-10">
-                                        <div class="collapse single-title">
-                                            <h3>Title</h3>
-                                            <h3>Dimensions</h3>
-                                            <h3>Size</h3>
-                                            <div class="input-group input-text-single">
-                                                <input type="text" class="form-control single-title" ng-model="formData.title" id="single-title-input" placeholder="Ex: Yank My Doodle, It's a Dandy!">
-                                                <input type="text" class="form-control single-title" ng-model="formData.dimensions" id="single-title-input-dimensions">
-                                                <input type="text" class="form-control single-title" ng-model="formData.size" id="single-title-input-size">
-                                                <span class="input-group-btn">
-                                                    <button class="btn btn-warning btn-add-single-title" type="button"><i class="fas fa-level-up-alt"></i>Add Title</button>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="col-lg-4 hidden-xs hidden-sm hidden-md">
-                            <img id="loading-spinner" src="img/ajax-loader.gif" alt="Loading spinner" />
+                                </form>
+                            </div>
+                            <div class="col-lg-4 hidden-xs hidden-sm hidden-md">
+                                <img id="loading-spinner" src="img/ajax-loader.gif" alt="Loading spinner" />
+                            </div>
                         </div>
                     </div>
                 </div>
