@@ -60,8 +60,6 @@ $(document).ready(function() {
 
 function deleteRow(id) {
 
-	//function deleteIt() {
-
 	return $.ajax({
 		type: "POST",
 		url: "deleteRow.php",
@@ -71,13 +69,11 @@ function deleteRow(id) {
 		},
 		success: handleResponse
 	})
-	//}
 
 	function handleResponse(data) {
 		angular.element($('#movie-controller')).scope().refreshData();
 		return;
 	}
-	//deleteIt();
 }
 
 // $(document).ready(function () {
