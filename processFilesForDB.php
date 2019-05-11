@@ -123,7 +123,7 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
             //updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
             //End caution...
 
-            //renameFile($title, $dirName, $files);
+            //renameSingleFile($title, $dirName, $files);
 
             moveDuplicateFile($titleUe, $dirName, $files);
             return;
@@ -217,7 +217,7 @@ function moveDuplicateFile($titleUe, $dirName, $files)
     }
 }
 
-// function renameFile($title, $newTitle, $dirName, $files)
+// function renameSingleFile($title, $newTitle, $dirName, $files)
 // {
 //     $destination = $dirName;
 //

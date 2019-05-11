@@ -204,12 +204,37 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 
 	}
 ])
+
+// app.controller('ModalCtrl', ['$scope', 'createDialog', function($scope, createDialogService) {
+//
+// 	$scope.launchComplexModal = function() {
+// 		createDialogService('../partials/modal.html', {
+// 			id: 'normalizeModal',
+// 			title: 'A Complex Modal Dialog',
+// 			backdrop: true,
+// 			controller: 'ComplexModalController',
+// 			success: {
+// 				label: 'Yay',
+// 				fn: function() {
+// 					console.log('Successfully closed complex modal');
+// 				}
+// 			}
+// 		}, {
+// 			myVal: 15,
+// 			assetDetails: {
+// 				name: 'My Asset',
+// 				description: 'A Very Nice Asset'
+// 			}
+// 		});
+// 	};
+// }]);
+
 app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$httpParamSerializer', '$route', '$routeParams', '$location',
 		function($scope, $http, $timeout, $q, $interval, $httpParamSerializer, $route, $routeParams, $location) {
-			$scope.mode = "Mode";
-			$scope.$route = $route;
-			$scope.$location = $location;
-			$scope.$routeParams = $routeParams;
+			// $scope.mode = "Mode";
+			// $scope.$route = $route;
+			// $scope.$location = $location;
+			// $scope.$routeParams = $routeParams;
 
 			// $('.btn-start-processing-dir').on("click", function(event) {
 			// 	//event.preventDefault();
@@ -219,8 +244,42 @@ app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$
 			// 	console.log('clicked');
 			// 	$location.path('/normalize');
 			// });
+			// $scope.launchComplexModal = function() {
+			// 	createDialogService('partials/modal.html', {
+			// 		id: 'normalizeModal',
+			// 		title: 'A Complex Modal Dialog',
+			// 		backdrop: true,
+			// 		controller: 'ComplexModalController',
+			// 		success: {
+			// 			label: 'Yay',
+			// 			fn: function() {
+			// 				console.log('Successfully closed complex modal');
+			// 			}
+			// 		}
+			// 	}, {
+			// 		myVal: 15,
+			// 		assetDetails: {
+			// 			name: 'My Asset',
+			// 			description: 'A Very Nice Asset'
+			// 		}
+			// 	});
+			// };
 		}
 	])
+	// 	.factory('StupidFactory', function() {
+	// 		return {
+	// 			stupid: function() {
+	// 				console.log('This is stupid');
+	// 			}
+	// 		};
+	// 	})
+	// app.controller('ComplexModalController', ['$scope', 'StupidFactory', 'myVal', 'assetDetails',
+	// 		function($scope, StupidFactory, myVal, assetDetails) {
+	// 			$scope.myVal = myVal;
+	// 			$scope.asset = assetDetails;
+	// 			StupidFactory.stupid();
+	// 		}
+	// 	])
 
 	.filter('sizeFilter', function() {
 		return function(value) {

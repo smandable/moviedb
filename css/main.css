@@ -8994,145 +8994,153 @@ body #import-records #duplicates p {
   font-size: 18px;
 }
 
-.normalize {
-  /* Make inline editables take the full width of their parents */
-}
-.normalize #process-files h4 {
+#process-files h4 {
   display: inline-flex;
 }
-.normalize #process-files #loading-spinner {
+#process-files #loading-spinner {
   display: none;
   margin-left: 55px;
 }
-.normalize #process-patterns {
+
+.db-ops-btn-wrapper {
   opacity: 0;
   width: 100%;
   transition: opacity 300ms;
 }
-.normalize #process-patterns.fade-in {
+.db-ops-btn-wrapper.fade-in {
   opacity: 1;
 }
-.normalize #process-patterns .btn-primary,
-.normalize #process-patterns .btn-success {
+.db-ops-btn-wrapper .btn-primary,
+.db-ops-btn-wrapper .btn-success {
   margin-top: 40px;
 }
-.normalize #process-patterns .btn-success {
-  margin-left: 30px;
-  opacity: 0;
-  transition: opacity 300ms;
+.db-ops-btn-wrapper .btn-success {
+  background-color: darkgreen;
+  border-color: #003100;
 }
-.normalize #process-patterns .btn-success.fade-in {
-  opacity: 1;
+.db-ops-btn-wrapper .btn-success:hover {
+  background-color: #003100;
 }
-.normalize #file-results {
-  margin-top: 20px;
+
+.modal-dialog .modal-content {
+  background-color: antiquewhite;
 }
-.normalize table {
+.modal-dialog #file-results {
+  /* Make inline editables take the full width of their parents */
+}
+.modal-dialog #file-results table {
   width: 100%;
 }
-.normalize table tr {
+.modal-dialog #file-results table tr {
   height: 34px;
 }
-.normalize table tr:nth-child(odd) {
+.modal-dialog #file-results table tr:nth-child(odd) {
   background-color: #888888;
   color: white;
 }
-.normalize table tr:nth-child(even) {
+.modal-dialog #file-results table tr:nth-child(even) {
   background-color: #555;
   color: white;
 }
-.normalize table tr.tbl-hdr {
+.modal-dialog #file-results table tr.tbl-hdr {
   background-color: #555;
   color: white;
 }
-.normalize table tr.file-renamed {
+.modal-dialog #file-results table tr.file-renamed {
   background-color: forestgreen;
 }
-.normalize table tr.file-not-renamed {
+.modal-dialog #file-results table tr.file-not-renamed {
   border: 1px solid red;
 }
-.normalize table tr th {
+.modal-dialog #file-results table tr th {
   padding: 7px;
   text-align: left;
 }
-.normalize table tr th:nth-of-type(1) {
+.modal-dialog #file-results table tr th:nth-of-type(1) {
   display: none;
 }
-.normalize table tr th:nth-of-type(2), .normalize table tr th:nth-of-type(3) {
+.modal-dialog #file-results table tr th:nth-of-type(2), .modal-dialog #file-results table tr th:nth-of-type(3) {
   width: 37.5%;
 }
-.normalize table tr th:nth-of-type(3), .normalize table tr th:nth-of-type(4), .normalize table tr th:nth-of-type(5), .normalize table tr th:nth-of-type(6), .normalize table tr th:nth-of-type(7) {
+.modal-dialog #file-results table tr th:nth-of-type(3), .modal-dialog #file-results table tr th:nth-of-type(4), .modal-dialog #file-results table tr th:nth-of-type(5), .modal-dialog #file-results table tr th:nth-of-type(6), .modal-dialog #file-results table tr th:nth-of-type(7) {
   border-left: 1px solid white;
 }
-.normalize table tr td {
+.modal-dialog #file-results table tr td {
   padding: 7px;
   text-align: left;
   white-space: nowrap;
 }
-.normalize table tr td .editable-click,
-.normalize table tr td a,
-.normalize table tr td a.editable-click,
-.normalize table tr td a.editable-click:hover,
-.normalize table tr td a:focus,
-.normalize table tr td a:hover {
+.modal-dialog #file-results table tr td .editable-click,
+.modal-dialog #file-results table tr td a,
+.modal-dialog #file-results table tr td a.editable-click,
+.modal-dialog #file-results table tr td a.editable-click:hover,
+.modal-dialog #file-results table tr td a:focus,
+.modal-dialog #file-results table tr td a:hover {
   color: #fff;
   border-bottom: none;
   text-decoration: none;
 }
-.normalize table tr td:nth-of-type(1) {
+.modal-dialog #file-results table tr td:nth-of-type(1) {
   display: none;
 }
-.normalize table tr td:nth-of-type(3), .normalize table tr td:nth-of-type(4), .normalize table tr td:nth-of-type(5), .normalize table tr td:nth-of-type(6) {
+.modal-dialog #file-results table tr td:nth-of-type(3), .modal-dialog #file-results table tr td:nth-of-type(4), .modal-dialog #file-results table tr td:nth-of-type(5), .modal-dialog #file-results table tr td:nth-of-type(6) {
   border-left: 1px solid white;
 }
-.normalize table tr td:nth-of-type(2), .normalize table tr td:nth-of-type(3) {
+.modal-dialog #file-results table tr td:nth-of-type(2), .modal-dialog #file-results table tr td:nth-of-type(3) {
   width: 37.5%;
 }
-.normalize table tr td:nth-of-type(3) {
+.modal-dialog #file-results table tr td:nth-of-type(3) {
   padding-left: 0;
 }
-.normalize table tr td:nth-of-type(3) a {
+.modal-dialog #file-results table tr td:nth-of-type(3) a {
   padding-left: 7px;
 }
-.normalize table tr td:nth-of-type(3).file-has-conflicts a {
+.modal-dialog #file-results table tr td:nth-of-type(3).file-has-conflicts a {
   border: 2px solid darkred;
   padding: 7px 7px 7px 5px;
 }
-.normalize table tr td:nth-of-type(4) {
+.modal-dialog #file-results table tr td:nth-of-type(4) {
   width: 105px;
 }
-.normalize table tr td:nth-of-type(7) {
+.modal-dialog #file-results table tr td:nth-of-type(7) {
   padding: 4px 5px;
   border-left: 1px solid white;
   text-align: center;
 }
-.normalize table tr td:nth-of-type(7) .btn {
+.modal-dialog #file-results table tr td:nth-of-type(7) .btn {
   padding: 1px 12px;
 }
-.normalize table tr td:nth-of-type(8) {
+.modal-dialog #file-results table tr td:nth-of-type(8) {
   padding-left: 5px;
   padding-right: 5px;
   border-right: 1px solid white;
   text-align: center;
 }
-.normalize .editable-container.editable-inline,
-.normalize .editable-container.editable-inline .control-group.form-group,
-.normalize .editable-container.editable-inline .control-group.form-group .editable-input,
-.normalize .editable-container.editable-inline .control-group.form-group .editable-input input:not([type=radio]):not([type=checkbox]):not([type=submit]),
-.normalize .editable-container.editable-inline .control-group.form-group .editable-input select,
-.normalize .editable-container.editable-inline .control-group.form-group .editable-input textarea {
+.modal-dialog #file-results .editable-container.editable-inline,
+.modal-dialog #file-results .editable-container.editable-inline .control-group.form-group,
+.modal-dialog #file-results .editable-container.editable-inline .control-group.form-group .editable-input,
+.modal-dialog #file-results .editable-container.editable-inline .control-group.form-group .editable-input input:not([type=radio]):not([type=checkbox]):not([type=submit]),
+.modal-dialog #file-results .editable-container.editable-inline .control-group.form-group .editable-input select,
+.modal-dialog #file-results .editable-container.editable-inline .control-group.form-group .editable-input textarea {
   width: 95% !important;
 }
-.normalize .editable-click,
-.normalize a.editable-click,
-.normalize a.editable-click:hover {
+.modal-dialog #file-results .editable-click,
+.modal-dialog #file-results a.editable-click,
+.modal-dialog #file-results a.editable-click:hover {
   color: #fff;
   border-bottom: initial;
   text-decoration: none;
 }
-.normalize #currentTitle {
+.modal-dialog #file-results #currentTitle {
   color: #000 !important;
   width: 100%;
+}
+
+@media screen and (min-width: 768px) {
+  .modal-dialog {
+    left: auto;
+    width: 90vw;
+  }
 }
 
 /*# sourceMappingURL=main.css.map */

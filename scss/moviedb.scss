@@ -830,223 +830,241 @@ body {
     }
 }
 
-.normalize {
-    #process-files {
-        h4 {
-            display: inline-flex;
-        }
-
-        #loading-spinner {
-            display: none;
-            margin-left: 55px;
-            // margin-top: 50px;
-        }
+//.normalize {
+#process-files {
+    h4 {
+        display: inline-flex;
     }
 
-    #process-patterns {
-        opacity: 0;
-        width: 100%;
-        transition: opacity 300ms;
+    #loading-spinner {
+        display: none;
+        margin-left: 55px;
+        // margin-top: 50px;
+    }
+}
 
-        &.fade-in {
-            opacity: 1;
+.db-ops-btn-wrapper {
+    opacity: 0;
+    width: 100%;
+    transition: opacity 300ms;
+
+    &.fade-in {
+        opacity: 1;
+    }
+
+    .btn-primary,
+    .btn-success {
+        margin-top: 40px;
+    }
+
+    .btn-success {
+        background-color: darkgreen;
+        border-color: darken(darkgreen, 10%);
+
+        &:hover {
+            background-color: darken(darkgreen, 10%);
         }
+        // margin-left: 30px;
+        // opacity: 0;
+        // transition: opacity 300ms;
+        //
+        // &.fade-in {
+        //     opacity: 1;
+        // }
+    }
+}
 
-        .btn-primary,
-        .btn-success {
-            margin-top: 40px;
-        }
-
-        .btn-success {
-            margin-left: 30px;
-            opacity: 0;
-            transition: opacity 300ms;
-
-            &.fade-in {
-                opacity: 1;
-            }
-        }
+.modal-dialog {
+    .modal-content {
+        background-color: antiquewhite;
     }
 
     #file-results {
-        margin-top: 20px;
-    }
+        // margin-top: 20px;
 
-    table {
-        $bknd: #555;
-        width: 100%;
+        table {
+            $bknd: #555;
+            width: 100%;
 
-        tr {
-            height: 34px;
+            tr {
+                height: 34px;
 
-            &:nth-child(odd) {
-                background-color: lighten($bknd, 20%);
-                color: white;
-            }
-
-            &:nth-child(even) {
-                background-color: $bknd;
-                color: white;
-            }
-
-            &.tbl-hdr {
-                background-color: $bknd;
-                color: white;
-            }
-
-            &.file-renamed {
-                //border: 1px solid green;
-                background-color: forestgreen;
-            }
-
-            &.file-not-renamed {
-                border: 1px solid red;
-            }
-
-            // .file-renamed {
-            //   background-color: forestgreen;
-            // }
-            //
-            // .file-not-renamed {
-            //   border: 2px solid red;
-            // }
-
-            th {
-                padding: 7px;
-                text-align: left;
-
-                &:nth-of-type(1) {
-                    display: none;
+                &:nth-child(odd) {
+                    background-color: lighten($bknd, 20%);
+                    color: white;
                 }
 
-                &:nth-of-type(2),
-                &:nth-of-type(3) {
-                    width: 37.5%;
+                &:nth-child(even) {
+                    background-color: $bknd;
+                    color: white;
                 }
 
-                &:nth-of-type(3),
-                &:nth-of-type(4),
-                &:nth-of-type(5),
-                &:nth-of-type(6),
-                &:nth-of-type(7) {
-                    border-left: 1px solid white;
-                }
-            }
-
-            td {
-                padding: 7px;
-                text-align: left;
-                white-space: nowrap;
-
-                .editable-click,
-                a,
-                a.editable-click,
-                a.editable-click:hover,
-                a:focus,
-                a:hover {
-                    color: #fff;
-                    border-bottom: none;
-                    text-decoration: none;
+                &.tbl-hdr {
+                    background-color: $bknd;
+                    color: white;
                 }
 
-                &:nth-of-type(1) {
-                    display: none;
+                &.file-renamed {
+                    //border: 1px solid green;
+                    background-color: forestgreen;
                 }
 
-                &:nth-of-type(3),
-                &:nth-of-type(4),
-                &:nth-of-type(5),
-                &:nth-of-type(6) {
-                    border-left: 1px solid white;
+                &.file-not-renamed {
+                    border: 1px solid red;
                 }
 
-                &:nth-of-type(2),
-                &:nth-of-type(3) {
-                    width: 37.5%;
-                }
+                // .file-renamed {
+                //   background-color: forestgreen;
+                // }
+                //
+                // .file-not-renamed {
+                //   border: 2px solid red;
+                // }
 
-                &:nth-of-type(3) {
-                    padding-left: 0;
+                th {
+                    padding: 7px;
+                    text-align: left;
 
-                    a {
-                        padding-left: 7px;
+                    &:nth-of-type(1) {
+                        display: none;
                     }
 
-                    // &.file-already-exists {
-                    //   a {
-                    //     border: 2px solid green;
-                    //     padding: 7px 7px 7px 5px;
-                    //   }
-                    // }
+                    &:nth-of-type(2),
+                    &:nth-of-type(3) {
+                        width: 37.5%;
+                    }
 
-                    &.file-has-conflicts {
+                    &:nth-of-type(3),
+                    &:nth-of-type(4),
+                    &:nth-of-type(5),
+                    &:nth-of-type(6),
+                    &:nth-of-type(7) {
+                        border-left: 1px solid white;
+                    }
+                }
+
+                td {
+                    padding: 7px;
+                    text-align: left;
+                    white-space: nowrap;
+
+                    .editable-click,
+                    a,
+                    a.editable-click,
+                    a.editable-click:hover,
+                    a:focus,
+                    a:hover {
+                        color: #fff;
+                        border-bottom: none;
+                        text-decoration: none;
+                    }
+
+                    &:nth-of-type(1) {
+                        display: none;
+                    }
+
+                    &:nth-of-type(3),
+                    &:nth-of-type(4),
+                    &:nth-of-type(5),
+                    &:nth-of-type(6) {
+                        border-left: 1px solid white;
+                    }
+
+                    &:nth-of-type(2),
+                    &:nth-of-type(3) {
+                        width: 37.5%;
+                    }
+
+                    &:nth-of-type(3) {
+                        padding-left: 0;
+
                         a {
-                            border: 2px solid darkred;
-                            padding: 7px 7px 7px 5px;
+                            padding-left: 7px;
+                        }
+
+                        // &.file-already-exists {
+                        //   a {
+                        //     border: 2px solid green;
+                        //     padding: 7px 7px 7px 5px;
+                        //   }
+                        // }
+
+                        &.file-has-conflicts {
+                            a {
+                                border: 2px solid darkred;
+                                padding: 7px 7px 7px 5px;
+                            }
+                        }
+
+                        // &.file-has-no-conflicts {
+                        //   a {
+                        //     border: 2px solid darkolivegreen;
+                        //     padding: 7px 7px 7px 5px;
+                        //   }
+                        // }
+
+                        // &.file-not-renamed {
+                        //   a {
+                        //     border: 2px solid darkred;
+                        //     padding: 7px;
+                        //   }
+                        // }
+
+                    }
+
+                    &:nth-of-type(4) {
+
+                        width: 105px;
+                    }
+
+                    &:nth-of-type(7) {
+                        padding: 4px 5px;
+                        border-left: 1px solid white;
+                        text-align: center;
+
+                        .btn {
+                            padding: 1px 12px;
                         }
                     }
 
-                    // &.file-has-no-conflicts {
-                    //   a {
-                    //     border: 2px solid darkolivegreen;
-                    //     padding: 7px 7px 7px 5px;
-                    //   }
-                    // }
-
-                    // &.file-not-renamed {
-                    //   a {
-                    //     border: 2px solid darkred;
-                    //     padding: 7px;
-                    //   }
-                    // }
-
-                }
-
-                &:nth-of-type(4) {
-
-                    width: 105px;
-                }
-
-                &:nth-of-type(7) {
-                    padding: 4px 5px;
-                    border-left: 1px solid white;
-                    text-align: center;
-
-                    .btn {
-                        padding: 1px 12px;
+                    &:nth-of-type(8) {
+                        padding-left: 5px;
+                        padding-right: 5px;
+                        border-right: 1px solid white;
+                        text-align: center;
                     }
-                }
-
-                &:nth-of-type(8) {
-                    padding-left: 5px;
-                    padding-right: 5px;
-                    border-right: 1px solid white;
-                    text-align: center;
                 }
             }
         }
-    }
-    /* Make inline editables take the full width of their parents */
-    .editable-container.editable-inline,
-    .editable-container.editable-inline .control-group.form-group,
-    .editable-container.editable-inline .control-group.form-group .editable-input,
-    .editable-container.editable-inline .control-group.form-group .editable-input input:not([type=radio]):not([type=checkbox]):not([type=submit]),
-    .editable-container.editable-inline .control-group.form-group .editable-input select,
-    .editable-container.editable-inline .control-group.form-group .editable-input textarea {
-        width: 95% !important;
-    }
+        /* Make inline editables take the full width of their parents */
+        .editable-container.editable-inline,
+        .editable-container.editable-inline .control-group.form-group,
+        .editable-container.editable-inline .control-group.form-group .editable-input,
+        .editable-container.editable-inline .control-group.form-group .editable-input input:not([type=radio]):not([type=checkbox]):not([type=submit]),
+        .editable-container.editable-inline .control-group.form-group .editable-input select,
+        .editable-container.editable-inline .control-group.form-group .editable-input textarea {
+            width: 95% !important;
+        }
 
-    .editable-click,
-    a.editable-click,
-    a.editable-click:hover {
-        color: #fff;
-        border-bottom: initial;
-        text-decoration: none;
-    }
+        .editable-click,
+        a.editable-click,
+        a.editable-click:hover {
+            color: #fff;
+            border-bottom: initial;
+            text-decoration: none;
+        }
 
-    #currentTitle {
-        color: #000!important;
-        width: 100%;
-    }
+        #currentTitle {
+            color: #000!important;
+            width: 100%;
+        }
 
+    }
+}
+
+@media screen and (min-width: 768px) {
+    .modal-dialog {
+        left: auto;
+        width: 90vw;
+    }
 }

@@ -8,6 +8,9 @@ var cleanedNamesDeDuped = [];
 var numTitlesFromDirectory = 0;
 var copyResultRowValues = [];
 
+var dbOpsButton = $('.btn-process-dir-database-ops');
+var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
+
 function updateRecord(id, dataType, dataToUpdate) {
 
 	return $.ajax({
@@ -168,17 +171,28 @@ $('.btn-add-single-title').on("click", function(event) {
 	}
 });
 
-//default
-$('#input-directory').val("/Users/sean/Download/names fixed/");
-//$('#input-directory').val("/Volumes/Recorded 1/test/");
-//$('#input-directory').val("/Volumes/Tmp/keep/");
+$(document).ready(function() {
+	//default
+	//$('#input-directory').val("/Users/sean/Download/names fixed/");
+	//$('#input-directory').val("/Volumes/Misc 1/to move/");
+	$('#input-directory').val("/Users/sean/Download/test/");
+	//$('#input-directory').val("/Volumes/Recorded 1/test/");
+	//$('#input-directory').val("/Volumes/Bi-Gay-TS/Recorded overflow/");
+
+	dirName = $('#input-directory').val();
+});
 
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
+	console.log("dirName in click handler: " + dirName + "\n");
+	//processFilesForDB(dirName);
+	processFiles(dirName);
 
-	dirName = $('#input-directory').val();
+});
+
+$('.btn-process-dir-database-ops').on("click", function(event) {
+	event.preventDefault();
 	processFilesForDB(dirName);
-	//$location.path('/normalize');
 });
 
 function processFilesForDB(dirName) {
@@ -321,6 +335,170 @@ $('#duplicates').on("click", ".btn-find-file", function(event) {
 	var fileName = $('.duplicate-text').val();
 	findFile(fileName);
 });
+
+var dbOpsBtnWrapper = $('.db-ops-btn-wrapper');
+var transitionEnd = 'webkitTransitionEnd msTransitionEnd transitionend';
+
+function processFiles(dirName) {
+	$("#loading-spinner").css('display', 'inline-flex');
+	$.ajax({
+		type: "POST",
+		url: "normalize.php",
+		dataType: "json",
+		data: {
+			dirName: dirName
+		},
+	}).always(function(response) {
+		handleProcessFilesResult(response);
+		$("#loading-spinner").css('display', 'none');
+	})
+}
+
+function handleProcessFilesResult(response) {
+	//console.log("response: ", response);
+	var totalCount = response.length;
+
+	$("#file-data tbody ~ tbody").empty();
+	// var tbody = $('#file-results table').children('tbody:first');
+	var tbody = $('#file-results table').children('tbody:nth-of-type(2)');
+	var table = tbody.length ? tbody : $('#file-results table');
+
+	// var row = '<tr><td>{{path}}</td><td>{{originalFileName}}</td><td class="{{conflictsClass}} {{fileAlreadyExistsClass}}"><a>{{fileNameDisplayed}}</a></span></td><td>{{size}}</td><td>{{dimensions}}</td><td>{{durationNoMS}}</td></tr>';
+
+	for (i = 0; i < response.length; i++) {
+
+		var path = response[i]['Path'];
+		var fileNameAndPath = response[i]['fileNameAndPath'];
+		var originalFileName = response[i]['originalFileName'];
+		var fileWillBeRenamed = response[i]['fileWillBeRenamed'];
+		var newFileName = response[i]['newFileName'];
+		var size = response[i]['Size'];
+		var dimensions = response[i]['Dimensions'];
+		var duration = response[i]['Duration'];
+		var durationNoMS = duration.split(".")[0];
+		var fileRenameConflict = response[i]['fileRenameConflict'];
+		var fileAlreadyExists = response[i]['fileAlreadyExists'];
+		var fileNameDisplayed = "";
+
+		if (fileAlreadyExists == true) {
+			var fileAlreadyExistsClass = 'file-already-exists';
+		} else if (fileAlreadyExists == false) {
+			var fileAlreadyExistsClass = 'file-does-not-exist';
+		}
+		if (fileRenameConflict == true) {
+			var conflictsClass = 'file-has-conflicts';
+			//fileNameDisplayed = originalFileName;
+			fileNameDisplayed = newFileName;
+		} else if (fileRenameConflict == false) {
+			var conflictsClass = 'file-has-no-conflicts';
+			fileNameDisplayed = newFileName;
+		}
+
+		var row = '<tr><td>' + path + '</td><td>' + originalFileName + '</td><td class="' + conflictsClass + fileAlreadyExistsClass + '"><a>' + fileNameDisplayed + '</a></span></td><td>' + size + '</td><td>' + dimensions + '</td><td>' + durationNoMS + '</td></tr>';
+		// $('div.modal-body').append(row);
+		$(tbody).append(row);
+		// table.append(row.compose({
+		// 	'path': path,
+		// 	'originalFileName': originalFileName,
+		// 	'conflictsClass': conflictsClass,
+		// 	'fileAlreadyExistsClass': fileAlreadyExistsClass,
+		// 	'fileNameDisplayed': fileNameDisplayed,
+		// 	'size': size,
+		// 	'dimensions': dimensions,
+		// 	'durationNoMS': durationNoMS,
+		// }));
+	}
+	if (!$('#myModal').hasClass('in')) {
+		$('#normalizeModal').modal('show');
+	}
+}
+
+$('#normalizeModal').on('hidden.bs.modal', function() {
+	//renameTheFiles();
+	dbOpsBtnWrapper.addClass('inline-flex').outerWidth();
+	dbOpsBtnWrapper.addClass('fade-in').one(transitionEnd, function() {
+
+	});
+})
+
+$('#modal-rename-files-btn').on("click", function() {
+	renameTheFiles();
+});
+
+function renameTheFiles() {
+	$.ajax({
+		type: "POST",
+		url: "renameFiles.php",
+		dataType: "json",
+	}).always(function(response) {
+		handleRenameTheFilesResult(response);
+	})
+}
+
+function handleRenameTheFilesResult(response) {
+	//processFiles(dirName);
+	console.log("response: ", response);
+}
+$(document).ready(function() {
+	$.fn.editable.defaults.mode = 'inline';
+
+	$("#file-results table").on("click", "a", function(e) {
+		e.preventDefault();
+
+		var path = $(this).closest('tr').children('td:first-of-type').text();
+		path = path + "/";
+		var pk = $(this).closest("tr").find("td:nth-of-type(2)").text();
+		var originalFileName = $(this).closest("tr").find("td:nth-of-type(2)").text();
+
+		$(this).editable({
+			type: 'text',
+			pk: pk,
+			name: 'title',
+			params: function(params) {
+				params.path = path;
+				params.originalFileName = originalFileName;
+				return params;
+			},
+			url: "renameSingleFile.php",
+			success: function(response) {
+				if (response == "fail") {
+					$(this).closest("tr").find("td:nth-of-type(2)").text(originalFileName);
+					$(this).closest("tr").find("td:nth-of-type(3)").html('<a>' + originalFileName + '</a>');
+				} else {
+					$(this).closest("tr").find("td:nth-of-type(3)").removeClass('file-has-conflicts');
+					$(this).closest("tr").find("td:nth-of-type(3)").removeClass('file-does-not-exist');
+					$(this).closest("tr").find("td:nth-of-type(2)").text(response);
+					$(this).closest("tr").find("td:nth-of-type(3)").html('<a>' + response + '</a>');
+				}
+			}
+		});
+	});
+});
+
+$('#file-results table').on("click", "th", function(event) {
+
+	var table = $(this).parents('table').eq(0)
+	var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()))
+	this.asc = !this.asc
+	if (!this.asc) {
+		rows = rows.reverse()
+	}
+	for (var i = 0; i < rows.length; i++) {
+		table.append(rows[i])
+	}
+})
+
+function comparer(index) {
+	return function(a, b) {
+		var valA = getCellValue(a, index),
+			valB = getCellValue(b, index)
+		return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.toString().localeCompare(valB)
+	}
+}
+
+function getCellValue(row, index) {
+	return $(row).children('td').eq(index).text()
+}
 
 function formatSize(size) {
 	if (size >= 1073741824) {
