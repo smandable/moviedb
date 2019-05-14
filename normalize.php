@@ -5,18 +5,6 @@ include('getDuration.php');
 include('formatSize.php');
 
 $dirName = $_POST['dirName'];
-//$dryRun = $_POST['dryRun'];
-//$dryRun = true;
-// $dryRun = false;
-
-// if (isset($_POST['dryRun'])) {
-//     $dryRun  = $_POST['dryRun'];
-//     if ($dryRun === true) {
-//         $dryRun = false;
-//     } elseif ($dryRun === false) {
-//         $dryRun = true;
-//     }
-// }
 
 if (isset($_POST['searchPattern '])) {
     $searchPattern  = $_POST['searchPattern'];
@@ -53,9 +41,6 @@ function getFiles($dirName, $files)
     }
     processFiles();
 }
-
-//var_dump($files);
-// processFiles();
 
 function processFiles()
 {
@@ -164,6 +149,7 @@ function cleanupFunctions($newFileName)
     $newFileName = preg_replace('/\b(?<! \- )(\s|\.)cd/i', ' - CD', trim($newFileName)); // space or single period 'cd' to ' - CD'
     $newFileName = preg_replace('/\b(?!Scene_)(Scene\s|scene\.|\.scene|scene)/i', 'Scene_', trim($newFileName)); // 'scene ' or 'scene.' or '.scene' or 'scene' to 'Scene_'
     $newFileName = preg_replace('/\b(?<!\s\-\sScene)(\sscene)/i', ' - Scene', trim($newFileName)); // Not following a ' - Scene', replace ' scene' with ' - Scene'
+    $newFileName = preg_replace('/(\s*)\#(\s*)/i', ' # ', trim($newFileName)); // '#' to ' # '
 
     $pattern1 = '/(?<!^)(?<!CD)(?<!\_)(?<!\d)([1-9])(?!\d)/i'; // Not following an underscore or a digit or 'CD', a digit from 1-9 without a digit following
     $rep1 = '0$1'; // ' 0'
@@ -172,8 +158,6 @@ function cleanupFunctions($newFileName)
     $pattern2 = '/(?<!^)(?<!CD)(?<!\#\s)(?<!\_)(?<!\d)([0-9]{1,3}?(?!\d))/i'; // Not following a '#  ' or '_' or 'CD',  1-3 digits from 0-9 without a digit following
     $rep2 = '# $1'; // ' # 0'
     $newFileName = preg_replace($pattern2, $rep2, $newFileName); //replace the first backreference with ' # '
-
-    $newFileName = preg_replace('/(\s*)\#(\s*)/i', ' # ', trim($newFileName)); // '#' to ' # '
 
     return $newFileName;
 }

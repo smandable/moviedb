@@ -8490,6 +8490,9 @@ body .movies .ui-grid-canvas .ui-grid-coluiGrid-0007,
 body .movies .ui-grid-canvas .ui-grid-coluiGrid-0008 {
   text-align: left;
 }
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-0005 .ui-grid-filter-button {
+  width: 10px;
+}
 body .movies .ui-grid-canvas .cell-controls,
 body .movies .ui-grid-canvas .ui-grid-coluiGrid-0009 {
   padding-top: 1px;
@@ -9025,7 +9028,11 @@ body #import-records #duplicates p {
 .modal-dialog .modal-content {
   background-color: antiquewhite;
 }
+.modal-dialog .modal-content .modal-body {
+  overflow: scroll;
+}
 .modal-dialog #file-results {
+  height: 70vh;
   /* Make inline editables take the full width of their parents */
 }
 .modal-dialog #file-results table {
@@ -9061,6 +9068,15 @@ body #import-records #duplicates p {
 }
 .modal-dialog #file-results table tr th:nth-of-type(2), .modal-dialog #file-results table tr th:nth-of-type(3) {
   width: 37.5%;
+}
+.modal-dialog #file-results table tr th:nth-of-type(4) {
+  width: 75px;
+}
+.modal-dialog #file-results table tr th:nth-of-type(5) {
+  width: 100px;
+}
+.modal-dialog #file-results table tr th:nth-of-type(6) {
+  width: 100px;
 }
 .modal-dialog #file-results table tr th:nth-of-type(3), .modal-dialog #file-results table tr th:nth-of-type(4), .modal-dialog #file-results table tr th:nth-of-type(5), .modal-dialog #file-results table tr th:nth-of-type(6), .modal-dialog #file-results table tr th:nth-of-type(7) {
   border-left: 1px solid white;
@@ -9139,7 +9155,7 @@ body #import-records #duplicates p {
 @media screen and (min-width: 768px) {
   .modal-dialog {
     left: auto;
-    width: 90vw;
+    width: 70vw;
   }
 }
 

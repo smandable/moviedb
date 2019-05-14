@@ -160,11 +160,9 @@ $('.btn-add-single-title').on("click", function(event) {
 	if (stl) {
 		var nameToAdd = $.trim($('#single-title-input').val());
 		var dimensions = $.trim($('#single-title-input-dimensions').val());
-
 		var size = $.trim($('#single-title-input-size').val());
 		size = size.replace(new RegExp(",", "g"), "");
 		size = parseInt(size, 10);
-		//$('#single-title-input-size').val(size);
 		addMovie(nameToAdd, dimensions, size);
 	} else {
 		$('#single-title-input').css('border', '1px solid red');
@@ -173,18 +171,16 @@ $('.btn-add-single-title').on("click", function(event) {
 
 $(document).ready(function() {
 	//default
-	//$('#input-directory').val("/Users/sean/Download/names fixed/");
+	$('#input-directory').val("/Volumes/Misc 1/to move/");
 	//$('#input-directory').val("/Volumes/Misc 1/to move/");
-	$('#input-directory').val("/Users/sean/Download/test/");
+	//$('#input-directory').val("/Users/sean/Download/test/");
 	//$('#input-directory').val("/Volumes/Recorded 1/test/");
-	//$('#input-directory').val("/Volumes/Bi-Gay-TS/Recorded overflow/");
 
 	dirName = $('#input-directory').val();
 });
 
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
-	console.log("dirName in click handler: " + dirName + "\n");
 	//processFilesForDB(dirName);
 	processFiles(dirName);
 
@@ -276,9 +272,7 @@ $(document).ready(function() {
 			pk: pk,
 			name: 'title',
 			url: "editRowInResultsTable.php",
-			success: function(response) {
-				console.log("response: ", response);
-			}
+			success: function(response) {}
 		});
 	});
 
@@ -355,15 +349,10 @@ function processFiles(dirName) {
 }
 
 function handleProcessFilesResult(response) {
-	//console.log("response: ", response);
 	var totalCount = response.length;
-
 	$("#file-data tbody ~ tbody").empty();
-	// var tbody = $('#file-results table').children('tbody:first');
 	var tbody = $('#file-results table').children('tbody:nth-of-type(2)');
 	var table = tbody.length ? tbody : $('#file-results table');
-
-	// var row = '<tr><td>{{path}}</td><td>{{originalFileName}}</td><td class="{{conflictsClass}} {{fileAlreadyExistsClass}}"><a>{{fileNameDisplayed}}</a></span></td><td>{{size}}</td><td>{{dimensions}}</td><td>{{durationNoMS}}</td></tr>';
 
 	for (i = 0; i < response.length; i++) {
 
@@ -387,7 +376,6 @@ function handleProcessFilesResult(response) {
 		}
 		if (fileRenameConflict == true) {
 			var conflictsClass = 'file-has-conflicts';
-			//fileNameDisplayed = originalFileName;
 			fileNameDisplayed = newFileName;
 		} else if (fileRenameConflict == false) {
 			var conflictsClass = 'file-has-no-conflicts';
@@ -395,18 +383,8 @@ function handleProcessFilesResult(response) {
 		}
 
 		var row = '<tr><td>' + path + '</td><td>' + originalFileName + '</td><td class="' + conflictsClass + fileAlreadyExistsClass + '"><a>' + fileNameDisplayed + '</a></span></td><td>' + size + '</td><td>' + dimensions + '</td><td>' + durationNoMS + '</td></tr>';
-		// $('div.modal-body').append(row);
 		$(tbody).append(row);
-		// table.append(row.compose({
-		// 	'path': path,
-		// 	'originalFileName': originalFileName,
-		// 	'conflictsClass': conflictsClass,
-		// 	'fileAlreadyExistsClass': fileAlreadyExistsClass,
-		// 	'fileNameDisplayed': fileNameDisplayed,
-		// 	'size': size,
-		// 	'dimensions': dimensions,
-		// 	'durationNoMS': durationNoMS,
-		// }));
+
 	}
 	if (!$('#myModal').hasClass('in')) {
 		$('#normalizeModal').modal('show');
@@ -414,7 +392,6 @@ function handleProcessFilesResult(response) {
 }
 
 $('#normalizeModal').on('hidden.bs.modal', function() {
-	//renameTheFiles();
 	dbOpsBtnWrapper.addClass('inline-flex').outerWidth();
 	dbOpsBtnWrapper.addClass('fade-in').one(transitionEnd, function() {
 
@@ -436,9 +413,12 @@ function renameTheFiles() {
 }
 
 function handleRenameTheFilesResult(response) {
-	//processFiles(dirName);
-	console.log("response: ", response);
+
+	console.log("renameTheFiles() success");
+	$('#file-data').css('border', '5px solid green');
+	$('.modal-body').css('padding', '10px');
 }
+
 $(document).ready(function() {
 	$.fn.editable.defaults.mode = 'inline';
 

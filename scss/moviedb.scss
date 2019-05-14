@@ -200,6 +200,12 @@ body {
                 text-align: left;
             }
 
+            .ui-grid-coluiGrid-0005 {
+                .ui-grid-filter-button {
+                    width: 10px;
+                }
+            }
+
             .cell-controls,
             .ui-grid-coluiGrid-0009 {
                 padding-top: 1px;
@@ -877,10 +883,15 @@ body {
 .modal-dialog {
     .modal-content {
         background-color: antiquewhite;
+
+        .modal-body {
+            overflow: scroll;
+        }
     }
 
     #file-results {
         // margin-top: 20px;
+        height: 70vh;
 
         table {
             $bknd: #555;
@@ -932,6 +943,18 @@ body {
                     &:nth-of-type(2),
                     &:nth-of-type(3) {
                         width: 37.5%;
+                    }
+
+                    &:nth-of-type(4) {
+                        width: 75px;
+                    }
+
+                    &:nth-of-type(5) {
+                        width: 100px;
+                    }
+
+                    &:nth-of-type(6) {
+                        width: 100px;
                     }
 
                     &:nth-of-type(3),
@@ -1065,6 +1088,6 @@ body {
 @media screen and (min-width: 768px) {
     .modal-dialog {
         left: auto;
-        width: 90vw;
+        width: 70vw;
     }
 }

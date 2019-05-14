@@ -14,7 +14,8 @@ if (empty($_POST['dirName'])) {
 
 $files = array();
 $files2 = array();
-// $pattern1 = '/\\.[^.\\s]{3,4}$/';
+$filesMissingNumOne = array();
+
 $pattern1 = '/\.[a-z1-9]{3,4}$/';
 $pattern2 = '/ - Scene.*/i';
 $pattern3 = '/ - CD.*/i';
@@ -23,24 +24,22 @@ $pattern4 = '/ - Bonus.*| Bonus.*/i';
 $directory = new \RecursiveDirectoryIterator($dirName);
 $iterator = new \RecursiveIteratorIterator($directory);
 
-    foreach ($iterator as $fileInfo) {
-        if ($fileInfo->getBasename() === '.' || $fileInfo->getBasename() === '..' || $fileInfo->getBasename() === '.DS_Store'
-        || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
-            continue;
-        }
-
-        $baseName = $fileInfo->getBasename();
-        $fileName = $baseName;
-        $fileName = preg_replace(array($pattern1, $pattern2, $pattern3, $pattern4), '', $fileName);
-
-        $fileNameAndPath = $fileInfo->getPathname();
-        $fileSize = filesize($fileInfo->getPathname());
-        $fileExtension =pathinfo($fileInfo->getBasename(), PATHINFO_EXTENSION);
-
-        $dimensions = getDimensions($fileNameAndPath);
-
-        $files[] = array('Name' => $fileName, 'baseName' => $baseName, 'fileExtension' => $fileExtension, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
+foreach ($iterator as $fileInfo) {
+    if ($fileInfo->getBasename() === '.' || $fileInfo->getBasename() === '..' || $fileInfo->getBasename() === '.DS_Store'
+    || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
+        continue;
     }
+
+    $baseName = $fileInfo->getBasename();
+    $fileName = $baseName;
+    $fileName = preg_replace(array($pattern1, $pattern2, $pattern3, $pattern4), '', $fileName);
+    $fileNameAndPath = $fileInfo->getPathname();
+    $fileSize = filesize($fileInfo->getPathname());
+    $fileExtension =pathinfo($fileInfo->getBasename(), PATHINFO_EXTENSION);
+    $dimensions = getDimensions($fileNameAndPath);
+
+    $files[] = array('Name' => $fileName, 'baseName' => $baseName, 'fileExtension' => $fileExtension, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
+}
 
 $filesSorted = array();
 
@@ -73,16 +72,13 @@ $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
     }
     return $a;
 });
-
 $files2ReducedSizesSummed = array_values($files2ReducedSizesSummed);
 $lengthFiles2 = count($files2ReducedSizesSummed);
 
 for ($i=0;$i<$lengthFiles2;$i++) {
-    //checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $dirName, $files);
-    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Date Created"], $files2ReducedSizesSummed[$i]["Id"], $dirName, $files);
+    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Date Created"], $files2ReducedSizesSummed[$i]["Id"], $dirName, $files, $filesMissingNumOne);
 }
-
-function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger, &$sizeInDB, &$dateCreatedInDB, &$id, $dirName, $files)
+function checkDatabaseForMovie(&$title, $dimensions, $size, &$isDupe, &$isLarger, &$sizeInDB, &$dateCreatedInDB, &$id, $dirName, $files, &$filesMissingNumOne)
 {
     include "db_connect.php";
     $titleUe = $title;
@@ -103,19 +99,19 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
         if ($result2->num_rows > 0) {
             $newTitle = $tmpTitle[0]." ".$numOne;
             $result2 = $db->query("UPDATE `".$table."` SET title='$newTitle' WHERE title='$tmpTitle[0]'");
+            $title = $tmpTitle;
         }
     }
 
     //If title being read from directory DOES NOT have a number in it, look for that title in the DB WITH a number + " 01". If found, mark file as duplicate.
-    $regex = "/# [0-9]/";
-    if (!preg_match($regex, $title)) {
+    if (!preg_match('/# [0-9]+$/', $title)) {
         $tmpTitle = $title." ".$numOne;
         $result2 = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle'");
         $row2 = mysqli_fetch_assoc($result2);
         if ($result2->num_rows > 0) {
             $isDupe = true;
+            $id = $row2['id'];
             $dateCreatedInDB = $row2['date_created'];
-
             $sizeInDB = $row2['filesize'];
             compareFileSizeToDB($size, $sizeInDB, $isLarger);
 
@@ -123,9 +119,11 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
             //updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
             //End caution...
 
-            //renameSingleFile($title, $dirName, $files);
+            $filesMissingNumOne[] = array('title' => $title);
+            //findFilesToRename($filesMissingNumOne);
 
             moveDuplicateFile($titleUe, $dirName, $files);
+            $title = $tmpTitle;
             return;
         }
     }
@@ -146,7 +144,6 @@ function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger,
     $result->close();
     $db->close();
 }
-
 function addToDB($title, $dimensions, $size, $db, $table, $dirName)
 {
     $result = $db->query("INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, date_created) VALUES ('$title', '$dimensions', '$size', NOW())");
@@ -164,21 +161,84 @@ function updateSizeAndDimensions($title, $dimensions, $dimensionsInDB, $size, $s
         //quickLogFile($title, $size, $sizeInDB, $dimensions, $dimensionsInDB, $dirName);
     }
 }
-
 function updateDB($title, $db, $id, $table)
 {
     $result = $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
 }
-
 function compareFileSizeToDB($size, $sizeInDB, &$isLarger)
 {
     if (($sizeInDB > 0) && ($sizeInDB < $size)) {
         $isLarger = true;
     }
 }
+function moveDuplicateFile($titleUe, $dirName, $files)
+{
+    $destination = $dirName.'duplicates/';
+    if (!is_dir($destination)) {
+        mkdir($destination, 0777, true);
+    }
+    foreach ($files as $file) {
+        if (!is_file($file['Path'])) {
+            continue;
+        }
+        if ($file['Name'] == $titleUe) {
+            $rename_file = $destination.$file['baseName'];
+            str_replace("'", "\'", $rename_file);
+            rename($file['Path'], $rename_file);
+        }
+    }
+}
+findFilesToRename($filesMissingNumOne, $dirName);
+function findFilesToRename($filesMissingNumOne, $dirName)
+{
+    $dirName = $dirName.'duplicates/';
+    $directory = new \RecursiveDirectoryIterator($dirName);
+    $iterator = new \RecursiveIteratorIterator($directory);
+    $numOne = ' # 01';
+    $spaceDashSpace = ' - ';
+    $pattern1 = '/\.[a-z1-9]{3,4}$/';
 
+    foreach ($filesMissingNumOne as $fileMissingOne) {
+        $titleMissingOne = $fileMissingOne['title'];
+        //echo "titleMissingOne: $titleMissingOne\n";
+
+        foreach ($iterator as $file) {
+            if ($file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store') {
+                continue;
+            }
+            $fileName = $file->getBasename();
+            $originalFileName = $fileName;
+            $fileExtension =pathinfo($file->getBasename(), PATHINFO_EXTENSION);
+            $fileExtension = "." . $fileExtension;
+            $fileName = preg_replace($pattern1, '', $fileName);
+
+            if (strcasecmp($titleMissingOne, $fileName) == 0) {
+                $fileName = $fileName . $numOne . $fileExtension;
+                // echo "fileName no patterns: $fileName\n";
+                rename($dirName.$originalFileName, $dirName.$fileName);
+            }
+
+            if ($beginningOfFileName = stristr($fileName, ' - Scene_', true)) {
+                if (strcasecmp($titleMissingOne, $beginningOfFileName) == 0) {
+                    $tmpFileName = preg_split('/ - /', $fileName);
+                    $fileName = $tmpFileName[0] . $numOne . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
+                    // echo "fileName after splitting and joining: $fileName\n";
+                    rename($dirName.$originalFileName, $dirName.$fileName);
+                }
+            }
+            if ($beginningOfFileName = stristr($fileName, ' - CD', true)) {
+                if (strcasecmp($titleMissingOne, $beginningOfFileName) == 0) {
+                    $tmpFileName = preg_split('/ - /', $fileName);
+                    $fileName = $tmpFileName[0] . $numOne . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
+                    // echo "fileName after splitting and joining: $fileName\n";
+                    rename($dirName.$originalFileName, $dirName.$fileName);
+                }
+            }
+            // rename($dirName.$originalFileName, $dirName.$fileName);
+        }
+    }
+}
 returnHTML($files2ReducedSizesSummed);
-
 function returnHTML($files2ReducedSizesSummed)
 {
     $lengthFiles2ReducedSizesSummed = count($files2ReducedSizesSummed);
@@ -198,66 +258,6 @@ function returnHTML($files2ReducedSizesSummed)
     }
     echo json_encode($returnedArray);
 }
-
-function moveDuplicateFile($titleUe, $dirName, $files)
-{
-    $destination = $dirName.'duplicates/';
-    if (!is_dir($destination)) {
-        mkdir($destination, 0777, true);
-    }
-    foreach ($files as $file) {
-        if (!is_file($file['Path'])) {
-            continue;
-        }
-        if ($file['Name'] == $titleUe) {
-            $rename_file = $destination.$file['baseName'];
-            str_replace("'", "\'", $rename_file);
-            rename($file['Path'], $rename_file);
-        }
-    }
-}
-
-// function renameSingleFile($title, $newTitle, $dirName, $files)
-// {
-//     $destination = $dirName;
-//
-//     $pattern1 = '/\.[a-z1-9]{3,4}$/'
-//     $pattern2 = '/ - Scene.*/i';
-//     $pattern3 = '/ - CD.*/i';
-//
-// if ($newTitle = preg_match($pattern3)) {
-//     $pattern = '/(\s)(- )(CD)/';
-//     $rep = ' # 01 $2$3';
-//     $newTitle = preg_replace($pattern, $rep, $newTitle);
-//     rename($dirName.title, $dirName.$newTitle);
-//   } else if ($newTitle = preg_match($pattern2)) {
-//     $pattern = '/(\s)(- )(Scene)/';
-//     $rep = ' # 01 $2$3';
-//     $newTitle = preg_replace($pattern, $rep, $newTitle);
-//         rename($dirName.title, $dirName.$newTitle);
-//   } else {
-//     $pattern = '/([\.])([a-z1-9]{3,4})$/';
-//     $rep = ' # 01.$2';
-//     $newTitle = preg_replace($pattern, $rep, $newTitle);
-//         rename($dirName.title, $dirName.$newTitle);
-//   }
-//
-//     // foreach ($files as $file) {
-//     //     if (!is_file($file['Path'])) {
-//     //         continue;
-//     //     }
-//
-//
-//         //$fileExtension =pathinfo($file['baseName'], PATHINFO_EXTENSION);
-//         //$newTitle = $newTitle . "." . $fileExtension;
-//
-//         // if ($file['Name'] == $title) {
-//         //     $rename_file = $destination.$newTitle;
-//         //     rename($file['baseName'], $rename_file);
-//         // }
-//     //}
-// }
-
 function quickLogFile($title, $newIdToReturn, $dirName)
 {
     $myfile = fopen("$dirName/updated.txt", "a") or die("Unable to open file!");
@@ -268,7 +268,6 @@ function quickLogFile($title, $newIdToReturn, $dirName)
     fwrite($myfile, $txt);
     fclose($myfile);
 }
-
 function super_unique($array, $key)
 {
     $temp_array = [];
@@ -280,7 +279,6 @@ function super_unique($array, $key)
     $array = array_values($temp_array);
     return $array;
 }
-
 function multi_array_key_exists($needle, $haystack)
 {
     foreach ($haystack as $key => $value) :
