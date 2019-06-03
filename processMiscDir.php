@@ -139,7 +139,7 @@ function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
         if ($result->num_rows > 0) {
             echo "$newTitle is in database\n";
             updateFile("fid", $dirName, $title, $dimensions, $size, $titleInDB, $dimensionsInDB, $sizeInDB);
-            //renameFile($title, $newTitle, $dirName, $files);
+            //renameSingleFile($title, $newTitle, $dirName, $files);
             moveDuplicateFile($title, $dirName, $files);
             return;
         }
@@ -218,7 +218,7 @@ function compareFileSizeToDB($title, $titleInDB, $size, $sizeInDB, $dimensions, 
     fclose($myfile);
 }
 
-function renameFile($title, $newTitle, $dirName, $files)
+function renameSingleFile($title, $newTitle, $dirName, $files)
 {
     $destination = $dirName.'duplicates/';
     if (!is_dir($destination)) {

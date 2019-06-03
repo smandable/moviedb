@@ -11,6 +11,21 @@ var copyResultRowValues = [];
 var dbOpsButton = $('.btn-process-dir-database-ops');
 var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 
+
+//default
+// $('#input-directory').val("/Volumes/Misc 1/to move/");
+//$('#input-directory').val("/Users/sean/Download/test/");
+$('#input-directory').val("/Volumes/Recorded 2/recorded/");
+//$('#input-directory').val("/Users/sean/Download/recorded/");
+
+$('.btn-start-processing-dir').on("click", function(event) {
+	event.preventDefault();
+	dirName = $('#input-directory').val();
+	processFilesForDB(dirName);
+	//processFiles(dirName);
+
+});
+
 function updateRecord(id, dataType, dataToUpdate) {
 
 	return $.ajax({
@@ -79,6 +94,45 @@ function deleteRow(id) {
 	}
 }
 
+function playMovie(path) {
+
+	// var row = '<tr><td>' + path + '</td><td>' + originalFileName + '</td><td class="' + conflictsClass + fileAlreadyExistsClass + '"><a>' + fileNameDisplayed + '</a></span></td><td>' + size + '</td><td>' + dimensions + '</td><td>' + durationNoMS + '</td></tr>';
+	// $(tbody).append(row);
+	console.log("path: ", path);
+
+	// console.log("show modal...");
+
+	var html = '<video controls>' +
+		// '<source src="' + path + '" width="' + videoWidth + '" ' + 'height="' + videoHeight + '" type="video/mp4">' +
+		'<source src="' + path + ' type="video/mp4">' +
+		'</video>';
+
+	$('#movieToPlay').append(html);
+
+	$('#playMovieModal').modal('show');
+
+
+	// var html << HTML
+	//
+	//
+	// HTML
+	// return $.ajax({
+	// 	type: "POST",
+	// 	url: "deleteRow.php",
+	// 	dataType: "json",
+	// 	data: {
+	// 		id: id
+	// 	},
+	// 	success: handleResponse
+	// })
+
+	// function handleResponse(data) {
+	// 	angular.element($('#movie-controller')).scope().refreshData();
+	// 	return;
+	// }
+
+}
+
 // $(document).ready(function () {
 $('#directory-results table').on("click", ".btn-copy-result", function(event) {
 
@@ -88,9 +142,9 @@ $('#directory-results table').on("click", ".btn-copy-result", function(event) {
 	copyResultRowValues['Size'] = row.find("td:nth-child(4) .tsize").text();
 	//copyResultRowValues = [row.find("td:nth-child(2)"), row.find("td:nth-child(3)"), row.find("td:nth-child(4)")];
 
-	console.log("copyResultRowValues['Title']" + copyResultRowValues['Title'] + "\n");
-	console.log("copyResultRowValues['Dimensions']" + copyResultRowValues['Dimensions'] + "\n");
-	console.log("copyResultRowValues['Size']" + copyResultRowValues['Size'] + "\n");
+	// console.log("copyResultRowValues['Title']" + copyResultRowValues['Title'] + "\n");
+	// console.log("copyResultRowValues['Dimensions']" + copyResultRowValues['Dimensions'] + "\n");
+	// console.log("copyResultRowValues['Size']" + copyResultRowValues['Size'] + "\n");
 });
 
 function pasteResults(id) {
@@ -169,23 +223,6 @@ $('.btn-add-single-title').on("click", function(event) {
 	}
 });
 
-$(document).ready(function() {
-	//default
-	$('#input-directory').val("/Volumes/Misc 1/to move/");
-	//$('#input-directory').val("/Volumes/Misc 1/to move/");
-	//$('#input-directory').val("/Users/sean/Download/test/");
-	//$('#input-directory').val("/Volumes/Recorded 1/test/");
-
-	dirName = $('#input-directory').val();
-});
-
-$('.btn-start-processing-dir').on("click", function(event) {
-	event.preventDefault();
-	//processFilesForDB(dirName);
-	processFiles(dirName);
-
-});
-
 $('.btn-process-dir-database-ops').on("click", function(event) {
 	event.preventDefault();
 	processFilesForDB(dirName);
@@ -218,10 +255,15 @@ function handleProcessFilesForDBResult(response) {
 	totalSizeNew = 0;
 	totalSizeDuplicates = 0;
 
+
 	for (i = 0; i < response.data.length; i++) {
 		var name = response.data[i]['Name'];
 		var dimensions = response.data[i]['Dimensions'];
 		var size = response.data[i]['Size'];
+		var duration = response.data[i]['Duration'];
+		//var durationNoMS = duration.split(".")[0];
+		var durationInDB = response.data[i]['DurationInDB'];
+		//var durationInDBNoMS = durationInDB.split(".")[0];
 		var isDuplicate = response.data[i]['Duplicate'];
 		var isLarger = response.data[i]['Larger'];
 		var sizeInDB = response.data[i]['Size in DB'];
@@ -238,15 +280,21 @@ function handleProcessFilesForDBResult(response) {
 			++newMovies;
 			totalSizeNew += size;
 
-			var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
+			var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) +
+				'</td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button><!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>-->' +
+				'<button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 		} else if (response.data[i]['Duplicate'] == true) {
 			++numDuplicates;
 			totalSizeDuplicates += size;
 
 			if (response.data[i]['Larger'] == true) {
-				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) + '"><i class="fas fa-angle-double-up"></i></a></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</i></button></td></tr>';
+				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
+					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(durationInDB) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button">' +
+					'<i class="fas fa-copy"></i>Copy</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			} else {
-				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button></td></tr>';
+				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(durationInDB) + '</td>' +
+					'<td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button>' +
+					'<!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			}
 		}
 		$("#directory-results table").append(markup);
@@ -257,6 +305,37 @@ function handleProcessFilesForDBResult(response) {
 
 	$("#directory-results .col-lg-2").html('<button class="btn btn-success btn-refresh" type="button">Refresh</button>');
 }
+
+$('#directory-results').on("click", ".btn-delete", function(event) {
+	var path = $(this).closest('tr').children('td:first-of-type').text();
+	var fileName = $(this).closest('tr').children('td:nth-of-type(3)').text();
+	var fileNameAndPath = path + "/" + fileName;
+	deleteFile(fileNameAndPath);
+	$(this).closest('tr').remove();
+});
+
+function deleteFile(fileNameAndPath) {
+
+	function deleteIt() {
+
+		return $.ajax({
+			type: "POST",
+			url: "deleteFile.php",
+			dataType: "json",
+			data: {
+				fileNameAndPath: fileNameAndPath
+			},
+			success: handleResponse
+		})
+	}
+
+	function handleResponse(data) {
+		// console.log("response: ", data);
+		return;
+	}
+	deleteIt();
+}
+
 $(document).ready(function() {
 	$('[data-toggle="tooltip"]').tooltip();
 
@@ -386,9 +465,10 @@ function handleProcessFilesResult(response) {
 		$(tbody).append(row);
 
 	}
-	if (!$('#myModal').hasClass('in')) {
-		$('#normalizeModal').modal('show');
-	}
+	// console.log("show modal...");
+	// if (!$('#normalizeModal').hasClass('in')) {
+	$('#normalizeModal').modal('show');
+	// }
 }
 
 $('#normalizeModal').on('hidden.bs.modal', function() {
@@ -414,7 +494,7 @@ function renameTheFiles() {
 
 function handleRenameTheFilesResult(response) {
 
-	console.log("renameTheFiles() success");
+	// console.log("renameTheFiles() success");
 	$('#file-data').css('border', '5px solid green');
 	$('.modal-body').css('padding', '10px');
 }
@@ -467,6 +547,18 @@ $('#file-results table').on("click", "th", function(event) {
 		table.append(rows[i])
 	}
 })
+$('#directory-results table').on("click", "th", function(event) {
+
+	var table = $(this).parents('table').eq(0)
+	var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()))
+	this.asc = !this.asc
+	if (!this.asc) {
+		rows = rows.reverse()
+	}
+	for (var i = 0; i < rows.length; i++) {
+		table.append(rows[i])
+	}
+})
 
 function comparer(index) {
 	return function(a, b) {
@@ -492,6 +584,26 @@ function formatSize(size) {
 		size = number_format(size, 2, '.', '') + ' KB';
 	}
 	return size;
+}
+
+function formatDuration(duration) {
+
+	if (duration !== null) {
+		var sec_num = parseInt(duration, 10); // don't forget the second param
+		var hours = Math.floor(sec_num / 3600);
+		var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+		var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+		if (minutes < 10) {
+			minutes = "0" + minutes;
+		}
+		if (seconds < 10) {
+			seconds = "0" + seconds;
+		}
+		return hours + ':' + minutes + ':' + seconds;
+	} else {
+		return '';
+	}
 }
 
 function number_format(number, decimals, dec_point, thousands_sep) {

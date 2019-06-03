@@ -36,7 +36,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 			// enableGridMenu: true,
 			showGridFooter: true,
 			showColumnFooter: false,
-			gridFooterTemplate: "<div class=\"ui-grid-footer-info ui-grid-grid-footer\"><span>{{'search.totalItems' | t}} {{grid.rows.length}}</span><span ng-if=\"grid.renderContainers.body.visibleRowCache.length !== grid.rows.length\" class=\"ngLabel\">({{\"search.showingItems\" | t}} {{grid.renderContainers.body.visibleRowCache.length}})</span><span id = \"footer-btns\"><button class=\"btn btn-danger\" ng-click=\"grid.appScope.multipleDeleteButtonClickHandler.onClick()\"><i class=\"fa fa-edit\"></i>Delete checked</button><button class=\"btn btn-warning btn-get-checked-sizes\">Copy total size</button></span></div>",
+			gridFooterTemplate: 'partials/grid-footer-template.html',
 			excessRows: 20,
 			onRegisterApi: function(gridApi) {
 				// console.log('in onRegisterApi');
@@ -49,22 +49,26 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 					name: 'Id',
 					field: 'id',
 					width: 65,
+					enableFiltering: false,
 					enableCellEdit: false,
 					cellClass: 'cell-id'
 				},
 				{
 					name: 'Title',
 					field: 'title',
-					// width: 450,
-					width: 525,
+					width: 425,
+					enableFiltering: true,
 					enableCellEdit: true,
+					// enableCellEditOnFocus: true,
+					// filterHeaderTemplate: 'partials/cell-state-editable-template.html',
+					// cellTemplate: 'partials/cell-state-editable-template.html',
 					cellClass: 'cell-title'
 				},
 				{
 					name: 'Dimensions',
 					field: 'dimensions',
 					width: 110,
-					// enableFiltering: false,
+					enableFiltering: false,
 					enableCellEdit: true,
 					cellClass: 'cell-dimensions'
 				},
@@ -72,23 +76,34 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 					name: 'Size',
 					field: 'filesize',
 					width: 80,
+					enableFiltering: false,
 					enableCellEdit: true,
 					cellClass: 'cell-size',
 					cellFilter: 'sizeFilter'
 				},
 				{
+					name: 'Duration',
+					field: 'duration',
+					width: 90,
+					enableFiltering: false,
+					enableCellEdit: true,
+					cellClass: 'cell-size',
+					cellFilter: 'durationFilter'
+				},
+				{
 					name: 'Added',
 					field: 'date_created',
 					width: 90,
+					enableFiltering: false,
 					enableCellEdit: false,
 					type: 'date',
 					cellClass: 'cell-date-created'
 				},
 				{
 					name: 'Controls',
-					width: 170,
-					enableFiltering: false,
+					width: 270,
 					cellTemplate: 'partials/cell-controls-template.html',
+					enableFiltering: false,
 					enableCellEdit: false,
 					cellClass: 'cell-controls'
 				}
@@ -124,6 +139,13 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 			}
 		};
 
+		$scope.playButtonClickHandler = {
+			onClick: function(path) {
+				playMovie(path);
+				//$scope.refreshData();
+			}
+		};
+
 		$scope.rowCheckboxHandler = {
 			onClick: function(id, size) {
 
@@ -133,13 +155,13 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 					$scope.rowsToDelete.push(id);
 					$scope.sizeOfDeletedTitles += size;
 					$('#footer-btns').css('display', 'inline-block');
-					console.log($scope.rowsToDelete);
-					console.log($scope.sizeOfDeletedTitles);
+					// console.log($scope.rowsToDelete);
+					// console.log($scope.sizeOfDeletedTitles);
 				} else {
 					$scope.rowsToDelete.pop(id);
 					$scope.sizeOfDeletedTitles -= size;
-					console.log($scope.sizeOfDeletedTitles);
-					console.log($scope.rowsToDelete);
+					// console.log($scope.sizeOfDeletedTitles);
+					// console.log($scope.rowsToDelete);
 				}
 				$('.total-size-results').html(formatSize($scope.sizeOfDeletedTitles) + '<br><div class="unformatted">' + $scope.sizeOfDeletedTitles + '</div>');
 				if ($scope.rowsToDelete.length == 0) {
@@ -160,14 +182,14 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 
 
 		$('#footer-btns').on("click", ".btn-get-checked-sizes", function(event) {
-			console.log('clicked');
+			//console.log('clicked');
 			clipboard.writeText($('.unformatted').val());
 		});
 
 		$scope.multipleDeleteButtonClickHandler = {
 			onClick: function() {
 				for (i = 0; i < $scope.rowsToDelete.length; i++) {
-					console.log('rowsToDelete[i]: ', $scope.rowsToDelete[i]);
+					// console.log('rowsToDelete[i]: ', $scope.rowsToDelete[i]);
 					deleteRow($scope.rowsToDelete[i]);
 				}
 
@@ -192,7 +214,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 
 		$scope.numTitlesAdded = 0;
 		$scope.updateNumTitlesAdded = function() {
-			console.log("$scope.numTitlesAdded: ", $scope.numTitlesAdded);
+			// console.log("$scope.numTitlesAdded: ", $scope.numTitlesAdded);
 
 			$scope.numTitlesAdded++;
 		};
@@ -286,8 +308,14 @@ app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$
 			if (value != 0) {
 				return formatSize(value);
 			} else {
-				$(this).addClass('invisible-zero');
+				// $(this).addClass('invisible-zero');
 			}
-
+		};
+	})
+	.filter('durationFilter', function() {
+		return function(value) {
+			if (value != null) {
+				return formatDuration(value);
+			}
 		};
 	})

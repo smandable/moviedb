@@ -2,7 +2,7 @@
 
 include "db_connect.php";
 
-    $result = $db->query("SELECT id, title, dimensions, filesize, date_created FROM `".$table."` ORDER BY title ASC");
+    $result = $db->query("SELECT id, title, dimensions, filesize, duration, filepath, date_created FROM `".$table."` ORDER BY title ASC");
 
     $options = array();
 
@@ -11,7 +11,9 @@ include "db_connect.php";
               'id'      => $row_id['id'],
               'title'    => $row_id['title'],
               'dimensions'    => $row_id['dimensions'],
+              'duration'    => $row_id['duration'],
               'filesize'    => $row_id['filesize'],
+              'filepath'    => $row_id['filepath'],
               'date_created'    => $row_id['date_created']
           );
         }

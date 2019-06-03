@@ -63,17 +63,15 @@ for ($i=0;$i<$lengthFiles;$i++) {
     $isLarger = false;
     $sizeInDB = '';
     $durationInDB = '';
-    $pathInDB = '';
     $dateCreatedInDB = '';
     $id = '';
-    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Size in DB' => $sizeInDB, 'Duration' => $du, 'DurationInDB' => $durationInDB, 'Path' => $ph, 'PathInDB' => $pathInDB, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'Date Created' => $dateCreatedInDB, 'Id' => $id);
+    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $durationInDB, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'Size in DB' => $sizeInDB,'Date Created' => $dateCreatedInDB, 'Id' => $id);
 }
 
 $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
     if (isset($a[$b['Name']])) {
         $a[$b['Name']]['Size'] += $b['Size'];
         $a[$b['Name']]['Duration'] += $b['Duration'];
-    // $a[$b['Name']]['Path'] = $a['Path'];
     } else {
         $a[$b['Name']] = $b;
     }
@@ -83,9 +81,9 @@ $files2ReducedSizesSummed = array_values($files2ReducedSizesSummed);
 $lengthFiles2 = count($files2ReducedSizesSummed);
 
 for ($i=0;$i<$lengthFiles2;$i++) {
-    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Duration"], $files2ReducedSizesSummed[$i]["DurationInDB"], $files2ReducedSizesSummed[$i]["Path"], $files2ReducedSizesSummed[$i]["Path in DB"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Date Created"], $files2ReducedSizesSummed[$i]["Id"], $dirName, $files, $filesMissingNumOne);
+    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duration"], $files2ReducedSizesSummed[$i]["DurationInDB"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Date Created"], $files2ReducedSizesSummed[$i]["Id"], $dirName, $files, $filesMissingNumOne);
 }
-function checkDatabaseForMovie(&$title, $dimensions, $size, &$sizeInDB, $duration, &$durationInDB, $path, &$pathInDB, &$isDupe, &$isLarger, &$dateCreatedInDB, &$id, $dirName, $files, &$filesMissingNumOne)
+function checkDatabaseForMovie(&$title, $dimensions, $size, $duration, &$durationInDB, &$isDupe, &$isLarger, &$sizeInDB, &$dateCreatedInDB, &$id, $dirName, $files, &$filesMissingNumOne)
 {
     include "db_connect.php";
     $titleUe = $title;
@@ -98,7 +96,6 @@ function checkDatabaseForMovie(&$title, $dimensions, $size, &$sizeInDB, $duratio
     $sizeInDB = $row['filesize'];
     $durationInDB = $row['duration'];
     $dateCreatedInDB = $row['date_created'];
-    $pathInDB = $row['filepath'];
     $spacePoundSpace01 = " # 01";
 
     //If title being read from directory HAS a number in it, look for that title in the DB WITHOUT a number. If found, add " # 01" to it. This is only to update that record in the db. There's no comparison here.
@@ -122,11 +119,10 @@ function checkDatabaseForMovie(&$title, $dimensions, $size, &$sizeInDB, $duratio
             $id = $row2['id'];
             $dateCreatedInDB = $row2['date_created'];
             $sizeInDB = $row2['filesize'];
-            $pathInDB = $row2['filepath'];
             compareFileSizeToDB($size, $sizeInDB, $isLarger);
 
             //Caution here.. this is for normalization, really...
-            updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $duration, $durationInDB, $path, $pathInDB, $db, $table, $dirName);
+            //updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
             //End caution...
 
             $filesMissingNumOne[] = array('title' => $title);
@@ -143,9 +139,10 @@ function checkDatabaseForMovie(&$title, $dimensions, $size, &$sizeInDB, $duratio
         compareFileSizeToDB($size, $sizeInDB, $isLarger);
 
         //Caution here.. this is for normalization, really...
-        updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $duration, $durationInDB, $path, $pathInDB, $db, $table, $dirName);
-  
-    //moveDuplicateFile($titleUe, $dirName, $files);
+        updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $duration, $durationInDB, $db, $table, $dirName);
+    //End caution...
+
+        //moveDuplicateFile($titleUe, $dirName, $files);
     } else {
         $id = addToDB($title, $dimensions, $size, $duration, $db, $table, $dirName);
     }
@@ -153,7 +150,6 @@ function checkDatabaseForMovie(&$title, $dimensions, $size, &$sizeInDB, $duratio
     $result->close();
     $db->close();
 }
-
 function addToDB($title, $dimensions, $size, $duration, $db, $table, $dirName)
 {
     $result = $db->query("INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, duration, date_created) VALUES ('$title', '$dimensions', '$size', '$duration', NOW())");
@@ -163,19 +159,16 @@ function addToDB($title, $dimensions, $size, $duration, $db, $table, $dirName)
     // quickLogFile($title, $newIdToReturn, $dirName);
     return $newIdToReturn;
 }
-function updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $duration, $durationInDB, $path, $pathInDB, $db, $table, $dirName)
+function updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $duration, $durationInDB, $db, $table, $dirName)
 {
     if (($sizeInDB == null) || ($sizeInDB < $size)) {
         $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE title='$title'");
     }
-    if (($dimensionsInDB == null)) {
+    if (($dimensionsInDB == null) || ($dimensionsInDB < $dimensions)) {
         $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
     }
     if (($durationInDB == null) || ($durationInDB < $duration)) {
         $result = $db->query("UPDATE `".$table."` SET duration='$duration' WHERE title='$title'");
-    }
-    if (($pathInDB == null)) {
-        $result = $db->query("UPDATE `".$table."` SET filepath='$path' WHERE title='$title'");
     }
 }
 function updateDB($title, $db, $id, $table)

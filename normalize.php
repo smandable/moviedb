@@ -97,7 +97,7 @@ return $newFileName;
 function titleCase($newFileName)
 {
     $delimiters = array(" ");
-    $exceptions = array("the", "a", "an", "as", "at", "be", "but", "by", "for", "in", "of", "off", "on", "per", "to", "up", "via", "and", "nor", "or", "so", "yet", "with", "vs", "OMG", "CD", "POV", "MILF", "XXX");
+    $exceptions = array("the", "a", "an", "as", "at", "be", "but", "by", "for", "in", "of", "off", "on", "per", "to", "up", "via", "and", "nor", "or", "so", "yet", "with", "vs", "BBC", "OMG", "CD", "POV", "MILF", "XXX");
     /*
      * Exceptions in lower case are words you don't want converted
      * Exceptions all in upper case are any words you don't want converted to title case

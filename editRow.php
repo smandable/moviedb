@@ -27,6 +27,10 @@ include "db_connect.php";
       $size = $dataToUpdate;
       $size = formatSize($size);
       $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE id='$id'");
+  }
+  if ($dataType == 'Duration') {
+      $duration = $dataToUpdate;
+      $result = $db->query("UPDATE `".$table."` SET duration='$duration' WHERE id='$id'");
   } elseif ($result === false) {
       echo "SQL error:" . $db->error;
   }
