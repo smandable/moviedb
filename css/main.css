@@ -8541,6 +8541,18 @@ body .movies .ui-grid-canvas .cell-controls .btn-warning:hover,
 body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-warning:hover {
   background-color: #c77c11;
 }
+body .movies .ui-grid-canvas .cell-controls .btn-success,
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-success {
+  background-color: darkgreen;
+  border-color: #003100;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+body .movies .ui-grid-canvas .cell-controls .btn-success:hover,
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-success:hover {
+  background-color: #003100;
+  border-color: darkgreen;
+}
 body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 {
   display: contents;
   min-width: 193px;
@@ -8746,8 +8758,7 @@ body #directory-results #table-wrap table tr:first-of-type {
   background-color: #212121;
   padding-top: 7px;
   border-top: 1px solid #ccc;
-  top: 865px;
-  position: fixed;
+  position: absolute;
   height: 30px;
 }
 body #directory-results #table-wrap table tr:first-of-type .dup-not-new,
@@ -8898,11 +8909,16 @@ body #import-records .form-group.btn-group label {
 }
 body #import-records .form-group.btn-group label:hover {
   background-color: #003100;
+  border-color: darkgreen;
 }
 body #import-records .form-group.btn-group label input[type=radio] {
   margin-top: 2px;
   margin-right: 5px;
   line-height: 1;
+  display: none;
+}
+label body #import-records .form-group.btn-group label input[type=radio]:checked {
+  background-color: #003100;
 }
 body #import-records .btn-warning {
   font-weight: bold;
@@ -9206,14 +9222,27 @@ body #import-records #duplicates p {
   border: 1px solid gray;
   width: 85%;
 }
+#utilities table#utils-paths thead tr {
+  background-color: #212121;
+}
+#utilities table#utils-paths tbody {
+  border-top: none;
+}
+#utilities table#utils-paths tbody tr:first-of-type {
+  border-top: none;
+}
 #utilities table#utils-paths td,
 #utilities table#utils-paths th {
   padding: 6px;
+  border-right: solid 1px darkgray;
 }
 #utilities table#utils-paths td:first-of-type,
 #utilities table#utils-paths th:first-of-type {
-  border-right: solid 1px darkgray;
-  width: 95%;
+  width: 90%;
+}
+#utilities table#utils-paths td:nth-of-type(2),
+#utilities table#utils-paths td:nth-of-type(3) {
+  text-align: center;
 }
 #utilities .btn {
   font-size: 16px;

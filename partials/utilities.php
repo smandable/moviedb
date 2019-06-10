@@ -9,26 +9,31 @@
                           Normalize DB
                       </h2>
                       <hr />
-                      <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" id="utils-chkbx-dont-move-duplicates" value="dontMoveDuplicates" checked>
-                        <label class="form-check-label" for="utils-chkbx-dont-move-duplicates">Don&rsquo;t move duplicates</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="checkbox" id="utils-chkbx-dont-update-size" value="dontUpdateSize" checked>
-                      <label class="form-check-label" for="utils-chkbx-dont-update-size">Don&rsquo;t update size in DB</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="checkbox" id="utils-chkbx-dont-update-dimensions" value="dontUpdateDimensions" checked>
-                      <label class="form-check-label" for="utils-chkbx-dont-update-dimensions">Don&rsquo;t update dimensions in DB</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                      <input class="form-check-input" type="checkbox" id="utils-chkbx-dont-update-duration" value="dontUpdateDuration" checked>
-                      <label class="form-check-label" for="utils-chkbx-dont-update-duration">Don&rsquo;t update duration in DB</label>
-                    </div>
-
+                      <div id="chkbox-options">
+                        <div class="form-check form-check-inline">
+                          <input class="form-check-input" type="checkbox" id="utils-chkbx-move-duplicates" value="moveDuplicates">
+                          <label class="form-check-label" for="utils-chkbx-move-duplicates">Move duplicates</label>
+                       </div>
+                       <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="utils-chkbx-update-size" value="updateSize" checked>
+                        <label class="form-check-label" for="utils-chkbx-update-size">Update size in DB</label>
+                       </div>
+                       <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="utils-chkbx-update-dimensions" value="updateDimensions" checked>
+                        <label class="form-check-label" for="utils-chkbx-update-dimensions">Update dimensions in DB</label>
+                       </div>
+                       <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="utils-chkbx-update-duration" value="updateDuration" checked>
+                        <label class="form-check-label" for="utils-chkbx-update-duration">Update duration in DB</label>
+                       </div>
+                       <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="utils-chkbx-update-path" value="updatePath" checked>
+                        <label class="form-check-label" for="utils-chkbx-update-path">Update path in DB</label>
+                       </div>
+                     </div>
                     <table id="utils-paths" class="table">
                       <thead>
-                    <th>Path to process</th><th>Include</th>
+                    <th>Path to process</th><th>Files</th><th>Include</th>
                     </thead>
                     <tbody></tbody>
                     </table>

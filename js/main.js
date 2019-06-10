@@ -13,16 +13,16 @@ var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 
 
 //default
-// $('#input-directory').val("/Volumes/Misc 1/to move/");
-//$('#input-directory').val("/Users/sean/Download/test/");
-$('#input-directory').val("/Volumes/Recorded 2/recorded/");
-//$('#input-directory').val("/Users/sean/Download/recorded/");
+//$('#input-directory').val("/Volumes/Misc 1/tmt/");
+// $('#input-directory').val("/Users/sean/Download/test/");
+//$('#input-directory').val("/Volumes/Recorded 3/recorded/");
+$('#input-directory').val("/Users/sean/Download/names fixed/");
 
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
 	dirName = $('#input-directory').val();
-	processFilesForDB(dirName);
-	//processFiles(dirName);
+	//processFilesForDB(dirName);
+	processFiles(dirName);
 
 });
 
@@ -48,7 +48,7 @@ function updateRecord(id, dataType, dataToUpdate) {
 }
 
 $(document).ready(function() {
-	var intervalId;
+	var intervalID;
 
 	function copy_search_term(e) {
 		var tst = $.trim($('.ui-grid-coluiGrid-0005').find('input[type=text]').val());
@@ -96,40 +96,32 @@ function deleteRow(id) {
 
 function playMovie(path) {
 
-	// var row = '<tr><td>' + path + '</td><td>' + originalFileName + '</td><td class="' + conflictsClass + fileAlreadyExistsClass + '"><a>' + fileNameDisplayed + '</a></span></td><td>' + size + '</td><td>' + dimensions + '</td><td>' + durationNoMS + '</td></tr>';
-	// $(tbody).append(row);
 	console.log("path: ", path);
+	// $('#movieToPlay').empty();
+	// var html = '<video controls>' +
+	// 	// '<source src="' + path + '" width="' + videoWidth + '" ' + 'height="' + videoHeight + '" type="video/mp4">' +
+	// 	'<source src="' + path + '" type="video/mp4">' +
+	// 	'</video>';
 
-	// console.log("show modal...");
+	// console.log("html: ", html);
 
-	var html = '<video controls>' +
-		// '<source src="' + path + '" width="' + videoWidth + '" ' + 'height="' + videoHeight + '" type="video/mp4">' +
-		'<source src="' + path + ' type="video/mp4">' +
-		'</video>';
-
-	$('#movieToPlay').append(html);
-
-	$('#playMovieModal').modal('show');
-
-
-	// var html << HTML
+	// $('#movieToPlay').append(html);
 	//
-	//
-	// HTML
-	// return $.ajax({
-	// 	type: "POST",
-	// 	url: "deleteRow.php",
-	// 	dataType: "json",
-	// 	data: {
-	// 		id: id
-	// 	},
-	// 	success: handleResponse
-	// })
+	// $('#playMovieModal').modal('show');
 
-	// function handleResponse(data) {
-	// 	angular.element($('#movie-controller')).scope().refreshData();
-	// 	return;
-	// }
+	$.ajax({
+		type: "POST",
+		url: "playMovie.php",
+		dataType: "json",
+		data: {
+			path: path
+		},
+		success: handleResponse
+	})
+
+	function handleResponse(data) {
+
+	}
 
 }
 
@@ -269,8 +261,8 @@ function handleProcessFilesForDBResult(response) {
 		var sizeInDB = response.data[i]['Size in DB'];
 		var dateCreated = response.data[i]['Date Created'];
 		var path = response.data[i]['Path'];
-		// var newId = response.data[i]['NewId'];
-		var id = response.data[i]['Id'];
+		// var newID = response.data[i]['NewID'];
+		var id = response.data[i]['ID'];
 		//console.info("response.data: ", response.data);
 		if (name.length > 80) {
 			name = name.substring(0, 80);
@@ -289,10 +281,10 @@ function handleProcessFilesForDBResult(response) {
 
 			if (response.data[i]['Larger'] == true) {
 				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
-					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(durationInDB) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button">' +
+					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button">' +
 					'<i class="fas fa-copy"></i>Copy</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			} else {
-				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(durationInDB) + '</td>' +
+				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) + '</td>' +
 					'<td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button>' +
 					'<!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			}

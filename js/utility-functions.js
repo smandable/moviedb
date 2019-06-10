@@ -1,35 +1,60 @@
 var dirName;
+var options = [];
 var directories = [];
+var startingFile = 0;
+var endingFile;
+
+getOptionsAndPathsFromFile();
 
 $(document).ready(function() {
-	var numPaths = $('#utils-paths tr').length - 1;
-	//console.log("numPaths: ", numPaths);
 
-	// for (i = 0; i < numPaths; i++) {
+	var numPaths = $('#utils-paths tbody tr').length;
 	$('#utils-paths tbody tr').each(function() {
-		directories.push($(this).find("td:first").html());
-		//directories.push($('#utils-paths tbody td:first-of-type').html());
-		console.log($('#utils-paths tbody tr td:first-of-type').html());
-		console.log("directories: ", directories[i]);
+		directories.push($(this).find("td:first-of-type").html());
 	});
+
 
 	$('#btn-utils').on("click", function(event) {
 		event.preventDefault();
 
-		directories
-		normalizeDB(dirName);
+		$('#utils-paths tbody tr').each(function() {
+			if ($(this).find('[type="checkbox"]').prop("checked")) {
+				var dirToProcess = ($(this).find("td:first-of-type").html());
+				console.log("dirToProcess: ", dirToProcess);
+				normalizeDB(options, dirToProcess);
+			}
+
+		})
+
 	});
+
 });
 
-function normalizeDB(dirName) {
+$('#chkbox-options input[type=checkbox]').on("change", function(event) {
+	event.preventDefault();
+	var key = $(this).attr('value');
+	if ($(this).prop("checked")) {
+		var state = "true;"
+	} else {
+		var state = "false;"
+	}
+	setOptionsAndPathsFile(key, state);
+	return;
+});
+
+function normalizeDB(options, dirToProcess) {
 	// Show loading spinner.
 	$("#loading-spinner").css('display', 'inline-block');
+	for (i = 0; i < options.length; i++) {
+		console.log("options: ", options[i]);
+	}
 	$.ajax({
 		type: "POST",
 		url: "normalizeDB.php",
 		dataType: "json",
 		data: {
-			dirName: dirName
+			options: options,
+			dirToProcess: dirToProcess
 		},
 	}).always(function(response) {
 		handleNormalizeDBResult(response);
@@ -37,43 +62,71 @@ function normalizeDB(dirName) {
 	})
 }
 
-
 function handleNormalizeDBResult(response) {
+	//startingFile += 200;
+}
+
+function setOptionsAndPathsFile(key, state) {
+	console.log(key, state);
+
+	$.ajax({
+		type: "POST",
+		url: "setOptionsAndPathsFile.php",
+		dataType: "json",
+		data: {
+			key: key,
+			state: state
+		}
+	}).always(function(response) {
+		handleSetOptionsAndPathsFileResult(response);
+	})
+}
+
+function handleSetOptionsAndPathsFileResult(response) {
+
+	console.log(response);
 
 }
 
-
-getOptionsAndPathsFromFile();
-
-function getOptionsAndPathsFromFile(filePathAndName) {
+function getOptionsAndPathsFromFile() {
 
 	$.ajax({
 		type: "POST",
 		url: "getOptionsAndPathsFromFile.php",
 		dataType: "json",
 	}).always(function(response) {
-		handleResult(response);
+		handleGetOptionsAndPathsFromFileResult(response);
 	})
 }
 
-function handleResult(response) {
-	//console.log(response);
+function handleGetOptionsAndPathsFromFileResult(response) {
 
-	// if response.moveDuplicates == 'true' {
-	// 	$('#utilities .chkbx-dont-move-duplicates').prop('checked', true);
-	//
-	// }
+	console.log(response);
 
-	for (i = 0; i < response.paths.length; i++) {
-		//console.log(response.paths[i]);
-		var paths = '<tr><td>' + response.paths[i] + '</td><td></td>/tr>';
-
-		$("#utilities table tbody").append(paths);
-
+	for (i = 0; i < response.pathsToProcess.length; i++) {
+		var pathsToProcess = '<tr><td>' + response.pathsToProcess[i] + '</td><td>' + countFiles(response.pathsToProcess[i]) + '</td><td><input class="" type="checkbox" value="" checked></td>/tr>';
+		$("#utilities table tbody").append(pathsToProcess);
 	}
-	// if files not found, add form control to browse or whatever
-	// if(){
+	options.push(response.moveDuplicates, response.updateDimensionsInDB, response.updateDurationInDB, response.updatePathInDB, response.updateSizeInDB);
+	for (i = 0; i < options.length; i++) {
+		console.log('options: ' + i + ' ' + options[i]);
+	}
+}
 
-	//}
+function countFiles(dirName) {
+	var count = 0;
 
+	$.ajax({
+		type: "POST",
+		url: "countFiles.php",
+		dataType: "json",
+		data: {
+			dirName: dirName
+		},
+		async: false,
+		success: function(data) {
+			count = data;
+		}
+	});
+	return count;
 }

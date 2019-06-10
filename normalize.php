@@ -126,6 +126,7 @@ function titleCase($newFileName)
 
     $newFileName = preg_replace('/^(the)\s/', 'The ', trim($newFileName)); // if 'the ' is at the beginning of the string, replace with "The "
     $newFileName = preg_replace('/^(a)\s/', 'A ', trim($newFileName)); // if 'a ' is at the beginning of the string, replace with "A "
+    $newFileName = preg_replace('/^(so)\s/', 'So ', trim($newFileName)); // if 'so ' is at the beginning of the string, replace with "So "
 
     return $newFileName;
 }
@@ -143,6 +144,8 @@ function cleanupFunctions($newFileName)
     $newFileName = preg_replace('/XXX/i', '', trim($newFileName)); // Look for 'XXX', replace with nothing
     $newFileName = preg_replace('/^gush\./i', '', trim($newFileName)); // Look for 'gush.', replace with nothing
     $newFileName = preg_replace('/(\sVol|Vol\s|Vol\.|\.Vol|Vol)/i', ' ', trim($newFileName)); // ' Vol' or 'Vol ' or 'Vol.' or '.Vol' or 'Vol' to ' '
+    $newFileName = preg_replace('/all star/i', 'All-Star', trim($newFileName)); // 'all star' to All-Star
+    //$newFileName = preg_replace('/cant/i', 'Can\'t, trim($newFileName)); // 'cant' to Can't
     $newFileName = preg_replace('/disc/i', 'CD', trim($newFileName)); // 'disc' to CD
     $newFileName = preg_replace('/disk(\s*)/i', 'CD', trim($newFileName)); // 'disk' or 'disk ' to CD
     $newFileName = preg_replace('/cd/i', 'CD', trim($newFileName)); // 'cd' to CD

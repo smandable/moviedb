@@ -46,7 +46,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				});
 			},
 			columnDefs: [{
-					name: 'Id',
+					name: 'ID',
 					field: 'id',
 					width: 65,
 					enableFiltering: false,
@@ -56,7 +56,8 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				{
 					name: 'Title',
 					field: 'title',
-					width: 425,
+					// width: 425,
+					width: 520,
 					enableFiltering: true,
 					enableCellEdit: true,
 					// enableCellEditOnFocus: true,
@@ -101,7 +102,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				},
 				{
 					name: 'Controls',
-					width: 270,
+					width: 180,
 					cellTemplate: 'partials/cell-controls-template.html',
 					enableFiltering: false,
 					enableCellEdit: false,
@@ -169,16 +170,6 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				}
 			}
 		};
-
-
-		// $('.btn-start-processing-dir').on("click", function(event) {
-		// 	//event.preventDefault();
-		//
-		// 	dirName = $('#input-directory').val();
-		// 	//processFilesForDB(dirName);
-		// 	console.log('clicked');
-		// 	$location.path('normalize');
-		// });
 
 
 		$('#footer-btns').on("click", ".btn-get-checked-sizes", function(event) {

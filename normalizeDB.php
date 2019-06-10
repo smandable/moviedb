@@ -6,12 +6,15 @@ include('getDimensionsCMDln.php');
 include('getDuration.php');
 include('formatSize.php');
 
-$dirName = $_POST['dirName'];
+$dirToProcess = $_POST['dirToProcess'];
+$options = $_POST['options'];
+// $startingFile = $_POST['startingFile'];
 
-if (empty($_POST['dirName'])) {
-    echo 'Directory is required.';
-    exit();
-}
+// if (empty($_POST['dirToProcess'])) {
+//     echo 'Directory to process is required.';
+//     exit();
+// }
+var_dump($options);
 
 $files = array();
 $files2 = array();
@@ -22,7 +25,7 @@ $pattern2 = '/ - Scene.*/i';
 $pattern3 = '/ - CD.*/i';
 $pattern4 = '/ - Bonus.*| Bonus.*/i';
 
-$directory = new \RecursiveDirectoryIterator($dirName);
+$directory = new \RecursiveDirectoryIterator($dirToProcess);
 $iterator = new \RecursiveIteratorIterator($directory);
 
 foreach ($iterator as $fileInfo) {
@@ -65,7 +68,7 @@ for ($i=0;$i<$lengthFiles;$i++) {
     $durationInDB = '';
     $dateCreatedInDB = '';
     $id = '';
-    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $durationInDB, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'Size in DB' => $sizeInDB,'Date Created' => $dateCreatedInDB, 'Id' => $id);
+    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $durationInDB, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'Size in DB' => $sizeInDB, 'Date Created' => $dateCreatedInDB, 'ID' => $id);
 }
 
 $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
@@ -79,11 +82,13 @@ $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
 });
 $files2ReducedSizesSummed = array_values($files2ReducedSizesSummed);
 $lengthFiles2 = count($files2ReducedSizesSummed);
+  // for ($i=$startingFile;$i<200;$i++) {
+      for ($i=0;$i<$lengthFiles2;$i++) {
+          checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Path"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duration"], $files2ReducedSizesSummed[$i]["DurationInDB"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Date Created"], $files2ReducedSizesSummed[$i]["ID"], $dirToProcess, $files, $filesMissingNumOne, $options);
+      }
+  // }
 
-for ($i=0;$i<$lengthFiles2;$i++) {
-    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duration"], $files2ReducedSizesSummed[$i]["DurationInDB"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Date Created"], $files2ReducedSizesSummed[$i]["Id"], $dirName, $files, $filesMissingNumOne);
-}
-function checkDatabaseForMovie(&$title, $dimensions, $size, $duration, &$durationInDB, &$isDupe, &$isLarger, &$sizeInDB, &$dateCreatedInDB, &$id, $dirName, $files, &$filesMissingNumOne)
+function checkDatabaseForMovie(&$title, $path, $dimensions, $size, $duration, &$durationInDB, &$isDupe, &$isLarger, &$sizeInDB, &$dateCreatedInDB, &$id, $dirToProcess, $files, &$filesMissingNumOne, $options)
 {
     include "db_connect.php";
     $titleUe = $title;
@@ -121,14 +126,25 @@ function checkDatabaseForMovie(&$title, $dimensions, $size, $duration, &$duratio
             $sizeInDB = $row2['filesize'];
             compareFileSizeToDB($size, $sizeInDB, $isLarger);
 
-            //Caution here.. this is for normalization, really...
-            //updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $db, $table, $dirName);
-            //End caution...
+            if ($options[0] == "true") {
+                moveDuplicateFile($titleUe, $dirToProcess, $files);
+            }
+            if ($options[1] == "true") {
+                updateDimensions($title, $dimensions, $db, $table, $dirToProcess);
+            }
+            if ($options[2] == "true") {
+                updateDuration($title, $duration, $db, $table, $dirToProcess);
+            }
+            if ($options[3] == "true") {
+                updatePath($title, $path, $db, $table, $dirToProcess);
+            }
+            if ($options[4] == "true") {
+                updateSize($title, $size, $db, $table, $dirToProcess);
+            }
 
             $filesMissingNumOne[] = array('title' => $title);
             //findFilesToRename($filesMissingNumOne);
 
-            //moveDuplicateFile($titleUe, $dirName, $files);
             $title = $tmpTitle;
             return;
         }
@@ -138,38 +154,52 @@ function checkDatabaseForMovie(&$title, $dimensions, $size, $duration, &$duratio
         $isDupe = true;
         compareFileSizeToDB($size, $sizeInDB, $isLarger);
 
-        //Caution here.. this is for normalization, really...
-        updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $duration, $durationInDB, $db, $table, $dirName);
-    //End caution...
-
-        //moveDuplicateFile($titleUe, $dirName, $files);
+        if ($options[0] == "true") {
+            moveDuplicateFile($titleUe, $dirToProcess, $files);
+        }
+        if ($options[1] == "true") {
+            updateDimensions($title, $dimensions, $db, $table, $dirToProcess);
+        }
+        if ($options[2] == "true") {
+            updateDuration($title, $duration, $db, $table, $dirToProcess);
+        }
+        if ($options[3] == "true") {
+            updatePath($title, $path, $db, $table, $dirToProcess);
+        }
+        if ($options[4] == "true") {
+            updateSize($title, $size, $db, $table, $dirToProcess);
+        }
     } else {
-        $id = addToDB($title, $dimensions, $size, $duration, $db, $table, $dirName);
+        $id = addToDB($title, $dimensions, $size, $duration, $db, $table, $dirToProcess);
     }
 
     $result->close();
     $db->close();
 }
-function addToDB($title, $dimensions, $size, $duration, $db, $table, $dirName)
+function addToDB($title, $dimensions, $size, $duration, $db, $table, $dirToProcess)
 {
     $result = $db->query("INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, duration, date_created) VALUES ('$title', '$dimensions', '$size', '$duration', NOW())");
     $newResult = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
     $newRow = mysqli_fetch_assoc($newResult);
-    $newIdToReturn = $newRow['id'];
-    // quickLogFile($title, $newIdToReturn, $dirName);
-    return $newIdToReturn;
+    $newIDToReturn = $newRow['id'];
+    // quickLogFile($title, $newIDToReturn, $dirToProcess);
+    return $newIDToReturn;
 }
-function updateSizeDimensionsAndDuration($title, $dimensions, $dimensionsInDB, $size, $sizeInDB, $duration, $durationInDB, $db, $table, $dirName)
+function updateSize($title, $size, $db, $table, $dirToProcess)
 {
-    if (($sizeInDB == null) || ($sizeInDB < $size)) {
-        $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE title='$title'");
-    }
-    if (($dimensionsInDB == null) || ($dimensionsInDB < $dimensions)) {
-        $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
-    }
-    if (($durationInDB == null) || ($durationInDB < $duration)) {
-        $result = $db->query("UPDATE `".$table."` SET duration='$duration' WHERE title='$title'");
-    }
+    $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE title='$title'");
+}
+function updateDimensions($title, $dimensions, $db, $table, $dirToProcess)
+{
+    $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
+}
+function updateDuration($title, $duration, $db, $table, $dirToProcess)
+{
+    $result = $db->query("UPDATE `".$table."` SET duration='$duration' WHERE title='$title'");
+}
+function updatePath($title, $path, $db, $table, $dirToProcess)
+{
+    $result = $db->query("UPDATE `".$table."` SET filepath='$path' WHERE title='$title'");
 }
 function updateDB($title, $db, $id, $table)
 {
@@ -181,9 +211,9 @@ function compareFileSizeToDB($size, $sizeInDB, &$isLarger)
         $isLarger = true;
     }
 }
-function moveDuplicateFile($titleUe, $dirName, $files)
+function moveDuplicateFile($titleUe, $dirToProcess, $files)
 {
-    $destination = $dirName.'duplicates/';
+    $destination = $dirToProcess.'duplicates/';
     if (!is_dir($destination)) {
         mkdir($destination, 0777, true);
     }
@@ -198,11 +228,11 @@ function moveDuplicateFile($titleUe, $dirName, $files)
         }
     }
 }
-//findFilesToRename($filesMissingNumOne, $dirName);
-function findFilesToRename($filesMissingNumOne, $dirName)
+//findFilesToRename($filesMissingNumOne, $dirToProcess);
+function findFilesToRename($filesMissingNumOne, $dirToProcess)
 {
-    $dirName = $dirName.'duplicates/';
-    $directory = new \RecursiveDirectoryIterator($dirName);
+    $dirToProcess = $dirToProcess.'duplicates/';
+    $directory = new \RecursiveDirectoryIterator($dirToProcess);
     $iterator = new \RecursiveIteratorIterator($directory);
     $spacePoundSpace01 = ' # 01';
     $spaceDashSpace = ' - ';
@@ -225,7 +255,7 @@ function findFilesToRename($filesMissingNumOne, $dirName)
             if (strcasecmp($titleMissingOne, $fileName) == 0) {
                 $fileName = $fileName . $spacePoundSpace01 . $fileExtension;
                 // echo "fileName no patterns: $fileName\n";
-                rename($dirName.$originalFileName, $dirName.$fileName);
+                rename($dirToProcess.$originalFileName, $dirToProcess.$fileName);
             }
 
             if ($beginningOfFileName = stristr($fileName, ' - Scene_', true)) {
@@ -233,7 +263,7 @@ function findFilesToRename($filesMissingNumOne, $dirName)
                     $tmpFileName = preg_split('/ - /', $fileName);
                     $fileName = $tmpFileName[0] . $spacePoundSpace01 . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
                     // echo "fileName after splitting and joining: $fileName\n";
-                    rename($dirName.$originalFileName, $dirName.$fileName);
+                    rename($dirToProcess.$originalFileName, $dirToProcess.$fileName);
                 }
             }
             if ($beginningOfFileName = stristr($fileName, ' - CD', true)) {
@@ -241,7 +271,7 @@ function findFilesToRename($filesMissingNumOne, $dirName)
                     $tmpFileName = preg_split('/ - /', $fileName);
                     $fileName = $tmpFileName[0] . $spacePoundSpace01 . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
                     // echo "fileName after splitting and joining: $fileName\n";
-                    rename($dirName.$originalFileName, $dirName.$fileName);
+                    rename($dirToProcess.$originalFileName, $dirToProcess.$fileName);
                 }
             }
         }
@@ -264,17 +294,18 @@ function returnHTML($files2ReducedSizesSummed)
         $isl = $files2ReducedSizesSummed[$i]["Larger"];
         $sdb = $files2ReducedSizesSummed[$i]['Size in DB'];
         $dcd = $files2ReducedSizesSummed[$i]["Date Created"];
-        $id = $files2ReducedSizesSummed[$i]["Id"];
-        $returnedArray['data'][$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $dudb, 'Path' => $ph, 'Duplicate' => $isd, 'Larger' => $isl, 'Size in DB' => $sdb, 'Date Created' => $dcd, 'Id' => $id);
+        $id = $files2ReducedSizesSummed[$i]["ID"];
+        // $sf = $startingFile + 200;
+        $returnedArray['data'][$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $dudb, 'Path' => $ph, 'Duplicate' => $isd, 'Larger' => $isl, 'Size in DB' => $sdb, 'Date Created' => $dcd, 'ID' => $id);
     }
     echo json_encode($returnedArray);
 }
-function quickLogFile($title, $newIdToReturn, $dirName)
+function quickLogFile($title, $newIDToReturn, $dirToProcess)
 {
-    $myfile = fopen("$dirName/updated.txt", "a") or die("Unable to open file!");
+    $myfile = fopen("$dirToProcess/updated.txt", "a") or die("Unable to open file!");
     // $txt = "$title\t\t  . 'size in db: ' . $sizeInDB . 'new size: ' . $size  . 'dimensions in db: ' . $dimensionsInDB  . 'new dimensions: ' . \t\t\n";
 
-    $txt = "$newIdToReturn\t$title\n\n";
+    $txt = "$newIDToReturn\t$title\n\n";
 
     fwrite($myfile, $txt);
     fclose($myfile);
