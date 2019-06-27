@@ -11,12 +11,11 @@ var copyResultRowValues = [];
 var dbOpsButton = $('.btn-process-dir-database-ops');
 var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 
-
 //default
-//$('#input-directory').val("/Volumes/Misc 1/tmt/");
-// $('#input-directory').val("/Users/sean/Download/test/");
+//$('#input-directory').val("/Volumes/Misc 1/to move/");
+$('#input-directory').val("/Users/sean/Download/to move/");
 //$('#input-directory').val("/Volumes/Recorded 3/recorded/");
-$('#input-directory').val("/Users/sean/Download/names fixed/");
+//$('#input-directory').val("/Users/sean/Download/names fixed/");
 
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
@@ -85,10 +84,10 @@ function deleteRow(id) {
 		data: {
 			id: id
 		},
-		success: handleResponse
+		success: handleDeleteRowResponse
 	})
 
-	function handleResponse(data) {
+	function handleDeleteRowResponse(data) {
 		angular.element($('#movie-controller')).scope().refreshData();
 		return;
 	}
@@ -116,22 +115,23 @@ function playMovie(path) {
 		data: {
 			path: path
 		},
-		success: handleResponse
+		success: handlePlayMovieResponse
 	})
 
-	function handleResponse(data) {
+	function handlePlayMovieResponse(data) {
 
 	}
 
 }
 
 // $(document).ready(function () {
-$('#directory-results table').on("click", ".btn-copy-result", function(event) {
+$('#directory-results table').on("click", ".btn-update-with-result", function(event) {
 
 	var row = $(this).closest("tr");
 	copyResultRowValues['Title'] = row.find("td:nth-child(2)").text();
 	copyResultRowValues['Dimensions'] = row.find("td:nth-child(3)").text();
 	copyResultRowValues['Size'] = row.find("td:nth-child(4) .tsize").text();
+	copyResultRowValues['Duration'] = row.find("td:nth-child(5)").text();
 	//copyResultRowValues = [row.find("td:nth-child(2)"), row.find("td:nth-child(3)"), row.find("td:nth-child(4)")];
 
 	// console.log("copyResultRowValues['Title']" + copyResultRowValues['Title'] + "\n");
@@ -163,14 +163,14 @@ function pasteResults(id) {
 				id: id,
 				copyResultRowValues: copyResultRowValues
 			},
-			success: handleResponse
+			success: handlePasteResultsResponse
 		})
 		// delete copyResultRowValues['Title'];
 		// delete copyResultRowValues['Dimensions'];
 		// delete copyResultRowValues['Size'];
 	}
 
-	function handleResponse(data) {
+	function handlePasteResultsResponse(data) {
 		// copyResultRowValues = {};
 		angular.element($('#movie-controller')).scope().refreshData();
 		return;
@@ -178,7 +178,7 @@ function pasteResults(id) {
 	if ((typeof copyResultRowValues['Title'] != "undefined") && (typeof copyResultRowValues['Dimensions'] != "undefined") && (typeof copyResultRowValues['Size'] != "undefined")) {
 		pasteIt();
 	} else {
-		alert("Either Title, Dimensions, or Size is empty");
+		alert("Either Title, Dimensions, Size, or Duration is empty");
 
 	}
 }
@@ -249,7 +249,7 @@ function handleProcessFilesForDBResult(response) {
 
 
 	for (i = 0; i < response.data.length; i++) {
-		var name = response.data[i]['Name'];
+		var name = response.data[i]['Title'];
 		var dimensions = response.data[i]['Dimensions'];
 		var size = response.data[i]['Size'];
 		var duration = response.data[i]['Duration'];
@@ -258,8 +258,8 @@ function handleProcessFilesForDBResult(response) {
 		//var durationInDBNoMS = durationInDB.split(".")[0];
 		var isDuplicate = response.data[i]['Duplicate'];
 		var isLarger = response.data[i]['Larger'];
-		var sizeInDB = response.data[i]['Size in DB'];
-		var dateCreated = response.data[i]['Date Created'];
+		var sizeInDB = response.data[i]['SizeInDB'];
+		var dateCreated = response.data[i]['DateCreatedInDB'];
 		var path = response.data[i]['Path'];
 		// var newID = response.data[i]['NewID'];
 		var id = response.data[i]['ID'];
@@ -273,7 +273,7 @@ function handleProcessFilesForDBResult(response) {
 			totalSizeNew += size;
 
 			var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) +
-				'</td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button><!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>-->' +
+				'</td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update DB</button><!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>-->' +
 				'<button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 		} else if (response.data[i]['Duplicate'] == true) {
 			++numDuplicates;
@@ -281,11 +281,11 @@ function handleProcessFilesForDBResult(response) {
 
 			if (response.data[i]['Larger'] == true) {
 				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
-					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button">' +
-					'<i class="fas fa-copy"></i>Copy</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
+					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
+					'<i class="fas fa-copy"></i>Update DB</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			} else {
 				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) + '</td>' +
-					'<td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-copy-result" type="button"><i class="fas fa-copy"></i>Copy</button>' +
+					'<td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update DB</button>' +
 					'<!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			}
 		}

@@ -8758,7 +8758,6 @@ body #directory-results #table-wrap table tr:first-of-type {
   background-color: #212121;
   padding-top: 7px;
   border-top: 1px solid #ccc;
-  position: absolute;
   height: 30px;
 }
 body #directory-results #table-wrap table tr:first-of-type .dup-not-new,

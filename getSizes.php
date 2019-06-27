@@ -22,7 +22,7 @@ foreach (new DirectoryIterator($path) as $fileInfo) {
     $formattedSize = formatSize($fileSize);
     $duration = getDuration($fileNameAndPath);
     $dimensions = getDimensions($fileNameAndPath);
-    //$files[] = array('Name' => $fileName, 'baseName' => $baseName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
+    //$files[] = array('Title' => $fileName, 'baseName' => $baseName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
 
     echo $fileName . "\t\t" . $formattedSize . "\t\t" . $duration . "\t\t" . $dimensions . "\n";
 createHTMLFile($path, $fileName, $formattedSize, $dimensions, $duration);

@@ -33,13 +33,11 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 		$scope.gridOptions = {
 			enableColumnResizing: true,
 			enableFiltering: true,
-			// enableGridMenu: true,
 			showGridFooter: true,
 			showColumnFooter: false,
 			gridFooterTemplate: 'partials/grid-footer-template.html',
 			excessRows: 20,
 			onRegisterApi: function(gridApi) {
-				// console.log('in onRegisterApi');
 				$scope.gridApi = gridApi;
 				$scope.gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue) {
 					updateRecord(rowEntity.id, colDef.name, newValue);
@@ -56,13 +54,9 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				{
 					name: 'Title',
 					field: 'title',
-					// width: 425,
 					width: 520,
 					enableFiltering: true,
 					enableCellEdit: true,
-					// enableCellEditOnFocus: true,
-					// filterHeaderTemplate: 'partials/cell-state-editable-template.html',
-					// cellTemplate: 'partials/cell-state-editable-template.html',
 					cellClass: 'cell-title'
 				},
 				{
@@ -143,7 +137,6 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 		$scope.playButtonClickHandler = {
 			onClick: function(path) {
 				playMovie(path);
-				//$scope.refreshData();
 			}
 		};
 
@@ -156,13 +149,9 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 					$scope.rowsToDelete.push(id);
 					$scope.sizeOfDeletedTitles += size;
 					$('#footer-btns').css('display', 'inline-block');
-					// console.log($scope.rowsToDelete);
-					// console.log($scope.sizeOfDeletedTitles);
 				} else {
 					$scope.rowsToDelete.pop(id);
 					$scope.sizeOfDeletedTitles -= size;
-					// console.log($scope.sizeOfDeletedTitles);
-					// console.log($scope.rowsToDelete);
 				}
 				$('.total-size-results').html(formatSize($scope.sizeOfDeletedTitles) + '<br><div class="unformatted">' + $scope.sizeOfDeletedTitles + '</div>');
 				if ($scope.rowsToDelete.length == 0) {

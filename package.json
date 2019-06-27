@@ -1,5 +1,5 @@
 {
-  "name": "movie_db",
+  "Title": "movie_db",
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {

@@ -9,7 +9,7 @@ include "db_connect.php";
       echo 'ID is required.';
       die();
   }
-  $dataType = $_POST['name'];
+  $dataType = $_POST['Title'];
   $dataType = $db->real_escape_string($dataType);
 
   $dataToUpdate = $_POST['value'];

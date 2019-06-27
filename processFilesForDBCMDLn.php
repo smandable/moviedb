@@ -48,7 +48,7 @@ foreach (new DirectoryIterator($dirName) as $fileInfo) {
 
     $dimensions = getDimensions($fileNameAndPath, $dirName);
 
-    $files[] = array('Name' => $fileName, 'baseName' => $baseName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
+    $files[] = array('Title' => $fileName, 'baseName' => $baseName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
 }
 
 $filesSorted = array();
@@ -62,20 +62,20 @@ array_multisort($filesSorted, SORT_ASC, $files);
 $lengthFiles = count($files);
 
 for ($i=0;$i<$lengthFiles;$i++) {
-    $nm = $files[$i]["Name"];
+    $nm = $files[$i]["Title"];
     $dm = $files[$i]["Dimensions"];
     $sz = $files[$i]["Size"];
     $ph = $files[$i]["Path"];
     $isDupe = false;
     $isLarger = false;
-    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger);
+    $files2[$i] = array('Title' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger);
 }
 
 $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
-    if (isset($a[$b['Name']])) {
-        $a[$b['Name']]['Size'] += $b['Size'];
+    if (isset($a[$b['Title']])) {
+        $a[$b['Title']]['Size'] += $b['Size'];
     } else {
-        $a[$b['Name']] = $b;
+        $a[$b['Title']] = $b;
     }
     return $a;
 });
@@ -85,7 +85,7 @@ $files2ReducedSizesSummed = array_values($files2ReducedSizesSummed);
 $lengthFiles2 = count($files2ReducedSizesSummed);
 
 for ($i=0;$i<$lengthFiles2;$i++) {
-    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $dirName, $files);
+    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Title"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $dirName, $files);
 }
 
 function checkDatabaseForMovie($title, $dimensions, $size, &$isDupe, &$isLarger, $dirName, $files)
@@ -211,7 +211,7 @@ function returnHTML($files2ReducedSizesSummed)
     $returnedArray = array();
 
     for ($i=0;$i<$lengthFiles2ReducedSizesSummed;$i++) {
-        $nm = $files2ReducedSizesSummed[$i]["Name"];
+        $nm = $files2ReducedSizesSummed[$i]["Title"];
         $dm = $files2ReducedSizesSummed[$i]["Dimensions"];
         $sz = $files2ReducedSizesSummed[$i]["Size"];
         $ph = $files2ReducedSizesSummed[$i]["Path"];
@@ -219,7 +219,7 @@ function returnHTML($files2ReducedSizesSummed)
         $isl = $files2ReducedSizesSummed[$i]["Larger"];
 
         //if ($isd == false) {
-        $returnedArray['data'][$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duplicate' => $isd, 'Larger' => $isl, 'Path' => $ph);
+        $returnedArray['data'][$i] = array('Title' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duplicate' => $isd, 'Larger' => $isl, 'Path' => $ph);
         //}
     }
 
@@ -237,7 +237,7 @@ function renameSingleFile($title, $newTitle, $dirName, $files)
         if (!is_file($file['Path'])) {
             continue;
         }
-        if ($file['Name'] == $title) {
+        if ($file['Title'] == $title) {
             $rename_file = $destination.$newTitle;
             rename($file['baseName'], $rename_file);
             //echo "renamed file to $rename_file";
@@ -255,7 +255,7 @@ function moveDuplicateFile($title, $dirName, $files)
         if (!is_file($file['Path'])) {
             continue;
         }
-        if ($file['Name'] == $title) {
+        if ($file['Title'] == $title) {
             //$newName = $file['baseName'];
             $rename_file = $destination.$file['baseName'];
             rename($file['Path'], $rename_file);

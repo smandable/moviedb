@@ -226,19 +226,3 @@ function returnHTML($filesProcessed)
     // ob_end_flush();
     echo json_encode($filesProcessed);
 }
-
-// function quickLogFile($originalFileName, $newFileNameAndExt, $task)
-// {
-//     $dirName = "/Users/sean/Downloads/";
-//
-//     $myfile = fopen("$dirName/$task.txt", "w") or die("Unable to open file!");
-//
-//     if ($task == "normalizationFunctions") {
-//         $txt = "newFileNameAndExt: $newFileNameAndExt\n";
-//     } elseif ($task == "renameFunctions") {
-//         $txt = "$originalFileName renamed to $newFileNameAndExt\n";
-//     }
-//
-//     fwrite($myfile, $txt);
-//     fclose($myfile);
-// }

@@ -43,7 +43,7 @@ foreach ($iterator as $fileInfo) {
     $dimensions = getDimensions($fileNameAndPath);
     $duration = getDuration($fileNameAndPath);
 
-    $files[] = array('Name' => $fileName, 'baseName' => $baseName, 'fileExtension' => $fileExtension, 'Dimensions' => $dimensions, 'Duration' => $duration, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
+    $files[] = array('Title' => $fileName, 'baseName' => $baseName, 'fileExtension' => $fileExtension, 'Dimensions' => $dimensions, 'Duration' => $duration, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
 }
 
 $filesSorted = array();
@@ -57,7 +57,7 @@ array_multisort($filesSorted, SORT_ASC, $files);
 $lengthFiles = count($files);
 
 for ($i=0;$i<$lengthFiles;$i++) {
-    $nm = $files[$i]["Name"];
+    $nm = $files[$i]["Title"];
     $dm = $files[$i]["Dimensions"];
     $du = $files[$i]["Duration"];
     $sz = $files[$i]["Size"];
@@ -68,15 +68,15 @@ for ($i=0;$i<$lengthFiles;$i++) {
     $durationInDB = '';
     $dateCreatedInDB = '';
     $id = '';
-    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $durationInDB, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'Size in DB' => $sizeInDB, 'Date Created' => $dateCreatedInDB, 'ID' => $id);
+    $files2[$i] = array('Title' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $durationInDB, 'Path' => $ph, 'Duplicate' => $isDupe, 'Larger' => $isLarger, 'SizeInDB' => $sizeInDB, 'DateCreated' => $dateCreatedInDB, 'ID' => $id);
 }
 
 $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
-    if (isset($a[$b['Name']])) {
-        $a[$b['Name']]['Size'] += $b['Size'];
-        $a[$b['Name']]['Duration'] += $b['Duration'];
+    if (isset($a[$b['Title']])) {
+        $a[$b['Title']]['Size'] += $b['Size'];
+        $a[$b['Title']]['Duration'] += $b['Duration'];
     } else {
-        $a[$b['Name']] = $b;
+        $a[$b['Title']] = $b;
     }
     return $a;
 });
@@ -84,7 +84,7 @@ $files2ReducedSizesSummed = array_values($files2ReducedSizesSummed);
 $lengthFiles2 = count($files2ReducedSizesSummed);
   // for ($i=$startingFile;$i<200;$i++) {
       for ($i=0;$i<$lengthFiles2;$i++) {
-          checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Path"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duration"], $files2ReducedSizesSummed[$i]["DurationInDB"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["Size in DB"], $files2ReducedSizesSummed[$i]["Date Created"], $files2ReducedSizesSummed[$i]["ID"], $dirToProcess, $files, $filesMissingNumOne, $options);
+          checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Title"], $files2ReducedSizesSummed[$i]["Path"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Duration"], $files2ReducedSizesSummed[$i]["DurationInDB"], $files2ReducedSizesSummed[$i]["Duplicate"], $files2ReducedSizesSummed[$i]["Larger"], $files2ReducedSizesSummed[$i]["SizeInDB"], $files2ReducedSizesSummed[$i]["DateCreated"], $files2ReducedSizesSummed[$i]["ID"], $dirToProcess, $files, $filesMissingNumOne, $options);
       }
   // }
 
@@ -221,7 +221,7 @@ function moveDuplicateFile($titleUe, $dirToProcess, $files)
         if (!is_file($file['Path'])) {
             continue;
         }
-        if ($file['Name'] == $titleUe) {
+        if ($file['Title'] == $titleUe) {
             $rename_file = $destination.$file['baseName'];
             str_replace("'", "\'", $rename_file);
             rename($file['Path'], $rename_file);
@@ -284,7 +284,7 @@ function returnHTML($files2ReducedSizesSummed)
     $returnedArray = array();
 
     for ($i=0;$i<$lengthFiles2ReducedSizesSummed;$i++) {
-        $nm = $files2ReducedSizesSummed[$i]["Name"];
+        $nm = $files2ReducedSizesSummed[$i]["Title"];
         $dm = $files2ReducedSizesSummed[$i]["Dimensions"];
         $sz = $files2ReducedSizesSummed[$i]["Size"];
         $du = $files2ReducedSizesSummed[$i]["Duration"];
@@ -292,18 +292,18 @@ function returnHTML($files2ReducedSizesSummed)
         $ph = $files2ReducedSizesSummed[$i]["Path"];
         $isd = $files2ReducedSizesSummed[$i]["Duplicate"];
         $isl = $files2ReducedSizesSummed[$i]["Larger"];
-        $sdb = $files2ReducedSizesSummed[$i]['Size in DB'];
-        $dcd = $files2ReducedSizesSummed[$i]["Date Created"];
+        $sdb = $files2ReducedSizesSummed[$i]['SizeInDB'];
+        $dcd = $files2ReducedSizesSummed[$i]["DateCreated"];
         $id = $files2ReducedSizesSummed[$i]["ID"];
         // $sf = $startingFile + 200;
-        $returnedArray['data'][$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $dudb, 'Path' => $ph, 'Duplicate' => $isd, 'Larger' => $isl, 'Size in DB' => $sdb, 'Date Created' => $dcd, 'ID' => $id);
+        $returnedArray['data'][$i] = array('Title' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $dudb, 'Path' => $ph, 'Duplicate' => $isd, 'Larger' => $isl, 'SizeInDB' => $sdb, 'DateCreated' => $dcd, 'ID' => $id);
     }
     echo json_encode($returnedArray);
 }
 function quickLogFile($title, $newIDToReturn, $dirToProcess)
 {
     $myfile = fopen("$dirToProcess/updated.txt", "a") or die("Unable to open file!");
-    // $txt = "$title\t\t  . 'size in db: ' . $sizeInDB . 'new size: ' . $size  . 'dimensions in db: ' . $dimensionsInDB  . 'new dimensions: ' . \t\t\n";
+    // $txt = "$title\t\t  . 'SizeInDB: ' . $sizeInDB . 'new size: ' . $size  . 'dimensions in db: ' . $dimensionsInDB  . 'new dimensions: ' . \t\t\n";
 
     $txt = "$newIDToReturn\t$title\n\n";
 

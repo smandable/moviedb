@@ -6,7 +6,7 @@ include('formatSize.php');
 //$dirName = "/Volumes/Recorded 2/recorded odd file types/";
  //$dirName = "/Volumes/Recorded 1/test/";
 $dirName = "/Users/sean/Download/tmp/names fixed/";
-$//dirName = "/Users/sean/Download/tmp/test/";
+//dirName = "/Users/sean/Download/tmp/test/";
 echo "dirName: " . $dirName . "\n";
 
 $files = array();
@@ -42,7 +42,7 @@ foreach (new DirectoryIterator($dirName) as $fileInfo) {
 
         $dimensions = getDimensions($fileNameAndPath, $dirName);
 
-        $files[] = array('Name' => $fileName, 'baseName' => $baseName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
+        $files[] = array('Title' => $fileName, 'baseName' => $baseName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
     }
 }
 
@@ -59,18 +59,18 @@ $keys = array_keys($files);
 $lengthFiles = count($files);
 
 for ($i=0;$i<$lengthFiles;$i++) {
-    $nm = $files[$i]["Name"];
+    $nm = $files[$i]["Title"];
     $dm = $files[$i]["Dimensions"];
     $sz = $files[$i]["Size"];
     $ph = $files[$i]["Path"];
-    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph);
+    $files2[$i] = array('Title' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Path' => $ph);
 }
 
 $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
-    if (isset($a[$b['Name']])) {
-        $a[$b['Name']]['Size'] += $b['Size'];
+    if (isset($a[$b['Title']])) {
+        $a[$b['Title']]['Size'] += $b['Size'];
     } else {
-        $a[$b['Name']] = $b;
+        $a[$b['Title']] = $b;
     }
     return $a;
 });
@@ -80,7 +80,7 @@ $files2ReducedSizesSummed = array_values($files2ReducedSizesSummed);
 $lengthFiles2 = count($files2ReducedSizesSummed);
 
 for ($i=0;$i<$lengthFiles2;$i++) {
-    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $dirName, $files);
+    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Title"], $files2ReducedSizesSummed[$i]["Dimensions"], $files2ReducedSizesSummed[$i]["Size"], $dirName, $files);
 }
 
 function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
@@ -135,7 +135,7 @@ function checkDatabaseForMovie($title, $dimensions, $size, $dirName, $files)
     }
 
     $results->close();
-$db->close();
+    $db->close();
 }
 function updateDB($title, $db, $id)
 {
@@ -208,7 +208,7 @@ function moveDuplicateFile($title, $dirName, $files)
         // $filetype = pathinfo($fileInfo, PATHINFO_EXTENSION);
 
         // if (!in_array(strtolower($filetype), $filetypes)) {
-        if ($file['Name'] == $title) {
+        if ($file['Title'] == $title) {
             $newName = $file['baseName'];
             echo "newName: $newName\n";
             $rename_file = $destination.$file['baseName'];
@@ -216,7 +216,6 @@ function moveDuplicateFile($title, $dirName, $files)
             rename($file['Path'], $rename_file);
             echo "\n";
         }
-
     }
 }
 

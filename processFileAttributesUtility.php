@@ -35,7 +35,7 @@ foreach (new DirectoryIterator($dirName) as $fileInfo) {
 
     $dimensions = getDimensions($fileNameAndPath, $dirName);
 
-    $files[] = array('Name' => $fileName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
+    $files[] = array('Title' => $fileName, 'Dimensions' => $dimensions, 'Size' => $fileSize, 'Path' => $fileNameAndPath);
 }
 
 $filesSorted = array();
@@ -49,17 +49,17 @@ $keys = array_keys($files);
 $lengthFiles = count($files);
 
 for ($i=0;$i<$lengthFiles;$i++) {
-    $nm = $files[$i]["Name"];
+    $nm = $files[$i]["Title"];
     $dm = $files[$i]["Dimensions"];
     $sz = $files[$i]["Size"];
-    $files2[$i] = array('Name' => $nm, 'Dimensions' => $dm, 'Size' => $sz);
+    $files2[$i] = array('Title' => $nm, 'Dimensions' => $dm, 'Size' => $sz);
 }
 
 $files2ReducedSizesSummed = array_reduce($files2, function ($a, $b) {
-    if (isset($a[$b['Name']])) {
-        $a[$b['Name']]['Size'] += $b['Size'];
+    if (isset($a[$b['Title']])) {
+        $a[$b['Title']]['Size'] += $b['Size'];
     } else {
-        $a[$b['Name']] = $b;
+        $a[$b['Title']] = $b;
     }
     return $a;
 });
@@ -68,7 +68,7 @@ $files2ReducedSizesSummed = array_values($files2ReducedSizesSummed);
 
 $lengthFiles2 = count($files2ReducedSizesSummed);
 for ($i=0;$i<$lengthFiles2;$i++) {
-    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Name"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Dimensions"]);
+    checkDatabaseForMovie($files2ReducedSizesSummed[$i]["Title"], $files2ReducedSizesSummed[$i]["Size"], $files2ReducedSizesSummed[$i]["Dimensions"]);
 }
 
 function checkDatabaseForMovie($title, $size, $dimensions)
