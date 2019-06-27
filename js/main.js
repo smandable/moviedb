@@ -95,19 +95,6 @@ function deleteRow(id) {
 
 function playMovie(path) {
 
-	console.log("path: ", path);
-	// $('#movieToPlay').empty();
-	// var html = '<video controls>' +
-	// 	// '<source src="' + path + '" width="' + videoWidth + '" ' + 'height="' + videoHeight + '" type="video/mp4">' +
-	// 	'<source src="' + path + '" type="video/mp4">' +
-	// 	'</video>';
-
-	// console.log("html: ", html);
-
-	// $('#movieToPlay').append(html);
-	//
-	// $('#playMovieModal').modal('show');
-
 	$.ajax({
 		type: "POST",
 		url: "playMovie.php",
