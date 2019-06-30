@@ -17,9 +17,6 @@ include "db_connect.php";
               'date_created'    => $row_id['date_created']
           );
         }
-     /*else {
-        $options['data'][] = array('no data');
-    }*/
 
     //modify http header to json
      header('Cache-Control: no-cache, must-revalidate');

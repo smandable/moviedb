@@ -50,7 +50,7 @@ function normalizeDB(options, dirToProcess) {
 	}
 	$.ajax({
 		type: "POST",
-		url: "normalizeDB.php",
+		url: "php/normalizeDB.php",
 		dataType: "json",
 		data: {
 			options: options,
@@ -71,7 +71,7 @@ function setOptionsAndPathsFile(key, state) {
 
 	$.ajax({
 		type: "POST",
-		url: "setOptionsAndPathsFile.php",
+		url: "php/setOptionsAndPathsFile.php",
 		dataType: "json",
 		data: {
 			key: key,
@@ -92,7 +92,7 @@ function getOptionsAndPathsFromFile() {
 
 	$.ajax({
 		type: "POST",
-		url: "getOptionsAndPathsFromFile.php",
+		url: "php/getOptionsAndPathsFromFile.php",
 		dataType: "json",
 	}).always(function(response) {
 		handleGetOptionsAndPathsFromFileResult(response);
@@ -118,7 +118,7 @@ function countFiles(dirName) {
 
 	$.ajax({
 		type: "POST",
-		url: "countFiles.php",
+		url: "php/countFiles.php",
 		dataType: "json",
 		data: {
 			dirName: dirName

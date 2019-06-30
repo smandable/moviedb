@@ -5,7 +5,7 @@ $state = $_POST['state'];
 
 // $str = implode("", file('config/optionsAndPaths.php'));
 // $fp = fopen('config/optionsAndPaths.php', 'w');
-$file = 'config/optionsAndPaths.php';
+$file = '../config/optionsAndPaths.php';
 
 $optionsAndPaths = array(
     $key => $state,

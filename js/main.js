@@ -30,7 +30,7 @@ function updateRecord(id, dataType, dataToUpdate) {
 	return $.ajax({
 		async: true,
 		type: "POST",
-		url: "editRow.php",
+		url: "php/editRow.php",
 		dataType: "json",
 		data: {
 			id: id,
@@ -79,7 +79,7 @@ function deleteRow(id) {
 
 	return $.ajax({
 		type: "POST",
-		url: "deleteRow.php",
+		url: "php/deleteRow.php",
 		dataType: "json",
 		data: {
 			id: id
@@ -97,7 +97,7 @@ function playMovie(path) {
 
 	$.ajax({
 		type: "POST",
-		url: "playMovie.php",
+		url: "php/playMovie.php",
 		dataType: "json",
 		data: {
 			path: path
@@ -144,7 +144,7 @@ function pasteResults(id) {
 
 		return $.ajax({
 			type: "POST",
-			url: "pasteRow.php",
+			url: "php/pasteRow.php",
 			dataType: "json",
 			data: {
 				id: id,
@@ -212,7 +212,7 @@ function processFilesForDB(dirName) {
 	$("#loading-spinner").css('display', 'inline-block');
 	$.ajax({
 		type: "POST",
-		url: "processFilesForDB.php",
+		url: "php/processFilesForDB.php",
 		dataType: "json",
 		data: {
 			dirName: dirName
@@ -299,7 +299,7 @@ function deleteFile(fileNameAndPath) {
 
 		return $.ajax({
 			type: "POST",
-			url: "deleteFile.php",
+			url: "php/deleteFile.php",
 			dataType: "json",
 			data: {
 				fileNameAndPath: fileNameAndPath
@@ -329,7 +329,7 @@ $(document).ready(function() {
 			type: 'text',
 			pk: pk,
 			name: 'title',
-			url: "editRowInResultsTable.php",
+			url: "php/editRowInResultsTable.php",
 			success: function(response) {}
 		});
 	});
@@ -356,7 +356,7 @@ $('.ui-grid-cell').on("click", ".btn-copy-title", function(event) {
 function addMovie(nameToAdd, dimensions, size) {
 	$.ajax({
 		type: "POST",
-		url: "addMovie.php",
+		url: "php/addMovie.php",
 		dataType: "json",
 		data: {
 			title: nameToAdd,
@@ -395,7 +395,7 @@ function processFiles(dirName) {
 	$("#loading-spinner").css('display', 'inline-flex');
 	$.ajax({
 		type: "POST",
-		url: "normalize.php",
+		url: "php/normalizeFiles.php",
 		dataType: "json",
 		data: {
 			dirName: dirName
@@ -464,7 +464,7 @@ $('#modal-rename-files-btn').on("click", function() {
 function renameTheFiles() {
 	$.ajax({
 		type: "POST",
-		url: "renameFiles.php",
+		url: "php/renameFiles.php",
 		dataType: "json",
 	}).always(function(response) {
 		handleRenameTheFilesResult(response);
@@ -498,7 +498,7 @@ $(document).ready(function() {
 				params.originalFileName = originalFileName;
 				return params;
 			},
-			url: "renameSingleFile.php",
+			url: "php/renameSingleFile.php",
 			success: function(response) {
 				if (response == "fail") {
 					$(this).closest("tr").find("td:nth-of-type(2)").text(originalFileName);

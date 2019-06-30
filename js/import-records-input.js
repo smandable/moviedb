@@ -15,7 +15,7 @@ var fname = "";
 //
 //         return $.ajax({
 //             type: "POST",
-//             url: "deleteRow.php",
+//             url: "php/deleteRow.php",
 //             dataType: "json",
 //             data: { id: id },
 //             success: handleResponse
@@ -38,33 +38,33 @@ var fname = "";
 
 function bs_input_file() {
 
-    $(".input-file").before(function () {
-        var element = $("<input type='file' style='visibility:hidden; height:0' class='fname-input'>");
-        element.attr("name", $(this).attr("name"));
-        element.change(function () {
-            element.next(element).find('input').val((element.val()).split('\\').pop());
-        });
-        $(this).find("button.btn-choose-file").click(function () {
-            $('.btn-start-processing-file').removeAttr("disabled");
-            element.click();
-        });
-        // $(this).find("button.btn-choose-dir").click(function () {
-        //     $('.btn-start-processing-dir').removeAttr("disabled");
-        //     element.click();
-        // });
-        $(this).find('input').css("cursor", "pointer");
-        $(this).find('input').mousedown(function () {
-            $('.btn-start').removeAttr("disabled");
-            $(this).parents('.input-file').prev().click();
-            return false;
-        });
-        fname = element;
-        return fname;
-    });
+	$(".input-file").before(function() {
+		var element = $("<input type='file' style='visibility:hidden; height:0' class='fname-input'>");
+		element.attr("name", $(this).attr("name"));
+		element.change(function() {
+			element.next(element).find('input').val((element.val()).split('\\').pop());
+		});
+		$(this).find("button.btn-choose-file").click(function() {
+			$('.btn-start-processing-file').removeAttr("disabled");
+			element.click();
+		});
+		// $(this).find("button.btn-choose-dir").click(function () {
+		//     $('.btn-start-processing-dir').removeAttr("disabled");
+		//     element.click();
+		// });
+		$(this).find('input').css("cursor", "pointer");
+		$(this).find('input').mousedown(function() {
+			$('.btn-start').removeAttr("disabled");
+			$(this).parents('.input-file').prev().click();
+			return false;
+		});
+		fname = element;
+		return fname;
+	});
 }
 
-$(function () {
-    bs_input_file();
+$(function() {
+	bs_input_file();
 });
 
 // $('input[type=radio]').on('change', function () {
@@ -111,7 +111,7 @@ $(function () {
 //     function getListOfNames(inputFileName) {
 //         return $.ajax({
 //             type: "POST",
-//             url: "processNamesFixedFile.php",
+//             url: "php/processNamesFixedFile.php",
 //             dataType: "json",
 //             data: "fname=" + inputFileName,
 //             success: handleNames
@@ -161,7 +161,7 @@ $(function () {
 //     //console.log('in processFilesForDB');
 //     $.ajax({
 //         type: "POST",
-//         url: "processFilesForDB.php",
+//         url: "php/processFilesForDB.php",
 //         dataType: "json",
 //         data: { dirName: dirName },
 //     }).always(function (response) {
@@ -300,7 +300,7 @@ $(function () {
 // function addMovie(nameToAdd, dimensions, size) {
 //     $.ajax({
 //         type: "POST",
-//         url: "addMovie.php",
+//         url: "php/addMovie.php",
 //         dataType: "json",
 //         data: { title: nameToAdd, dimensions: dimensions, filesize: size },
 //     }).always(function (data) {
@@ -335,7 +335,7 @@ $(function () {
 //     function findTheFile() {
 //         return $.ajax({
 //             type: "POST",
-//             url: "findFile.php",
+//             url: "php/findFile.php",
 //             dataType: "json",
 //             data: { fileName: fileName },
 //             success: handleFindResult
@@ -358,7 +358,7 @@ $(function () {
 //     function deleteTheFile() {
 //         return $.ajax({
 //             type: "POST",
-//             url: "deleteFile.php",
+//             url: "php/deleteFile.php",
 //             dataType: "json",
 //             data: { id: id },
 //             success: handleDelete

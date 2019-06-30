@@ -2,7 +2,7 @@ function getConfigFileState() {
 	$.ajax({
 		async: true,
 		type: "GET",
-		url: "readConfigFile.php",
+		url: "php/readConfigFile.php",
 		dataType: "json"
 	}).always(function(data) {
 		handleConfigFileState(data);
@@ -57,7 +57,7 @@ function updateConfigFile(configUpdate) {
 	return $.ajax({
 		async: true,
 		type: "POST",
-		url: "updateConfigFile.php",
+		url: "php/updateConfigFile.php",
 		dataType: "json",
 		data: "configUpdate=" + configUpdate
 	}).always(function(data) {

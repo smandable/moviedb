@@ -2,7 +2,7 @@
 
 ini_set('max_execution_time', 0);
 
-include('getDimensionsCMDln.php');
+include('getDimensions.php');
 include('getDuration.php');
 include('formatSize.php');
 
@@ -164,7 +164,6 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
     //moveDuplicateFile($title, $filesArray);
     } else {
         $filesArrayReducedSizesSummed['ID'] = addToDB($title, $dimensions, $size, $duration, $path, $db, $table);
-        //  addToDB($title, $dimensions, $size, $duration, $path, $db, $table);
         //moveRecordedFile($title, $filesArray);
     }
 

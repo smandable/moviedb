@@ -2,7 +2,7 @@
 
 ini_set('max_execution_time', 0);
 
-include('getDimensionsCMDln.php');
+include('getDimensions.php');
 include('getDuration.php');
 include('formatSize.php');
 

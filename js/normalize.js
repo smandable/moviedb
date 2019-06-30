@@ -19,7 +19,7 @@ $('.btn-start-processing-dir').on("click", function(event) {
 // 	$("#loading-spinner").css('display', 'inline-flex');
 // 	$.ajax({
 // 		type: "POST",
-// 		url: "normalize.php",
+// 		url: "php/normalizeFiles.php",
 // 		dataType: "json",
 // 		data: {
 // 			dirName: dirName
@@ -44,7 +44,7 @@ $('.btn-process-dir-rename-files').on("click", function(event) {
 
 	$.ajax({
 		type: "POST",
-		url: "renameSingleFile.php",
+		url: "php/renameSingleFile.php",
 		dataType: "json",
 	}).always(function(response) {
 		handlerenameSingleFileResult(response);
@@ -92,7 +92,7 @@ function revertFile(path, originalFileName, newFileName) {
 
 		return $.ajax({
 			type: "POST",
-			url: "renameSingleFile.php",
+			url: "php/renameSingleFile.php",
 			dataType: "json",
 			data: {
 				path: path,
@@ -117,7 +117,7 @@ function processFiles(dirName) {
 	$("#loading-spinner").css('display', 'inline-flex');
 	$.ajax({
 		type: "POST",
-		url: "normalize.php",
+		url: "php/normalizeFiles.php",
 		dataType: "json",
 		data: {
 			dirName: dirName
@@ -235,7 +235,7 @@ $(document).ready(function() {
 				params.originalFileName = originalFileName;
 				return params;
 			},
-			url: "renameSingleFile.php",
+			url: "php/renameSingleFile.php",
 			success: function(response) {
 				if (response == "fail") {
 					$(this).closest("tr").find("td:nth-of-type(2)").text(originalFileName);

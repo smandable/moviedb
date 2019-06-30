@@ -107,7 +107,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 
 		var getData = function() {
 			$.ajax({
-				url: "getAllMovies.php",
+				url: "php/getAllMovies.php",
 				type: 'GET',
 				dataType: "json",
 				success: function(response) {

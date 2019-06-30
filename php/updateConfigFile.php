@@ -2,8 +2,8 @@
 
 $configUpdate = $_POST['configUpdate'];
 
-$str = implode("", file('config/config.php'));
-$fp = fopen('config/config.php', 'w');
+$str = implode("", file('../config/config.php'));
+$fp = fopen('../config/config.php', 'w');
 
     if ($configUpdate == "testDB") {
         $str = preg_replace('/movieLibraryPROD\b/i', 'movieLibraryTEST', $str);
