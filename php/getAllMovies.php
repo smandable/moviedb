@@ -25,5 +25,4 @@ include "db_connect.php";
 
     echo json_encode($options);
 
-    $result->close();
     $db->close();

@@ -16,19 +16,26 @@ include "db_connect.php";
   $valueToUpdate = $db->real_escape_string($valueToUpdate);
 
   if ($columnToUpdate == 'Title') {
-      $result = $db->query("UPDATE `".$table."` SET title='$valueToUpdate' WHERE id='$id'");
+      $row = mysqli_fetch_assoc($db->query("SELECT * FROM `".$table."` WHERE id = '$id'"));
+
+      $originalTitle = $row['title'];
+      $path = $row['filepath'];
+      $path = str_replace($originalTitle, $valueToUpdate, $path);
+
+      $db->query("UPDATE `".$table."` SET title='$valueToUpdate' WHERE id='$id'");
+      if ($path != "") {
+          $db->query("UPDATE `".$table."` SET filepath='$path' WHERE id='$id'");
+      }
   }
   if ($columnToUpdate == 'Dimensions') {
-      $result = $db->query("UPDATE `".$table."` SET dimensions='$valueToUpdate' WHERE id='$id'");
+      $db->query("UPDATE `".$table."` SET dimensions='$valueToUpdate' WHERE id='$id'");
   }
   if ($columnToUpdate == 'Size') {
       $valueToUpdate = formatSize($valueToUpdate);
-      $result = $db->query("UPDATE `".$table."` SET filesize='$valueToUpdate' WHERE id='$id'");
+      $db->query("UPDATE `".$table."` SET filesize='$valueToUpdate' WHERE id='$id'");
   }
   if ($columnToUpdate == 'Duration') {
-      $result = $db->query("UPDATE `".$table."` SET duration='$valueToUpdate' WHERE id='$id'");
-  } elseif ($result === false) {
-      echo "SQL error:" . $db->error;
+      $db->query("UPDATE `".$table."` SET duration='$valueToUpdate' WHERE id='$id'");
   }
 
   $db->close();

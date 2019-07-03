@@ -17,18 +17,8 @@ include "db_connect.php";
 
   if ($columnToUpdate == 'title') {
       $title = $valueToUpdate;
-      $result = $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
-  }
-  // if ($columnToUpdate == 'Dimensions') {
-  //     $dimensions = $valueToUpdate;
-  //     $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE id='$id'");
-  // }
-  // if ($columnToUpdate == 'Size') {
-  //     $size = $valueToUpdate;
-  //     $size = formatSize($size);
-  //     $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE id='$id'");
-  // }
-  elseif ($result === false) {
+      $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
+  } else {
       echo "SQL error:" . $db->error;
   }
 

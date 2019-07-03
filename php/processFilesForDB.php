@@ -114,39 +114,51 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
     $title = $db->real_escape_string($title);
     $path = $db->real_escape_string($path);
 
-    if (!$db->query("SELECT * FROM `".$table."` WHERE title = '$title'")) {
-        printf("Error: %s\n", $db->sqlstate);
-        printf("Error message: %s\n", $db->error);
-    }
-    if ($db->query("SELECT * FROM `".$table."` WHERE title = '$title'")) {
-        $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
-    }
+    // if (!$db->query("SELECT * FROM `".$table."` WHERE title = '$title'")) {
+    //     printf("Error: %s\n", $db->sqlstate);
+    //     printf("Error message: %s\n", $db->error);
+    // }
 
-    $row = mysqli_fetch_assoc($result);
+    // if ($db->query("SELECT * FROM `".$table."` WHERE title = '$title'")) {
+    //     $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
+    // }
+    // $row = mysqli_fetch_assoc($result);
+
     $spacePoundSpace01 = " # 01";
 
     //If file being read from directory HAS a number in it, look for that title in the DB WITHOUT a number. If found, add " # 01" to it. This is only to update that record in the db. There's no comparison here.
     if (preg_match('/# [0-9]+$/', $title)) {
         $tmpTitle = preg_split('/ # [0-9]+/', $title);
-        $result2 = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle[0]'");
-        if ($result2->num_rows > 0) {
+        $resultT = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle[0]'");
+
+        if ($resultT->num_rows > 0) {
             $titleSpacePoundSpace01 = $tmpTitle[0].$spacePoundSpace01;
-            $result2 = $db->query("UPDATE `".$table."` SET title='$titleSpacePoundSpace01' WHERE title='$tmpTitle[0]'");
+            $db->query("UPDATE `".$table."` SET title='$titleSpacePoundSpace01' WHERE title='$tmpTitle[0]'");
+            $rowT = mysqli_fetch_assoc($resultT);
+            $idT = $rowT['id'];
+            $originalTitle = $rowT['title'];
+            $pathT = $rowT['filepath'];
+
+            if ($pathT != "") {
+                $pathT = str_replace($originalTitle, $titleSpacePoundSpace01, $pathT);
+                $db->query("UPDATE `".$table."` SET filepath='$pathT' WHERE id='$idT'");
+            }
         }
     }
 
     //If file being read from directory DOES NOT have a number in it, look for that title in the DB WITH a number + " 01". If found, mark file as duplicate, then rename the file to filename + " # 01"
     if (!preg_match('/# [0-9]+$/', $title)) {
         $titleSpacePoundSpace01 = $title.$spacePoundSpace01;
-        $result2 = $db->query("SELECT * FROM `".$table."` WHERE title = '$titleSpacePoundSpace01'");
-        $row2 = mysqli_fetch_assoc($result2);
-        if ($result2->num_rows > 0) {
+        // $db->query("SELECT * FROM `".$table."` WHERE title = '$titleSpacePoundSpace01'");
+        $resultN = $db->query("SELECT * FROM `".$table."` WHERE title = '$titleSpacePoundSpace01'");
+        $rowN = mysqli_fetch_assoc($resultN);
+        if ($resultN->num_rows > 0) {
             $filesArrayReducedSizesSummed['Duplicate'] = true;
-            $filesArrayReducedSizesSummed['ID'] = $row2['id'];
-            $filesArrayReducedSizesSummed['DateCreatedInDB'] = $row2['date_created'];
-            $filesArrayReducedSizesSummed['SizeInDB'] = $row2['filesize'];
-            $filesArrayReducedSizesSummed['DurationInDB'] = $row2['duration'];
-            $filesArrayReducedSizesSummed['PathInDB'] = $row2['filepath'];
+            $filesArrayReducedSizesSummed['ID'] = $rowN['id'];
+            $filesArrayReducedSizesSummed['DateCreatedInDB'] = $rowN['date_created'];
+            $filesArrayReducedSizesSummed['SizeInDB'] = $rowN['filesize'];
+            $filesArrayReducedSizesSummed['DurationInDB'] = $rowN['duration'];
+            $filesArrayReducedSizesSummed['PathInDB'] = $rowN['filepath'];
             $filesArrayReducedSizesSummed['Larger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
 
             //moveDuplicateFile($title, $filesArray);
@@ -157,6 +169,10 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
             return;
         }
     }
+
+    $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
+
+    $row = mysqli_fetch_assoc($result);
 
     if ($result->num_rows > 0) {
         $filesArrayReducedSizesSummed['Duplicate'] = true;
@@ -173,7 +189,6 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
         //moveRecordedFile($title, $filesArray);
     }
 
-    $result->close();
     $db->close();
 }
 
@@ -189,8 +204,8 @@ function addToDB($title, $dimensions, $size, $duration, $path, $db, $table)
     if ($db->query(
         "INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, duration, filepath, date_created) VALUES ('$title', '$dimensions', '$size', '$duration', '$path', NOW())"
     )) {
-        $newResult = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
-        $newRow = mysqli_fetch_assoc($newResult);
+        $newRow = mysqli_fetch_assoc($db->query("SELECT * FROM `".$table."` WHERE title = '$title'"));
+        // $newRow = mysqli_fetch_assoc($newResult);
         $newIDToReturn = $newRow['id'];
         return $newIDToReturn;
     } else {
