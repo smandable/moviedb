@@ -9,24 +9,24 @@ include "db_connect.php";
       echo 'ID is required.';
       die();
   }
-  $dataType = $_POST['dataType'];
-  $dataType = $db->real_escape_string($dataType);
+  $column = $_POST['column'];
+  $column = $db->real_escape_string($column);
 
-  $dataToUpdate = $_POST['dataToUpdate'];
-  $dataToUpdate = $db->real_escape_string($dataToUpdate);
+  $valueToUpdate = $_POST['valueToUpdate'];
+  $valueToUpdate = $db->real_escape_string($valueToUpdate);
 
-  if ($dataType == 'Title') {
-      $result = $db->query("UPDATE `".$table."` SET title='$dataToUpdate' WHERE id='$id'");
+  if ($column == 'Title') {
+      $result = $db->query("UPDATE `".$table."` SET title='$valueToUpdate' WHERE id='$id'");
   }
-  if ($dataType == 'Dimensions') {
-      $result = $db->query("UPDATE `".$table."` SET dimensions='$dataToUpdate' WHERE id='$id'");
+  if ($column == 'Dimensions') {
+      $result = $db->query("UPDATE `".$table."` SET dimensions='$valueToUpdate' WHERE id='$id'");
   }
-  if ($dataType == 'Size') {
-      $dataToUpdate = formatSize($dataToUpdate);
-      $result = $db->query("UPDATE `".$table."` SET filesize='$dataToUpdate' WHERE id='$id'");
+  if ($column == 'Size') {
+      $valueToUpdate = formatSize($valueToUpdate);
+      $result = $db->query("UPDATE `".$table."` SET filesize='$valueToUpdate' WHERE id='$id'");
   }
-  if ($dataType == 'Duration') {
-      $result = $db->query("UPDATE `".$table."` SET duration='$dataToUpdate' WHERE id='$id'");
+  if ($column == 'Duration') {
+      $result = $db->query("UPDATE `".$table."` SET duration='$valueToUpdate' WHERE id='$id'");
   } elseif ($result === false) {
       echo "SQL error:" . $db->error;
   }

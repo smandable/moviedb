@@ -9,22 +9,22 @@ include "db_connect.php";
       echo 'ID is required.';
       die();
   }
-  $dataType = $_POST['Title'];
-  $dataType = $db->real_escape_string($dataType);
+  $column = $_POST['Title'];
+  $column = $db->real_escape_string($column);
 
-  $dataToUpdate = $_POST['value'];
-  $dataToUpdate = $db->real_escape_string($dataToUpdate);
+  $valueToUpdate = $_POST['value'];
+  $valueToUpdate = $db->real_escape_string($valueToUpdate);
 
-  if ($dataType == 'title') {
-      $title = $dataToUpdate;
+  if ($column == 'title') {
+      $title = $valueToUpdate;
       $result = $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
   }
-  // if ($dataType == 'Dimensions') {
-  //     $dimensions = $dataToUpdate;
+  // if ($column == 'Dimensions') {
+  //     $dimensions = $valueToUpdate;
   //     $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE id='$id'");
   // }
-  // if ($dataType == 'Size') {
-  //     $size = $dataToUpdate;
+  // if ($column == 'Size') {
+  //     $size = $valueToUpdate;
   //     $size = formatSize($size);
   //     $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE id='$id'");
   // }

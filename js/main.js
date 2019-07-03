@@ -25,7 +25,7 @@ $('.btn-start-processing-dir').on("click", function(event) {
 
 });
 
-function updateRecord(id, dataType, dataToUpdate) {
+function updateRecord(id, column, valueToUpdate) {
 
 	return $.ajax({
 		async: true,
@@ -34,8 +34,8 @@ function updateRecord(id, dataType, dataToUpdate) {
 		dataType: "json",
 		data: {
 			id: id,
-			dataType: dataType,
-			dataToUpdate: dataToUpdate
+			column: column,
+			valueToUpdate: valueToUpdate
 		},
 		success: handleResponse
 	})
