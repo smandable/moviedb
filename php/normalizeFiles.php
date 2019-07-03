@@ -4,7 +4,7 @@ include('getDimensions.php');
 include('getDuration.php');
 include('formatSize.php');
 
-$dirName = $_POST['dirName'];
+$directory = $_POST['directory'];
 
 if (isset($_POST['searchPattern '])) {
     $searchPattern  = $_POST['searchPattern'];
@@ -16,13 +16,13 @@ $files = array();
 $filesProcessed = array();
 $filesProcessedSorted = array();
 
-getFiles($dirName, $files);
+getFiles($directory, $files);
 
-function getFiles($dirName, $files)
+function getFiles($directory, $files)
 {
     global $files;
 
-    $directory = new \RecursiveDirectoryIterator($dirName);
+    $directory = new \RecursiveDirectoryIterator($directory);
     $iterator = new \RecursiveIteratorIterator($directory);
 
     foreach ($iterator as $file) {
@@ -44,7 +44,7 @@ function getFiles($dirName, $files)
 
 function processFiles()
 {
-    global $dirName;
+    global $directory;
     global $files;
     global $filesProcessed;
 
@@ -206,7 +206,7 @@ function checkConflicts($originalFileName, $newFileName, $fileExtension, $path, 
 }
 
 //I'm thinking of re-running this for cleanup's sake, I mean if something in cleanupFunctions() causes there to be multiple spaces or something...
-//getFiles($dirName, $files);
+//getFiles($directory, $files);
 
 foreach ($filesProcessed as $key => $row) {
     $filesProcessedSorted[$key] = $row['newFileName'];

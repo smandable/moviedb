@@ -16,26 +16,21 @@ include "db_connect.php";
   $dataToUpdate = $db->real_escape_string($dataToUpdate);
 
   if ($dataType == 'Title') {
-      $title = $dataToUpdate;
-      $result = $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
+      $result = $db->query("UPDATE `".$table."` SET title='$dataToUpdate' WHERE id='$id'");
   }
   if ($dataType == 'Dimensions') {
-      $dimensions = $dataToUpdate;
-      $result = $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE id='$id'");
+      $result = $db->query("UPDATE `".$table."` SET dimensions='$dataToUpdate' WHERE id='$id'");
   }
   if ($dataType == 'Size') {
-      $size = $dataToUpdate;
-      $size = formatSize($size);
-      $result = $db->query("UPDATE `".$table."` SET filesize='$size' WHERE id='$id'");
+      $dataToUpdate = formatSize($dataToUpdate);
+      $result = $db->query("UPDATE `".$table."` SET filesize='$dataToUpdate' WHERE id='$id'");
   }
   if ($dataType == 'Duration') {
-      $duration = $dataToUpdate;
-      $result = $db->query("UPDATE `".$table."` SET duration='$duration' WHERE id='$id'");
+      $result = $db->query("UPDATE `".$table."` SET duration='$dataToUpdate' WHERE id='$id'");
   } elseif ($result === false) {
       echo "SQL error:" . $db->error;
   }
 
-  // $result->close();
   $db->close();
 
 function formatSize($size)

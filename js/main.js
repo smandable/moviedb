@@ -19,9 +19,9 @@ $('#input-directory').val("/Users/sean/Download/to move/");
 
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
-	dirName = $('#input-directory').val();
-	//processFilesForDB(dirName);
-	processFiles(dirName);
+	directory = $('#input-directory').val();
+	//processFilesForDB(directory);
+	processFiles(directory);
 
 });
 
@@ -204,18 +204,17 @@ $('.btn-add-single-title').on("click", function(event) {
 
 $('.btn-process-dir-database-ops').on("click", function(event) {
 	event.preventDefault();
-	processFilesForDB(dirName);
+	processFilesForDB(directory);
 });
 
-function processFilesForDB(dirName) {
-	// Show loading spinner.
+function processFilesForDB(directory) {
 	$("#loading-spinner").css('display', 'inline-block');
 	$.ajax({
 		type: "POST",
 		url: "php/processFilesForDB.php",
 		dataType: "json",
 		data: {
-			dirName: dirName
+			directory: directory
 		},
 	}).always(function(response) {
 		handleProcessFilesForDBResult(response);
@@ -391,14 +390,14 @@ $('#duplicates').on("click", ".btn-find-file", function(event) {
 var dbOpsBtnWrapper = $('.db-ops-btn-wrapper');
 var transitionEnd = 'webkitTransitionEnd msTransitionEnd transitionend';
 
-function processFiles(dirName) {
+function processFiles(directory) {
 	$("#loading-spinner").css('display', 'inline-flex');
 	$.ajax({
 		type: "POST",
 		url: "php/normalizeFiles.php",
 		dataType: "json",
 		data: {
-			dirName: dirName
+			directory: directory
 		},
 	}).always(function(response) {
 		handleProcessFilesResult(response);

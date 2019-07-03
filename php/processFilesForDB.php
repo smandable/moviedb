@@ -6,9 +6,9 @@ include('getDimensions.php');
 include('getDuration.php');
 include('formatSize.php');
 
-$dirName = $_POST['dirName'];
+$directory = $_POST['directory'];
 
-if (empty($_POST['dirName'])) {
+if (empty($_POST['directory'])) {
     echo 'Directory is required.';
     exit();
 }
@@ -20,15 +20,21 @@ $pattern2 = '/ - Scene.*/i';
 $pattern3 = '/ - CD.*/i';
 $pattern4 = '/ - Bonus.*| Bonus.*/i';
 
-$directory = new \RecursiveDirectoryIterator($dirName);
-$iterator = new \RecursiveIteratorIterator($directory);
+// $directory = new \RecursiveDirectoryIterator($directory);
+// $iterator = new \RecursiveIteratorIterator($directory);
+
+$iterator = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
+);
 
 foreach ($iterator as $fileInfo) {
-    if ($fileInfo->getBasename() === '.' || $fileInfo->getBasename() === '..' || $fileInfo->getBasename() === '.DS_Store'
-    || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
+    // if ($fileInfo->getBasename() === '.' || $fileInfo->getBasename() === '..' || $fileInfo->getBasename() === '.DS_Store'
+    // || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
+    //     continue;
+    // }
+    if ($fileInfo->getBasename() === '.DS_Store' || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
         continue;
     }
-
     $baseName = $fileInfo->getBasename();
     $fileName = $baseName;
     $fileName = preg_replace(array($pattern1, $pattern2, $pattern3, $pattern4), '', $fileName);
@@ -96,7 +102,7 @@ for ($i=0;$i<$lengthFilesArrayReducedSizesSummed;$i++) {
 
 function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
 {
-    global $dirName;
+    global $directory;
     $title = $filesArrayReducedSizesSummed['Title'];
     $dimensions = $filesArrayReducedSizesSummed['Dimensions'];
     $size = $filesArrayReducedSizesSummed['Size'];
@@ -145,8 +151,8 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
 
             //moveDuplicateFile($title, $filesArray);
 
-            $filesMissingNumOne[] = array('title' => $title);
-            //findFilesToRename($filesMissingNumOne);
+            $filesMissingSpacePoundSpace01[] = array('title' => $title);
+            //findFilesToRename($filesMissingSpacePoundSpace01);
 
             return;
         }
@@ -173,7 +179,7 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
 
 function addToDB($title, $dimensions, $size, $duration, $path, $db, $table)
 {
-    global $dirName;
+    global $directory;
     $pattern1 = '/to move\//i';
     $pattern2 = '/names fixed\//i';
     $replaceWith = 'recorded/';
@@ -204,8 +210,8 @@ function compareFileSizeToDB($size, $sizeInDB)
 
 function moveDuplicateFile($title, $filesArray)
 {
-    global $dirName;
-    $destination = $dirName.'duplicates/';
+    global $directory;
+    $destination = $directory.'duplicates/';
     if (!is_dir($destination)) {
         mkdir($destination, 0777, true);
     }
@@ -223,12 +229,12 @@ function moveDuplicateFile($title, $filesArray)
 
 function moveRecordedFile($title, $filesArray)
 {
-    global $dirName;
+    global $directory;
     $pattern1 = '/to move\//i';
     $pattern2 = '/names fixed\//i';
     $replaceWith = 'recorded/';
 
-    $destination = $dirName;
+    $destination = $directory;
     $destination = preg_replace(array($pattern1, $pattern2), $replaceWith, $destination);
 
     if (!is_dir($destination)) {
@@ -246,17 +252,17 @@ function moveRecordedFile($title, $filesArray)
     }
 }
 
-function findFilesToRename($filesMissingNumOne)
+function findFilesToRename($filesMissingSpacePoundSpace01)
 {
-    global $dirName;
-    $dirName = $dirName.'duplicates/';
-    $directory = new \RecursiveDirectoryIterator($dirName);
+    global $directory;
+    $directory = $directory.'duplicates/';
+    $directory = new \RecursiveDirectoryIterator($directory);
     $iterator = new \RecursiveIteratorIterator($directory);
     $spacePoundSpace01 = ' # 01';
     $spaceDashSpace = ' - ';
     $pattern1 = '/\.[a-z1-9]{3,4}$/';
 
-    foreach ($filesMissingNumOne as $fileMissingOne) {
+    foreach ($filesMissingSpacePoundSpace01 as $fileMissingOne) {
         $titleMissingOne = $fileMissingOne['title'];
 
         foreach ($iterator as $file) {
@@ -272,7 +278,7 @@ function findFilesToRename($filesMissingNumOne)
             if (strcasecmp($titleMissingOne, $fileName) == 0) {
                 $fileName = $fileName . $spacePoundSpace01 . $fileExtension;
                 str_replace("'", "\'", $fileName);
-                rename($dirName.$originalFileName, $dirName.$fileName);
+                rename($directory.$originalFileName, $directory.$fileName);
             }
 
             if ($beginningOfFileName = stristr($fileName, ' - Scene_', true)) {
@@ -280,7 +286,7 @@ function findFilesToRename($filesMissingNumOne)
                     $tmpFileName = preg_split('/ - /', $fileName);
                     $fileName = $tmpFileName[0] . $spacePoundSpace01 . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
                     str_replace("'", "\'", $fileName);
-                    rename($dirName.$originalFileName, $dirName.$fileName);
+                    rename($directory.$originalFileName, $directory.$fileName);
                 }
             }
             if ($beginningOfFileName = stristr($fileName, ' - CD', true)) {
@@ -288,12 +294,13 @@ function findFilesToRename($filesMissingNumOne)
                     $tmpFileName = preg_split('/ - /', $fileName);
                     $fileName = $tmpFileName[0] . $spacePoundSpace01 . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
                     str_replace("'", "\'", $fileName);
-                    rename($dirName.$originalFileName, $dirName.$fileName);
+                    rename($directory.$originalFileName, $directory.$fileName);
                 }
             }
         }
     }
 }
+
 returnHTML($filesArrayReducedSizesSummed);
 
 function returnHTML($filesArrayReducedSizesSummed)
@@ -322,8 +329,8 @@ function returnHTML($filesArrayReducedSizesSummed)
 
 // function quickLogFile($title)
 // {
-//     global $dirName;
-//     $myfile = fopen("$dirName/updated.txt", "a") or die("Unable to open file!");
+//     global $directory;
+//     $myfile = fopen("$directory/updated.txt", "a") or die("Unable to open file!");
 //
 //     $txt = "$title\n\n";
 //

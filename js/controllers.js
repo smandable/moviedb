@@ -241,8 +241,8 @@ app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$
 			// $('.btn-start-processing-dir').on("click", function(event) {
 			// 	//event.preventDefault();
 			//
-			// 	dirName = $('#input-directory').val();
-			// 	//processFilesForDB(dirName);
+			// 	directory = $('#input-directory').val();
+			// 	//processFilesForDB(directory);
 			// 	console.log('clicked');
 			// 	$location.path('/normalize');
 			// });

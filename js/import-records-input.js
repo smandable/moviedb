@@ -152,18 +152,18 @@ $(function() {
 // $('.btn-start-processing-dir').on("click", function (event) {
 //     event.preventDefault();
 //
-//     dirName = $('#input-directory').val();
-//     //console.log('dirName: ', dirName);
-//     processFilesForDB(dirName);
+//     directory = $('#input-directory').val();
+//     //console.log('directory: ', directory);
+//     processFilesForDB(directory);
 // });
 //
-// function processFilesForDB(dirName) {
+// function processFilesForDB(directory) {
 //     //console.log('in processFilesForDB');
 //     $.ajax({
 //         type: "POST",
 //         url: "php/processFilesForDB.php",
 //         dataType: "json",
-//         data: { dirName: dirName },
+//         data: { directory: directory },
 //     }).always(function (response) {
 //         handleProcessFilesForDBResult(response);
 //     })

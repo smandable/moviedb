@@ -1,4 +1,4 @@
-var dirName;
+var directory;
 var options = [];
 var directories = [];
 var startingFile = 0;
@@ -113,7 +113,7 @@ function handleGetOptionsAndPathsFromFileResult(response) {
 	}
 }
 
-function countFiles(dirName) {
+function countFiles(directory) {
 	var count = 0;
 
 	$.ajax({
@@ -121,7 +121,7 @@ function countFiles(dirName) {
 		url: "php/countFiles.php",
 		dataType: "json",
 		data: {
-			dirName: dirName
+			directory: directory
 		},
 		async: false,
 		success: function(data) {

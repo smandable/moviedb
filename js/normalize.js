@@ -4,25 +4,25 @@ $('#input-directory').val("/Volumes/Misc 1/to move/");
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
 
-	dirName = $('#input-directory').val();
+	directory = $('#input-directory').val();
 	// $("#file-data tr").not(':first').not(':last').empty();
 	//$("#file-data tr").not(':first').empty();
 	$("#file-data tbody ~ tbody").empty();
-	processFiles(dirName);
+	processFiles(directory);
 });
 
 /////////
 // var $dbOpsButton = $('.btn-process-dir-database-ops');
 // var transitionEnd = 'webkitTransitionEnd msTransitionEnd transitionend';
 //
-// function processFiles(dirName) {
+// function processFiles(directory) {
 // 	$("#loading-spinner").css('display', 'inline-flex');
 // 	$.ajax({
 // 		type: "POST",
 // 		url: "php/normalizeFiles.php",
 // 		dataType: "json",
 // 		data: {
-// 			dirName: dirName
+// 			directory: directory
 // 		},
 // 	}).always(function(response) {
 // 		handleProcessFilesResult(response);
@@ -52,8 +52,8 @@ $('.btn-process-dir-rename-files').on("click", function(event) {
 });
 
 function handlerenameSingleFileResult(response) {
-	dirName = $('#input-directory').val();
-	processFiles(dirName);
+	directory = $('#input-directory').val();
+	processFiles(directory);
 	dbOpsButton.addClass('inline-flex').outerWidth();
 	dbOpsButton.addClass('fade-in').one(transitionEnd2, function() {
 
@@ -113,14 +113,14 @@ function revertFile(path, originalFileName, newFileName) {
 var $processPatterns = $('#process-patterns');
 var transitionEnd = 'webkitTransitionEnd msTransitionEnd transitionend';
 
-function processFiles(dirName) {
+function processFiles(directory) {
 	$("#loading-spinner").css('display', 'inline-flex');
 	$.ajax({
 		type: "POST",
 		url: "php/normalizeFiles.php",
 		dataType: "json",
 		data: {
-			dirName: dirName
+			directory: directory
 		},
 	}).always(function(response) {
 		handleProcessFilesResult(response);
