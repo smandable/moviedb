@@ -9,23 +9,23 @@ include "db_connect.php";
       echo 'ID is required.';
       die();
   }
-  $column = $_POST['column'];
-  $column = $db->real_escape_string($column);
+  $columnToUpdate = $_POST['columnToUpdate'];
+  $columnToUpdate = $db->real_escape_string($columnToUpdate);
 
   $valueToUpdate = $_POST['valueToUpdate'];
   $valueToUpdate = $db->real_escape_string($valueToUpdate);
 
-  if ($column == 'Title') {
+  if ($columnToUpdate == 'Title') {
       $result = $db->query("UPDATE `".$table."` SET title='$valueToUpdate' WHERE id='$id'");
   }
-  if ($column == 'Dimensions') {
+  if ($columnToUpdate == 'Dimensions') {
       $result = $db->query("UPDATE `".$table."` SET dimensions='$valueToUpdate' WHERE id='$id'");
   }
-  if ($column == 'Size') {
+  if ($columnToUpdate == 'Size') {
       $valueToUpdate = formatSize($valueToUpdate);
       $result = $db->query("UPDATE `".$table."` SET filesize='$valueToUpdate' WHERE id='$id'");
   }
-  if ($column == 'Duration') {
+  if ($columnToUpdate == 'Duration') {
       $result = $db->query("UPDATE `".$table."` SET duration='$valueToUpdate' WHERE id='$id'");
   } elseif ($result === false) {
       echo "SQL error:" . $db->error;
