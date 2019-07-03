@@ -114,16 +114,6 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
     $title = $db->real_escape_string($title);
     $path = $db->real_escape_string($path);
 
-    // if (!$db->query("SELECT * FROM `".$table."` WHERE title = '$title'")) {
-    //     printf("Error: %s\n", $db->sqlstate);
-    //     printf("Error message: %s\n", $db->error);
-    // }
-
-    // if ($db->query("SELECT * FROM `".$table."` WHERE title = '$title'")) {
-    //     $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
-    // }
-    // $row = mysqli_fetch_assoc($result);
-
     $spacePoundSpace01 = " # 01";
 
     //If file being read from directory HAS a number in it, look for that title in the DB WITHOUT a number. If found, add " # 01" to it. This is only to update that record in the db. There's no comparison here.
