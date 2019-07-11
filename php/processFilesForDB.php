@@ -180,7 +180,7 @@ function addToDB($title, $dimensions, $size, $duration, $path, $db, $table)
         "INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, duration, filepath, date_created) VALUES ('$title', '$dimensions', '$size', '$duration', '$path', NOW())"
     )) {
         $newRow = mysqli_fetch_assoc($db->query("SELECT * FROM `".$table."` WHERE title = '$title'"));
-        // $newRow = mysqli_fetch_assoc($newResult);
+
         $newIDToReturn = $newRow['id'];
         return $newIDToReturn;
     } else {
