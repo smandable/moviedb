@@ -20,18 +20,11 @@ $pattern2 = '/ - Scene.*/i';
 $pattern3 = '/ - CD.*/i';
 $pattern4 = '/ - Bonus.*| Bonus.*/i';
 
-// $directory = new \RecursiveDirectoryIterator($directory);
-// $iterator = new \RecursiveIteratorIterator($directory);
-
 $iterator = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
 );
 
 foreach ($iterator as $fileInfo) {
-    // if ($fileInfo->getBasename() === '.' || $fileInfo->getBasename() === '..' || $fileInfo->getBasename() === '.DS_Store'
-    // || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
-    //     continue;
-    // }
     if ($fileInfo->getBasename() === '.DS_Store' || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
         continue;
     }
@@ -76,7 +69,7 @@ for ($i=0;$i<$lengthFilesArray;$i++) {
     'Path' => $filesArray[$i]["Path"],
     'PathInDB' => '',
     'Duplicate' => false,
-    'Larger' => false,
+    'isLarger' => false,
     'DateCreatedInDB' => '',
     'ID' => ''
   );
@@ -97,10 +90,10 @@ $filesArrayReducedSizesSummed = array_values($filesArrayReducedSizesSummed);
 $lengthFilesArrayReducedSizesSummed = count($filesArrayReducedSizesSummed);
 
 for ($i=0;$i<$lengthFilesArrayReducedSizesSummed;$i++) {
-    checkDatabaseForMovie($filesArrayReducedSizesSummed[$i]);
+    checkDatabaseForMovie($filesArrayReducedSizesSummed[$i], $filesArray);
 }
 
-function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
+function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
 {
     global $directory;
     $title = $filesArrayReducedSizesSummed['Title'];
@@ -116,7 +109,9 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
 
     $spacePoundSpace01 = " # 01";
 
-    //If file being read from directory HAS a number in it, look for that title in the DB WITHOUT a number. If found, add " # 01" to it. This is only to update that record in the db. There's no comparison here.
+    // If file being read from directory HAS a number in it, look for that title in the DB WITHOUT a number.
+    // If found, add " # 01" to it. This is only to update that record in the db.
+
     if (preg_match('/# [0-9]+$/', $title)) {
         $tmpTitle = preg_split('/ # [0-9]+/', $title);
         $resultT = $db->query("SELECT * FROM `".$table."` WHERE title = '$tmpTitle[0]'");
@@ -136,32 +131,22 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
         }
     }
 
-    //If file being read from directory DOES NOT have a number in it, look for that title in the DB WITH a number + " 01". If found, mark file as duplicate, then rename the file to filename + " # 01"
+    // If file being read from directory DOES NOT have a number in it, look for that title in the DB WITH a number + " 01".
+    // If found, add file to $filesMissingSpacePoundSpace01 array, and set $title to $title + # 01
+
     if (!preg_match('/# [0-9]+$/', $title)) {
         $titleSpacePoundSpace01 = $title.$spacePoundSpace01;
-        // $db->query("SELECT * FROM `".$table."` WHERE title = '$titleSpacePoundSpace01'");
+
         $resultN = $db->query("SELECT * FROM `".$table."` WHERE title = '$titleSpacePoundSpace01'");
         $rowN = mysqli_fetch_assoc($resultN);
         if ($resultN->num_rows > 0) {
-            $filesArrayReducedSizesSummed['Duplicate'] = true;
-            $filesArrayReducedSizesSummed['ID'] = $rowN['id'];
-            $filesArrayReducedSizesSummed['DateCreatedInDB'] = $rowN['date_created'];
-            $filesArrayReducedSizesSummed['SizeInDB'] = $rowN['filesize'];
-            $filesArrayReducedSizesSummed['DurationInDB'] = $rowN['duration'];
-            $filesArrayReducedSizesSummed['PathInDB'] = $rowN['filepath'];
-            $filesArrayReducedSizesSummed['Larger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
-
-            //moveDuplicateFile($title, $filesArray);
-
             $filesMissingSpacePoundSpace01[] = array('title' => $title);
-            //findFilesToRename($filesMissingSpacePoundSpace01);
 
-            return;
+            $title = $titleSpacePoundSpace01;
         }
     }
 
     $result = $db->query("SELECT * FROM `".$table."` WHERE title = '$title'");
-
     $row = mysqli_fetch_assoc($result);
 
     if ($result->num_rows > 0) {
@@ -171,12 +156,12 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
         $filesArrayReducedSizesSummed['SizeInDB'] = $row['filesize'];
         $filesArrayReducedSizesSummed['DurationInDB'] = $row['duration'];
         $filesArrayReducedSizesSummed['PathInDB'] = $row['filepath'];
-        $filesArrayReducedSizesSummed['Larger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
+        $filesArrayReducedSizesSummed['isLarger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
 
-    //moveDuplicateFile($title, $filesArray);
+        moveDuplicateFile($title, $filesArray);
     } else {
         $filesArrayReducedSizesSummed['ID'] = addToDB($title, $dimensions, $size, $duration, $path, $db, $table);
-        //moveRecordedFile($title, $filesArray);
+        moveRecordedFile($title, $filesArray);
     }
 
     $db->close();
@@ -322,7 +307,7 @@ function returnHTML($filesArrayReducedSizesSummed)
           'DurationInDB' => $filesArrayReducedSizesSummed[$i]["DurationInDB"],
           'Path' => $filesArrayReducedSizesSummed[$i]["Path"],
           'Duplicate' => $filesArrayReducedSizesSummed[$i]["Duplicate"],
-          'Larger' => $filesArrayReducedSizesSummed[$i]["Larger"],
+          'isLarger' => $filesArrayReducedSizesSummed[$i]["isLarger"],
           'SizeInDB' => $filesArrayReducedSizesSummed[$i]["SizeInDB"],
           'DateCreatedInDB' => $filesArrayReducedSizesSummed[$i]["DateCreatedInDB"],
           'ID' => $filesArrayReducedSizesSummed[$i]["ID"]

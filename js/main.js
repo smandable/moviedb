@@ -243,7 +243,7 @@ function handleProcessFilesForDBResult(response) {
 		var durationInDB = response.data[i]['DurationInDB'];
 		//var durationInDBNoMS = durationInDB.split(".")[0];
 		var isDuplicate = response.data[i]['Duplicate'];
-		var isLarger = response.data[i]['Larger'];
+		var isLarger = response.data[i]['isLarger'];
 		var sizeInDB = response.data[i]['SizeInDB'];
 		var dateCreated = response.data[i]['DateCreatedInDB'];
 		var path = response.data[i]['Path'];
@@ -265,7 +265,7 @@ function handleProcessFilesForDBResult(response) {
 			++numDuplicates;
 			totalSizeDuplicates += size;
 
-			if (response.data[i]['Larger'] == true) {
+			if (response.data[i]['isLarger'] == true) {
 				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
 					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
 					'<i class="fas fa-copy"></i>Update DB</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
