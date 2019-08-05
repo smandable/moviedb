@@ -13,6 +13,10 @@ if (empty($_POST['directory'])) {
     exit();
 }
 
+//$options = $_POST['options'];
+$options = array("false","false","false","false","false","false");
+//var_dump($options);
+
 $filesArray = array();
 
 $pattern1 = '/\.[a-z1-9]{3,4}$/i';
@@ -96,6 +100,7 @@ for ($i=0;$i<$lengthFilesArrayReducedSizesSummed;$i++) {
 function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
 {
     global $directory;
+    global $options;
     $title = $filesArrayReducedSizesSummed['Title'];
     $dimensions = $filesArrayReducedSizesSummed['Dimensions'];
     $size = $filesArrayReducedSizesSummed['Size'];
@@ -158,10 +163,27 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
         $filesArrayReducedSizesSummed['PathInDB'] = $row['filepath'];
         $filesArrayReducedSizesSummed['isLarger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
 
-        moveDuplicateFile($title, $filesArray);
+        if ($options[0] == "true") {
+            moveDuplicateFile($title, $filesArray);
+        }
+        if ($options[1] == "true") {
+            updateSize($title, $size, $db, $table);
+        }
+        if ($options[2] == "true") {
+            updateDimensions($title, $dimensions, $db, $table);
+        }
+        if ($options[3] == "true") {
+            updateDuration($title, $duration, $db, $table);
+        }
+        if ($options[4] == "true") {
+            updatePath($title, $path, $db, $table);
+        }
     } else {
         $filesArrayReducedSizesSummed['ID'] = addToDB($title, $dimensions, $size, $duration, $path, $db, $table);
-        moveRecordedFile($title, $filesArray);
+
+        if ($options[5] == "true") {
+            moveRecordedFile($title, $filesArray);
+        }
     }
 
     $db->close();
@@ -240,6 +262,27 @@ function moveRecordedFile($title, $filesArray)
             rename($file['Path'], $rename_file);
         }
     }
+}
+
+function updateSize($title, $size, $db, $table)
+{
+    $db->query("UPDATE `".$table."` SET filesize='$size' WHERE title='$title'");
+}
+function updateDimensions($title, $dimensions, $db, $table)
+{
+    $db->query("UPDATE `".$table."` SET dimensions='$dimensions' WHERE title='$title'");
+}
+function updateDuration($title, $duration, $db, $table)
+{
+    $db->query("UPDATE `".$table."` SET duration='$duration' WHERE title='$title'");
+}
+function updatePath($title, $path, $db, $table)
+{
+    $db->query("UPDATE `".$table."` SET filepath='$path' WHERE title='$title'");
+}
+function updateDB($title, $id, $db, $table)
+{
+    $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
 }
 
 function findFilesToRename($filesMissingSpacePoundSpace01)

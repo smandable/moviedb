@@ -6,15 +6,15 @@ include "db_connect.php";
 
     $options = array();
 
-        while ($row_id = mysqli_fetch_assoc($result)) {
+        while ($row = mysqli_fetch_assoc($result)) {
             $options['data'][] = array(
-              'id'      => $row_id['id'],
-              'title'    => $row_id['title'],
-              'dimensions'    => $row_id['dimensions'],
-              'duration'    => $row_id['duration'],
-              'filesize'    => $row_id['filesize'],
-              'filepath'    => $row_id['filepath'],
-              'date_created'    => $row_id['date_created']
+              'id'      => $row['id'],
+              'title'    => $row['title'],
+              'dimensions'    => $row['dimensions'],
+              'duration'    => $row['duration'],
+              'filesize'    => $row['filesize'],
+              'filepath'    => $row['filepath'],
+              'date_created'    => $row['date_created']
           );
         }
 

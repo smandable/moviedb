@@ -13,9 +13,9 @@
 $pathsArray = array(
   '/Volumes/Recorded 1/recorded/',
   '/Volumes/Recorded 2/recorded/',
-  '/Volumes/Recorded 3/recorded/',
-  '/Volumes/Bi-Gay-TS/recorded overflow/',
-  '/Volumes/Misc 1/recorded overflow/'
+  // '/Volumes/Recorded 3/recorded/',
+  '/Volumes/Bi-Gay-TS/recorded/',
+  '/Volumes/Misc 1/recorded/'
 );
 
 // $pathsArray = array(
@@ -38,6 +38,7 @@ $optionsAndPaths = array(
   'updateDurationInDB' => 'true',
   'updatePathInDB' => 'true',
   'updateSizeInDB' => 'true',
+  'moveRecorded' => 'false',
   'pathsToProcess' => array()
 );
 

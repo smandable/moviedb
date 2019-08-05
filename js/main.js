@@ -13,15 +13,15 @@ var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 
 //default
 //$('#input-directory').val("/Volumes/Misc 1/to move/");
-$('#input-directory').val("/Users/sean/Download/to move/");
-//$('#input-directory').val("/Volumes/Recorded 3/recorded/");
+//$('#input-directory').val("/Users/sean/Download/to move/");
+$('#input-directory').val("/Volumes/Recorded 1/recorded/");
 //$('#input-directory').val("/Users/sean/Download/names fixed/");
 
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
 	directory = $('#input-directory').val();
-	//processFilesForDB(directory);
-	processFiles(directory);
+	processFilesForDB(directory);
+	//processFiles(directory);
 
 });
 

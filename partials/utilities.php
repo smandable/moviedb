@@ -3,15 +3,19 @@
         <script type="text/javascript" src="js/utility-functions.js"></script>
         <div class="container">
           <div class="row">
-              <div class="col-xs-10">
+              <div class="col-xs-12">
+                <ul class="nav nav-tabs">
+                  <li class="nav-item">
+                    <a class="nav-link active" id="normalizeLink">Normalize DB</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="findDuplicatesLink">Search DB for Duplicates</a>
+                  </li>
+               </ul>
                   <div id="normalize-db">
-                      <h2>
-                          Normalize DB
-                      </h2>
-                      <hr />
                       <div id="chkbox-options">
                         <div class="form-check form-check-inline">
-                          <input class="form-check-input" type="checkbox" id="utils-chkbx-move-duplicates" value="moveDuplicates">
+                          <input class="form-check-input" type="checkbox" id="utils-chkbx-move-duplicates" value="moveDuplicates" checked>
                           <label class="form-check-label" for="utils-chkbx-move-duplicates">Move duplicates</label>
                        </div>
                        <div class="form-check form-check-inline">
@@ -30,6 +34,10 @@
                         <input class="form-check-input" type="checkbox" id="utils-chkbx-update-path" value="updatePath" checked>
                         <label class="form-check-label" for="utils-chkbx-update-path">Update path in DB</label>
                        </div>
+                       <div class="form-check form-check-inline">
+                         <input class="form-check-input" type="checkbox" id="utils-chkbx-move-recorded" value="moveRecorded" checked>
+                         <label class="form-check-label" for="utils-chkbx-move-recorded">Move recorded</label>
+                      </div>
                      </div>
                     <table id="utils-paths" class="table">
                       <thead>
@@ -37,7 +45,26 @@
                     </thead>
                     <tbody></tbody>
                     </table>
-                      <button type="button" class="btn btn-success btn-sm" id="btn-utils">Run</button>
+                      <button type="button" class="btn btn-success btn-sm" id="btn-normalize">Run</button>
+                        <img id="loading-spinner" src="img/ajax-loader.gif" alt="Loading spinner" />
+                  </div>
+                  <div id="find-duplicates">
+
+                    <table id="duplicates-list">
+                      <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Title</th>
+                            <th>Dimensions</th>
+                            <th id="size">Size</th>
+                            <th>Duration</th>
+                            <th>Added</th>
+                            <th></th>
+                        </tr>
+                      </thead>
+                        <tbody></tbody>
+                    </table>
+                      <button type="button" class="btn btn-success btn-sm" id="btn-find-duplicates">Run</button>
                         <img id="loading-spinner" src="img/ajax-loader.gif" alt="Loading spinner" />
                   </div>
               </div>
@@ -92,6 +119,27 @@
                     </div>
                 </div>
             </div> -->
+        </div>
+        <div class="container results-container">
+            <div class="row" id="directory-results">
+                <div class="col-xs-12 col-lg-10">
+                    <div id="totals"></div>
+                    <div id="table-wrap">
+                        <table>
+                            <tr>
+                                <th>Id</th>
+                                <th>Title</th>
+                                <th>Dimensions</th>
+                                <th id="size">Size</th>
+                                <th>Duration</th>
+                                <th>Added</th>
+                                <th>New?</th>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-2 hidden-xs hidden-sm hidden-md"></div>
+            </div>
         </div>
     </div>
 </div>

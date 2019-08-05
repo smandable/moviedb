@@ -1146,6 +1146,41 @@ body {
 }
 
 #utilities {
+    h1 {
+        margin-top: 5px;
+    }
+
+    .nav-tabs {
+        margin-top: 20px;
+        margin-bottom: 20px;
+
+        .nav-item {
+            &:first-of-type {
+                .nav-link {
+                    border-top-left-radius: 0.5rem;
+                }
+            }
+
+            &:nth-of-type(2) {
+                .nav-link {
+                    border-top-right-radius: 0.5rem;
+                }
+            }
+        }
+
+        .nav-link {
+            color: #fff;
+
+            &.active {
+                color: #495057;
+            }
+
+            &:hover {
+                color: #000 !important;
+            }
+        }
+    }
+
     table#utils-paths {
         color: white;
         margin-top: 20px;
@@ -1192,5 +1227,72 @@ body {
         display: none;
         float: right;
         margin-right: 170px;
+    }
+
+    .container.results-container {
+        padding-left: 10px;
+        padding-top: 30px;
+
+        #directory-results #totals {
+            position: absolute;
+            left: 10px;
+            background-color: #212121;
+            padding: 7px 10px 7px 6px;
+            border-top: 1px solid #fff;
+            border-bottom: 1px solid #fff;
+            border-left: 1px solid #fff;
+            border-right: 1px solid #fff;
+            text-align: left;
+            width: 950px;
+
+        }
+
+    }
+
+    #find-duplicates {
+        display: none;
+    }
+
+    table#duplicates-list {
+        color: white;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        border: 1px solid gray;
+        width: 85%;
+
+        thead {
+            tr {
+                background-color: #212121;
+            }
+        }
+
+        tbody {
+            border-top: none;
+
+            tr:first-of-type {
+                border-top: none;
+            }
+        }
+
+        td,
+        th {
+            padding: 6px;
+            border-right: solid 1px darkgray;
+        }
+
+        td:first-of-type,
+        th:first-of-type {
+            width: 10%;
+        }
+
+        td:nth-of-type(2),
+        th:nth-of-type(2) {
+            width: 50%;
+        }
+
+        // td:nth-of-type(3),
+        // th:nth-of-type(2) {
+        //     text-align: center;
+        // }
     }
 }

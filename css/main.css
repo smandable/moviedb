@@ -9215,6 +9215,28 @@ body #import-records #duplicates p {
   width: 100%;
 }
 
+#utilities h1 {
+  margin-top: 5px;
+}
+#utilities .nav-tabs {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+#utilities .nav-tabs .nav-item:first-of-type .nav-link {
+  border-top-left-radius: 0.5rem;
+}
+#utilities .nav-tabs .nav-item:nth-of-type(2) .nav-link {
+  border-top-right-radius: 0.5rem;
+}
+#utilities .nav-tabs .nav-link {
+  color: #fff;
+}
+#utilities .nav-tabs .nav-link.active {
+  color: #495057;
+}
+#utilities .nav-tabs .nav-link:hover {
+  color: #000 !important;
+}
 #utilities table#utils-paths {
   color: white;
   margin-top: 20px;
@@ -9251,6 +9273,54 @@ body #import-records #duplicates p {
   display: none;
   float: right;
   margin-right: 170px;
+}
+#utilities .container.results-container {
+  padding-left: 10px;
+  padding-top: 30px;
+}
+#utilities .container.results-container #directory-results #totals {
+  position: absolute;
+  left: 10px;
+  background-color: #212121;
+  padding: 7px 10px 7px 6px;
+  border-top: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #fff;
+  text-align: left;
+  width: 950px;
+}
+#utilities #find-duplicates {
+  display: none;
+}
+#utilities table#duplicates-list {
+  color: white;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 1px solid gray;
+  width: 85%;
+}
+#utilities table#duplicates-list thead tr {
+  background-color: #212121;
+}
+#utilities table#duplicates-list tbody {
+  border-top: none;
+}
+#utilities table#duplicates-list tbody tr:first-of-type {
+  border-top: none;
+}
+#utilities table#duplicates-list td,
+#utilities table#duplicates-list th {
+  padding: 6px;
+  border-right: solid 1px darkgray;
+}
+#utilities table#duplicates-list td:first-of-type,
+#utilities table#duplicates-list th:first-of-type {
+  width: 10%;
+}
+#utilities table#duplicates-list td:nth-of-type(2),
+#utilities table#duplicates-list th:nth-of-type(2) {
+  width: 50%;
 }
 
 /*# sourceMappingURL=main.css.map */
