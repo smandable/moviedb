@@ -25,6 +25,12 @@ body {
         background-color: #424242;
     }
 
+    // @media (min-width: 768px) {
+    .navbar-collapse.collapse {
+        display: none !important;
+    }
+    //  }
+
     .footer {
         background-color: #212121;
     }
@@ -32,7 +38,21 @@ body {
     .container {
         max-width: 1920px;
     }
-
+    @media (min-width: 768px) {
+        .container {
+            width: 100%;
+        }
+    }
+    // @media (min-width: 992px) {
+    //   .container {
+    //     width: 970px;
+    //   }
+    // }
+    // @media (min-width: 1200px) {
+    //   .container {
+    //     width: 1366px;
+    //   }
+    // }
     @media (min-width: 1200px) {
         .container {
             width: 1440px;
@@ -621,6 +641,7 @@ body {
                     }
                 }
 
+                .tduration,
                 .tsize {
                     display: none;
                 }

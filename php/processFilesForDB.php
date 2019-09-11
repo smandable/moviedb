@@ -14,7 +14,8 @@ if (empty($_POST['directory'])) {
 }
 
 //$options = $_POST['options'];
-$options = array("false","false","false","false","false","false");
+//$options = array("false","false","false","false","false","false");
+$options = array("true","false","false","false","false","true");
 //var_dump($options);
 
 $filesArray = array();
@@ -112,6 +113,7 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
     $title = $db->real_escape_string($title);
     $path = $db->real_escape_string($path);
 
+    $spacePoundSpace = " # ";
     $spacePoundSpace01 = " # 01";
 
     // If file being read from directory HAS a number in it, look for that title in the DB WITHOUT a number.
@@ -140,13 +142,19 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
     // If found, add file to $filesMissingSpacePoundSpace01 array, and set $title to $title + # 01
 
     if (!preg_match('/# [0-9]+$/', $title)) {
+        $titleSpacePoundSpace = $title.$spacePoundSpace;
         $titleSpacePoundSpace01 = $title.$spacePoundSpace01;
 
         $resultN = $db->query("SELECT * FROM `".$table."` WHERE title = '$titleSpacePoundSpace01'");
         $rowN = mysqli_fetch_assoc($resultN);
         if ($resultN->num_rows > 0) {
             $filesMissingSpacePoundSpace01[] = array('title' => $title);
-
+            $title = $titleSpacePoundSpace01;
+        }
+        $resultW = $db->query("SELECT * FROM `".$table."` WHERE title LIKE '$titleSpacePoundSpace%'");
+        $rowW = mysqli_fetch_assoc($resultW);
+        if ($resultW->num_rows > 0) {
+            $filesMissingSpacePoundSpace01[] = array('title' => $title);
             $title = $titleSpacePoundSpace01;
         }
     }

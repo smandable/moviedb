@@ -18,10 +18,10 @@ $("#findDuplicatesLink").on("click", function(event) {
 
 });
 
-// getOptionsAndPathsFromFile();
+getOptionsAndPathsFromFile();
 
 $(document).ready(function() {
-
+	//getOptionsAndPathsFromFile();
 	var numPaths = $('#utils-paths tbody tr').length;
 
 	$('#utils-paths tbody tr').each(function() {
@@ -150,6 +150,7 @@ function handleSetOptionsAndPathsFileResult(response) {
 
 }
 
+
 function getOptionsAndPathsFromFile() {
 
 	$.ajax({
@@ -166,32 +167,83 @@ function handleGetOptionsAndPathsFromFileResult(response) {
 	console.log(response);
 
 	for (i = 0; i < response.pathsToProcess.length; i++) {
-		// var pathsToProcess = '<tr><td>' + response.pathsToProcess[i] + '</td><td>' + countFiles(response.pathsToProcess[i]) + '</td><td><input class="" type="checkbox" value="" checked></td>/tr>';
-		var pathsToProcess = '<tr><td>' + response.pathsToProcess[i] + '</td><td></td><td><input class="" type="checkbox" value="" checked></td>/tr>';
+		// var pathsToProcess = '<tr><td class="utils-path">' + response.pathsToProcess[i] + '</td><td><span class="count">' + countFiles(response.pathsToProcess[i]) + '</span></td><td><input class="" type="checkbox" value="" checked></td>/tr>';
+		var pathsToProcess = '<tr><td class="utils-path">' + response.pathsToProcess[i] + '</td><td><span class="count"></span></td><td><input class="" type="checkbox" value="" checked></td>/tr>';
+		// var pathsToProcess = '<tr><td>' + response.pathsToProcess[i] + '</td><td></td><td><input class="" type="checkbox" value="" checked></td>/tr>';
 		$("#utilities #utils-paths tbody").append(pathsToProcess);
 	}
 	options.push(response.moveDuplicates, response.updateDimensionsInDB, response.updateDurationInDB, response.updatePathInDB, response.updateSizeInDB, response.moveRecorded);
 	for (i = 0; i < options.length; i++) {
-		console.log('options: ' + i + ' ' + options[i]);
+		//console.log('options: ' + i + ' ' + options[i]);
 	}
 }
 
+$(document).ready(function() {
+
+	directories = [];
+
+	$("#utilities #utils-paths tbody td.utils-path").each(function() {
+
+		directories.push($(this).text());
+	});
+
+	$.each(directories, function(index, value) {
+		//console.log("value", value);
+		// console.log("(directories[index]", directories[index]);
+
+		console.log(directories[index]);
+		//var count = countFiles(directories[index]);
+		//console.log(countFiles(directories[index]));
+		//$(this).parent().find('.count').text(count);
+		//console.log(countFiles(directories[index]));
+		//$("#utilities #utils-paths tbody td.count").text(count);
+		// var cnt = countFiles(directories[index]);
+		// console.log("cnt", cnt);
+	});
+
+
+	// countFiles(directory);
+
+});
+
 function countFiles(directory) {
 	var count = 0;
-
+	var data;
 	$.ajax({
 		type: "POST",
 		url: "php/countFiles.php",
 		dataType: "json",
 		data: {
 			directory: directory
-		},
-		async: false,
-		success: function(data) {
-			count = data;
 		}
-	});
-	return count;
+		// async: true
+
+
+		// $("#utilities #utils-paths tbody td.count").text("count");
+		// $("#utilities #utils-paths tbody td").text(count);
+		// var parent = $("#utils-paths tbody tr").find('.utils-path').text(directory);
+		// console.log("parent()", parent);
+		//$("#utils-paths tbody tr").find('.utils-path').text(directory).parent().children('.count').text(count);
+		// console.log(("#utils-paths td.utils-path").val());
+		//$("#utils-paths tbody tr td span").html(count);
+		// 	}
+		// });
+
+	}).always(function(data) {
+		console.log("data", data);
+		// rd = data;
+		// var countTxt = $(".count").val();
+		// if (!jQuery.trim(countTxt).length > 0) {
+		// 	//$("#utils-paths tbody tr").find('.utils-path').text(directory).parent().find('.count').text(data);
+		// }
+
+		//var parent = $("#utils-paths tbody tr").find('.utils-path').text(directory).parent().find('.count').text(data);
+		//	console.log("parent", parent);
+		// return data;
+		//return rd;
+		// $("#loading-spinner").css('display', 'none');
+	})
+	return data;
 }
 
 //END Normalize DB

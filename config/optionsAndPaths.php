@@ -11,6 +11,7 @@
 // );
 
 $pathsArray = array(
+  '/Volumes/Old Macintosh HD/from iMac/sean/Download/recorded/',
   '/Volumes/Recorded 1/recorded/',
   '/Volumes/Recorded 2/recorded/',
   // '/Volumes/Recorded 3/recorded/',

@@ -13,34 +13,34 @@ var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 
 //default
 //$('#input-directory').val("/Volumes/Misc 1/to move/");
-//$('#input-directory').val("/Users/sean/Download/to move/");
-$('#input-directory').val("/Volumes/Recorded 1/recorded/");
-//$('#input-directory').val("/Users/sean/Download/names fixed/");
+//$('#input-directory').val("/Users/sean/Download/bi/");
+// $('#input-directory').val("/Volumes/Recorded 1/recorded/");
+$('#input-directory').val("/Users/sean/Download/names fixed/");
 
 $('.btn-start-processing-dir').on("click", function(event) {
 	event.preventDefault();
 	directory = $('#input-directory').val();
-	processFilesForDB(directory);
-	//processFiles(directory);
+	//processFilesForDB(directory);
+	processFiles(directory);
 
 });
 
-function updateRecord(id, columnToUpdate, valueToUpdate) {
+function editCurrentRow(id, columnToUpdate, valueToUpdate) {
 
 	return $.ajax({
 		async: true,
 		type: "POST",
-		url: "php/editRow.php",
+		url: "php/editCurrentRow.php",
 		dataType: "json",
 		data: {
 			id: id,
 			columnToUpdate: columnToUpdate,
 			valueToUpdate: valueToUpdate
 		},
-		success: handleResponse
+		success: handleEditCurrentRowResponse
 	})
 
-	function handleResponse(data) {
+	function handleEditCurrentRowResponse(data) {
 		angular.element($('#movie-controller')).scope().refreshData();
 		return;
 	}
@@ -108,66 +108,34 @@ function playMovie(path) {
 	function handlePlayMovieResponse(data) {
 
 	}
-
 }
 
-// $(document).ready(function () {
 $('#directory-results table').on("click", ".btn-update-with-result", function(event) {
 
+	copyResultRowValues = [];
 	var row = $(this).closest("tr");
-	copyResultRowValues['Title'] = row.find("td:nth-child(2)").text();
-	copyResultRowValues['Dimensions'] = row.find("td:nth-child(3)").text();
-	copyResultRowValues['Size'] = row.find("td:nth-child(4) .tsize").text();
-	copyResultRowValues['Duration'] = row.find("td:nth-child(5)").text();
-	//copyResultRowValues = [row.find("td:nth-child(2)"), row.find("td:nth-child(3)"), row.find("td:nth-child(4)")];
 
-	// console.log("copyResultRowValues['Title']" + copyResultRowValues['Title'] + "\n");
-	// console.log("copyResultRowValues['Dimensions']" + copyResultRowValues['Dimensions'] + "\n");
-	// console.log("copyResultRowValues['Size']" + copyResultRowValues['Size'] + "\n");
+	copyResultRowValues = [row.find("td:nth-child(1)").text(), row.find("td:nth-child(2)").text(), row.find("td:nth-child(3)").text(), row.find("td:nth-child(4) .tsize").text(), row.find("td:nth-child(5) .tduration").text()];
+
+	updateExistingRecord(copyResultRowValues);
+
 });
 
-function pasteResults(id) {
+function updateExistingRecord(copyResultRowValues) {
 
-	function pasteIt() {
-		var row = $(this).closest(".ui-grid-row");
+	return $.ajax({
+		type: "POST",
+		url: "php/updateExistingRecord.php",
+		data: {
+			copyResultRowValues: copyResultRowValues
+		},
+		success: handleUpdateExistingRecordResponse
+	})
+}
 
-		var title = copyResultRowValues['Title'];
-		row.find(".cell-title").val(title);
+function handleUpdateExistingRecordResponse(data) {
 
-		var dimensions = copyResultRowValues['Dimensions'];
-		row.find(".cell-dimensions").val(dimensions);
-
-		var size = copyResultRowValues['Size'];
-		row.find(".cell-size").val(size);
-
-		copyResultRowValues = JSON.stringify(copyResultRowValues);
-
-		return $.ajax({
-			type: "POST",
-			url: "php/pasteRow.php",
-			dataType: "json",
-			data: {
-				id: id,
-				copyResultRowValues: copyResultRowValues
-			},
-			success: handlePasteResultsResponse
-		})
-		// delete copyResultRowValues['Title'];
-		// delete copyResultRowValues['Dimensions'];
-		// delete copyResultRowValues['Size'];
-	}
-
-	function handlePasteResultsResponse(data) {
-		// copyResultRowValues = {};
-		angular.element($('#movie-controller')).scope().refreshData();
-		return;
-	}
-	if ((typeof copyResultRowValues['Title'] != "undefined") && (typeof copyResultRowValues['Dimensions'] != "undefined") && (typeof copyResultRowValues['Size'] != "undefined")) {
-		pasteIt();
-	} else {
-		alert("Either Title, Dimensions, Size, or Duration is empty");
-
-	}
+	angular.element($('#movie-controller')).scope().refreshData();
 }
 
 $(document).ready(function() {
@@ -258,7 +226,7 @@ function handleProcessFilesForDBResult(response) {
 			++newMovies;
 			totalSizeNew += size;
 
-			var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) +
+			var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) + '<span class="tduration">' + duration + '</span>' +
 				'</td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update DB</button><!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>-->' +
 				'<button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 		} else if (response.data[i]['Duplicate'] == true) {
@@ -266,11 +234,11 @@ function handleProcessFilesForDBResult(response) {
 			totalSizeDuplicates += size;
 
 			if (response.data[i]['isLarger'] == true) {
-				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
-					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
+				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span><a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
+					'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '<span class="tduration">' + duration + '</span></td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
 					'<i class="fas fa-copy"></i>Update DB</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			} else {
-				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) + '</td>' +
+				var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) + '<span class="tduration">' + duration + '</span></td>' +
 					'<td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update DB</button>' +
 					'<!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
 			}
@@ -284,35 +252,35 @@ function handleProcessFilesForDBResult(response) {
 	$("#directory-results .col-lg-2").html('<button class="btn btn-success btn-refresh" type="button">Refresh</button>');
 }
 
-$('#directory-results').on("click", ".btn-delete", function(event) {
-	var path = $(this).closest('tr').children('td:first-of-type').text();
-	var fileName = $(this).closest('tr').children('td:nth-of-type(3)').text();
-	var fileNameAndPath = path + "/" + fileName;
-	deleteFile(fileNameAndPath);
-	$(this).closest('tr').remove();
-});
-
-function deleteFile(fileNameAndPath) {
-
-	function deleteIt() {
-
-		return $.ajax({
-			type: "POST",
-			url: "php/deleteFile.php",
-			dataType: "json",
-			data: {
-				fileNameAndPath: fileNameAndPath
-			},
-			success: handleResponse
-		})
-	}
-
-	function handleResponse(data) {
-		// console.log("response: ", data);
-		return;
-	}
-	deleteIt();
-}
+// $('#directory-results').on("click", ".btn-delete", function(event) {
+// 	var path = $(this).closest('tr').children('td:first-of-type').text();
+// 	var fileName = $(this).closest('tr').children('td:nth-of-type(3)').text();
+// 	var fileNameAndPath = path + "/" + fileName;
+// 	deleteFile(fileNameAndPath);
+// 	$(this).closest('tr').remove();
+// });
+//
+// function deleteFile(fileNameAndPath) {
+//
+// 	function deleteIt() {
+//
+// 		return $.ajax({
+// 			type: "POST",
+// 			url: "php/deleteFile.php",
+// 			dataType: "json",
+// 			data: {
+// 				fileNameAndPath: fileNameAndPath
+// 			},
+// 			success: handleResponse
+// 		})
+// 	}
+//
+// 	function handleResponse(data) {
+// 		// console.log("response: ", data);
+// 		return;
+// 	}
+// 	deleteIt();
+// }
 
 $(document).ready(function() {
 	$('[data-toggle="tooltip"]').tooltip();
@@ -363,11 +331,11 @@ function addMovie(nameToAdd, dimensions, size) {
 			filesize: size
 		},
 	}).always(function(data) {
-		handleResult(data);
+		handleAddMovieResult(data);
 	})
 }
 
-function handleResult(data) {
+function handleAddMovieResult(data) {
 	var isDupe = data.responseText;
 	if (~isDupe.indexOf("Duplicate")) {
 		var duplicateTitle = isDupe.split(': ')[1];
@@ -463,7 +431,7 @@ $('#modal-rename-files-btn').on("click", function() {
 function renameTheFiles() {
 	$.ajax({
 		type: "POST",
-		url: "php/renameFiles.php",
+		url: "php/renameTheFiles.php",
 		dataType: "json",
 	}).always(function(response) {
 		handleRenameTheFilesResult(response);

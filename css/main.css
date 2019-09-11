@@ -8349,11 +8349,19 @@ body .navbar-default .navbar-nav > .active > a:focus,
 body .navbar-default .navbar-nav > .active > a:hover {
   background-color: #424242;
 }
+body .navbar-collapse.collapse {
+  display: none !important;
+}
 body .footer {
   background-color: #212121;
 }
 body .container {
   max-width: 1920px;
+}
+@media (min-width: 768px) {
+  body .container {
+    width: 100%;
+  }
 }
 @media (min-width: 1200px) {
   body .container {
@@ -8852,6 +8860,7 @@ body #directory-results #table-wrap table tr th button svg {
 body #directory-results #table-wrap table tr td:hover {
   background-color: #333333;
 }
+body #directory-results #table-wrap table .tduration,
 body #directory-results #table-wrap table .tsize {
   display: none;
 }

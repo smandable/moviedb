@@ -40,7 +40,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 			onRegisterApi: function(gridApi) {
 				$scope.gridApi = gridApi;
 				$scope.gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue) {
-					updateRecord(rowEntity.id, colDef.name, newValue);
+					editCurrentRow(rowEntity.id, colDef.name, newValue);
 				});
 			},
 			columnDefs: [{

@@ -29,7 +29,7 @@
   else {
       $filesize = "";
   }
-  } if (isset($_POST['duration'])) {
+if (isset($_POST['duration'])) {
       $duration = $_POST['duration'];
       $duration = $db->real_escape_string($duration);
   }
