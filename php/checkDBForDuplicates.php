@@ -28,7 +28,8 @@ $options = array();
  header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
  header('Content-type: application/json');
 
-echo json_encode($options);
+include "safe_json_encode.php";
+echo safe_json_encode($options);
 
 $db->close();
 

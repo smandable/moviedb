@@ -364,8 +364,8 @@ function returnHTML($filesArrayReducedSizesSummed)
           'ID' => $filesArrayReducedSizesSummed[$i]["ID"]
         );
     }
-
-    echo json_encode($returnedArray);
+    include "safe_json_encode.php";
+    echo safe_json_encode($returnedArray);
 }
 
 // function quickLogFile($title)

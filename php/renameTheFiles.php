@@ -17,4 +17,5 @@ foreach ($_SESSION['filesProcessed'] as &$item) {
     }
 }
 
-echo json_encode($_SESSION['filesProcessed']);
+include "safe_json_encode.php";
+echo safe_json_encode($_SESSION['filesProcessed']);

@@ -8427,8 +8427,8 @@ body .movies .movies-container .row {
 }
 body .movies .movies-container .col-xs-12:first-of-type,
 body .movies .movies-container col-lg-10:first-of-type {
-  margin-top: -15px;
   padding-right: 0;
+  margin-top: -15px;
 }
 body .movies .movies-container .col-xs-3 {
   display: flex;
@@ -8441,6 +8441,7 @@ body .movies .myMoviesGrid {
   height: 720px;
 }
 body .movies .ui-grid-viewport {
+  overflow-x: hidden !important;
   width: 100% !important;
   height: 600px;
 }
@@ -8552,9 +8553,9 @@ body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-warning:hover {
 body .movies .ui-grid-canvas .cell-controls .btn-success,
 body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-success {
   background-color: darkgreen;
-  border-color: #003100;
   padding-left: 8px;
   padding-right: 8px;
+  border-color: #003100;
 }
 body .movies .ui-grid-canvas .cell-controls .btn-success:hover,
 body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-success:hover {
@@ -8590,9 +8591,13 @@ body .movies .ui-grid-grid-footer #footer-btns .btn {
 body .movies .ui-grid-grid-footer #footer-btns .btn:first-of-type {
   margin-right: 5px;
 }
+body .movies .col-lg-2.hidden-xs.hidden-sm.hidden-md {
+  position: absolute;
+  right: 15px;
+}
 body .movies .recent-terms {
   border: 1px solid #efefef;
-  overflow-y: scroll;
+  overflow-y: auto;
   text-align: left;
   width: 100%;
   height: 690px;
@@ -8603,9 +8608,9 @@ body .movies .recent-terms .recent-terms-hdr {
   font-weight: bold;
   background-color: #212121;
   padding: 5px 5px 8px;
-  height: 58px;
-  width: 86%;
   border-bottom: 1px solid #ccc;
+  width: 86%;
+  height: 58px;
 }
 body .movies .recent-terms .recent-terms-hdr h4 {
   display: inline-block;
@@ -8920,10 +8925,10 @@ body #import-records .form-group.btn-group label:hover {
   border-color: darkgreen;
 }
 body #import-records .form-group.btn-group label input[type=radio] {
+  display: none;
   margin-top: 2px;
   margin-right: 5px;
   line-height: 1;
-  display: none;
 }
 label body #import-records .form-group.btn-group label input[type=radio]:checked {
   background-color: #003100;
@@ -9280,12 +9285,12 @@ body #import-records #duplicates p {
 }
 #utilities #loading-spinner {
   display: none;
-  float: right;
   margin-right: 170px;
+  float: right;
 }
 #utilities .container.results-container {
-  padding-left: 10px;
   padding-top: 30px;
+  padding-left: 10px;
 }
 #utilities .container.results-container #directory-results #totals {
   position: absolute;

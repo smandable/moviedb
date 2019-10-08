@@ -298,7 +298,8 @@ function returnHTML($files2ReducedSizesSummed)
         // $sf = $startingFile + 200;
         $returnedArray['data'][$i] = array('Title' => $nm, 'Dimensions' => $dm, 'Size' => $sz, 'Duration' => $du, 'DurationInDB' => $dudb, 'Path' => $ph, 'Duplicate' => $isd, 'Larger' => $isl, 'SizeInDB' => $sdb, 'DateCreated' => $dcd, 'ID' => $id);
     }
-    echo json_encode($returnedArray);
+    include "safe_json_encode.php";
+    echo safe_json_encode($returnedArray);
 }
 function quickLogFile($title, $newIDToReturn, $dirToProcess)
 {

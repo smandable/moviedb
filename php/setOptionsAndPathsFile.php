@@ -4,4 +4,5 @@
 
 $optionsAndPaths = include('../config/optionsAndPaths.php');
 
-echo json_encode($optionsAndPaths);
+include "safe_json_encode.php";
+echo safe_json_encode($optionsAndPaths);

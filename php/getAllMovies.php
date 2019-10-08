@@ -1,5 +1,6 @@
 <?php
 
+include "safe_json_encode.php";
 include "db_connect.php";
 
     $result = $db->query("SELECT id, title, dimensions, filesize, duration, filepath, date_created FROM `".$table."` ORDER BY title ASC");
@@ -23,6 +24,6 @@ include "db_connect.php";
      header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
      header('Content-type: application/json');
 
-    echo json_encode($options);
+     echo safe_json_encode($options);
 
     $db->close();

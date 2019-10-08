@@ -224,5 +224,6 @@ function returnHTML($filesProcessed)
     }
     $_SESSION['filesProcessed'] = $filesProcessed;
     // ob_end_flush();
-    echo json_encode($filesProcessed);
+    include "safe_json_encode.php";
+    echo safe_json_encode($filesProcessed);
 }
