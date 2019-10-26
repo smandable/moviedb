@@ -30,60 +30,21 @@
 </head>
 
 <body>
-    <!-- <nav class="navbar navbar-default navbar-fixed-top" ng-controller="HeaderCtrl">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" ng-click="isCollapsed = !isCollapsed">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#/">Movies</a>
-            </div>
-            <div class="nav navbar-collapse" ng-class="isCollapsed ? 'collapse' : 'in'" id="navbarHeaderCollapse">
-                <ul class="nav navbar-nav navbar-right">
-                    <li ng-class="{ active: isActive('/')}">
-                        <a href="#/">Movies</a>
-                    </li>
-                    <li ng-class="{ active: isActive('/normalize')}">
-                        <a href="#/normalize">Normalize</a>
-                    </li>
-                    <li ng-class="{ active: isActive('/utilities')}">
-                        <a href="#/utilities">Utilities</a>
-                    </li>
-                    <li ng-class="{ active: isActive('/config')}">
-                        <a href="#/config">Config</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav> -->
 
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark" ng-controller="HeaderCtrl">
+      <!-- Brand -->
+      <a class="navbar-brand" href="#">MovieDB</a>
 
-    <!-- new nav  -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark" ng-controller="HeaderCtrl">
-        <a class="navbar-brand" href="#">MovieDB</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" ng-click="isCollapsed = !isCollapsed">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarSupportedContent" ng-class="isCollapsed ? 'collapse' : 'in'" id="navbarHeaderCollapse">
-            <ul class="navbar-nav mr-auto navbar-right">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Movies <span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#utilities">Utilities</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#config">Config</a>
-                </li>
-            </ul>
-        </div>
+      <!-- Links -->
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="#utilities">Utilities</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#config">Config</a>
+        </li>
+      </ul>
     </nav>
-    <!-- end new nav  -->
-
 
     <div class="container">
         <div class="row">

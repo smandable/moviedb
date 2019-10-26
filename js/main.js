@@ -16,16 +16,15 @@ var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 //$('#input-directory').val("/Users/sean/Download/bi/");
 // $('#input-directory').val("/Volumes/Recorded 1/recorded/");
 //$('#input-directory').val("/home/sean/Download/names fixed/");
-$('#input-directory').val("/media/sean/500 GB Samsung/Download/names fixed/");
-//$('#input-directory').val("/media/sean/Bi-Gay-TS/root/Recorded/");
-
-
+//$('#input-directory').val("/media/sean/500 GB Samsung/Download/names fixed/");
+$('#input-directory').val("/Volumes/Misc 1/r1/");
 
 $('.btn-start-processing-dir').on("click", function(event) {
     event.preventDefault();
     directory = $('#input-directory').val();
-    processFilesForDB(directory);
+
     //processFiles(directory);
+    processFilesForDB(directory);
 
 });
 
