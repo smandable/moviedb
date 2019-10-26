@@ -1,8 +1,8 @@
 <?php
 
-include('getDimensions.php');
-include('getDuration.php');
-include('formatSize.php');
+require 'getDimensions.php';
+require 'getDuration.php';
+require 'formatSize.php';
 
 $directory = $_POST['directory'];
 
@@ -27,7 +27,8 @@ function getFiles($directory, $files)
 
     foreach ($iterator as $file) {
         if ($file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
-|| $file->getBasename() === 'Thumbs.db' || $file->getBasename() === '.AppleDouble') {
+            || $file->getBasename() === 'Thumbs.db' || $file->getBasename() === '.AppleDouble'
+        ) {
             continue;
         }
         $path = $file->getPath();
@@ -52,7 +53,7 @@ function processFiles()
         $path = $file['Path'];
         $originalFileName = $file['originalFileName'];
         $newFileName = $file['newFileName'];
-        $fileNameAndPath = $path."/".$originalFileName;
+        $fileNameAndPath = $path . "/" . $originalFileName;
         $fileExtension = $file['fileExtension'];
         $fileSize = $file['fileSize'];
 
@@ -75,7 +76,7 @@ function processFiles()
             $fileRenameConflict = true;
         }
 
-        $newFileName = $newFileName.$fileExtension;
+        $newFileName = $newFileName . $fileExtension;
 
         $filesProcessed[] = array('Path' => $path, 'originalFileName' => $originalFileName, 'newFileName' => $newFileName, 'fileAlreadyExists' => $fileAlreadyExists, 'fileRenameConflict' => $fileRenameConflict, 'fileWasRenamed' => $fileWasRenamed, 'fileExtension' => $fileExtension, 'Size' => $formattedSize, 'Dimensions' => $dimensions, 'Duration' => $duration);
     }
@@ -91,7 +92,7 @@ function basicFunctions($newFileName)
     $newFileName = preg_replace('/\.+/', '.', trim($newFileName)); // filter multiple periods
     $newFileName = preg_replace('/^\.+/', '', trim($newFileName)); // trim leading period
 
-return $newFileName;
+    return $newFileName;
 }
 
 function titleCase($newFileName)
@@ -138,10 +139,12 @@ function cleanupFunctions($newFileName)
     $newFileName = preg_replace('/DVDRip/i', '', trim($newFileName)); // Look for 'DVDRip', replace with nothing
     $newFileName = preg_replace('/x264/i', '', trim($newFileName)); // Look for 'x264', replace with nothing
     $newFileName = preg_replace('/XCITE/i', '', trim($newFileName)); // Look for 'XCITE', replace with nothing
+    $newFileName = preg_replace('/KTR/i', '', trim($newFileName)); // Look for 'KTR', replace with nothing
     $newFileName = preg_replace('/DigitalSin/i', '', trim($newFileName)); // Look for 'DigitalSin', replace with nothing
     $newFileName = preg_replace('/WEBRip/i', '', trim($newFileName)); // Look for 'WEBRip', replace with nothing
     $newFileName = preg_replace('/VSEX/i', '', trim($newFileName)); // Look for 'VSEX', replace with nothing
     $newFileName = preg_replace('/XXX/i', '', trim($newFileName)); // Look for 'XXX', replace with nothing
+    $newFileName = preg_replace('/MP4/i', '', trim($newFileName)); // Look for 'MP4', replace with nothing
     $newFileName = preg_replace('/^gush\./i', '', trim($newFileName)); // Look for 'gush.', replace with nothing
     $newFileName = preg_replace('/(\sVol|Vol\s|Vol\.|\.Vol|Vol)/i', ' ', trim($newFileName)); // ' Vol' or 'Vol ' or 'Vol.' or '.Vol' or 'Vol' to ' '
     $newFileName = preg_replace('/all star/i', 'All-Star', trim($newFileName)); // 'all star' to All-Star
@@ -171,16 +174,16 @@ function finalCleanup($newFileName)
     $newFileName = preg_replace('/\.+/', '.', trim($newFileName)); // filter multiple periods
     $newFileName = preg_replace('/^\.+/', '', trim($newFileName)); // trim leading period
 
-  return $newFileName;
+    return $newFileName;
 }
 
 function checkIfFileExists($originalFileName, $newFileName, $fileExtension, $path)
 {
     $path = $path . "/";
 
-    $pathAndOriginalFileName = $path.$originalFileName;
-    $newFileNameAndExt = $newFileName.$fileExtension;
-    $pathAndNewFileName = $path.$newFileNameAndExt;
+    $pathAndOriginalFileName = $path . $originalFileName;
+    $newFileNameAndExt = $newFileName . $fileExtension;
+    $pathAndNewFileName = $path . $newFileNameAndExt;
 
     //Ok so the question here is whether I care if an existing file matches.
     //if ((file_exists($pathAndNewFileName)) || (strcmp($originalFileName, $newFileNameAndExt)==0)) {
@@ -194,9 +197,9 @@ function checkConflicts($originalFileName, $newFileName, $fileExtension, $path, 
 {
     $path = $path . "/";
 
-    $pathAndOriginalFileName = $path.$originalFileName;
-    $newFileNameAndExt = $newFileName.$fileExtension;
-    $pathAndNewFileName = $path.$newFileNameAndExt;
+    $pathAndOriginalFileName = $path . $originalFileName;
+    $newFileNameAndExt = $newFileName . $fileExtension;
+    $pathAndNewFileName = $path . $newFileNameAndExt;
 
     if ($fileAlreadyExists === false) {
         if (file_exists($pathAndNewFileName)) {

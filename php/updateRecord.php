@@ -1,6 +1,6 @@
 <?php
 
-include "db_connect.php";
+require 'db_connect.php';
 
 $id = $_POST['id'];
 $id = $db->real_escape_string($id);

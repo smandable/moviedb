@@ -7,8 +7,8 @@
                 <div class="col-xs-12 col-lg-10">
                     <div ng-controller="MoviesCtrl" data-ng-init="init()" id="movie-controller">
                         <p class="movies-hdr">{{moviesHdr}}</p>
-                        <div ui-grid="gridOptions" ui-grid-cellnav="ui-grid-cellNav" ui-grid-edit="ui-grid-edit" ui-grid-resize-columns="ui-grid-resize-columns" ui-grid-pinning="ui-grid-pinning" ui-grid-selection="ui-grid-selection"
-                          ui-grid-move-columns="ui-grid-move-columns" external-scopes="clickHandlerDeleteButton" class="myMoviesGrid"></div>
+                        <div ui-grid="gridOptions" ui-grid-cellnav="ui-grid-cellNav" ui-grid-edit="ui-grid-edit" ui-grid-resize-columns="ui-grid-resize-columns" ui-grid-pinning="ui-grid-pinning" ui-grid-selection="ui-grid-selection" ui-grid-move-columns="ui-grid-move-columns"
+                            external-scopes="clickHandlerDeleteButton" class="myMoviesGrid"></div>
                     </div>
                 </div>
                 <div class="col-lg-2 hidden-xs hidden-sm hidden-md">
@@ -62,11 +62,13 @@
 
                                         <div class="btn-wrap">
                                             <label class="btn btn-success">
-                                                <input type="radio" class="multi-from-dir" name="when" value="multi-from-dir" checked="checked">
+                                                <input type="radio" class="multi-from-dir" name="when"
+                                                    value="multi-from-dir" checked="checked">
                                                 <strong>Process directory</strong>
                                             </label>
                                             <label class="btn btn-success">
-                                                <input type="radio" class="single-title" name="when" value="single-title">
+                                                <input type="radio" class="single-title" name="when"
+                                                    value="single-title">
                                                 <strong>Add single title</strong>
                                             </label>
 
@@ -75,56 +77,79 @@
                                         <!-- <a href="" class="btn btn-default" ng-click="launchComplexModal()">Show Complex</a> -->
                                     </div>
 
+                                    <div class="db-ops-btn-wrapper">
+                                        <button class="btn btn-success btn-process-dir-database-ops" type="button">Perform Database Operations</button>
+                                    </div>
+
                                     <div class="form-group input-wrap">
-                                        <div class="col-xs-8 col-lg-6">
-                                            <div class="collapse multi-from-dir">
-                                                <h3>Directory to process</h3>
-                                                <div class="input-group input-dir">
-                                                    <input type="text" class="form-control input-dir-textfield" id="input-directory" />
-                                                    <span class="input-group-btn">
-                                                        <button class="btn btn-warning btn-start-processing-dir" type="button"><i class="fas fa-cogs"></i>Process</button>
+                                        <div class="col-xs-12">
+                                            <div class="col-xs-8">
+                                                <div class="collapse multi-from-dir">
+                                                    <h3>Directory to process</h3>
+                                                    <div class="input-group input-dir">
+                                                        <input type="text" class="form-control input-dir-textfield" id="input-directory" />
+                                                        <span class="input-group-btn">
+                                                        <button class="btn btn-warning btn-start-processing-dir"
+                                                            type="button"><i class="fas fa-cogs"></i>Process</button>
                                                         <!-- <button class="btn btn-warning btn-start-processing-dir" type="button" data-toggle="modal" data-target="#normalizeModal"><i class="fas fa-cogs"></i>Process</button> -->
                                                     </span>
+                                                    </div>
                                                 </div>
+                                            </div>
+                                            <!-- <div class="col-xs-4">
                                                 <div class="db-ops-btn-wrapper">
                                                     <button class="btn btn-success btn-process-dir-database-ops" type="button">Perform Database Operations</button>
                                                 </div>
-                                            </div>
+                                            </div> -->
                                         </div>
-                                        <div class="col-xs-12 col-lg-10">
+                                    </div>
+
+
+                                    <div class="form-group input-wrap">
+                                        <div class="col-xs-12">
                                             <div class="collapse single-title">
                                                 <h3>Title</h3>
                                                 <h3>Dimensions</h3>
                                                 <h3>Size</h3>
+                                                <h3>Duration</h3>
                                                 <div class="input-group input-text-single">
                                                     <input type="text" class="form-control single-title" ng-model="formData.title" id="single-title-input" placeholder="Ex: Yank My Doodle, It's a Dandy!">
                                                     <input type="text" class="form-control single-title" ng-model="formData.dimensions" id="single-title-input-dimensions">
                                                     <input type="text" class="form-control single-title" ng-model="formData.size" id="single-title-input-size">
+                                                    <input type="text" class="form-control single-title" ng-model="formData.duration" id="single-title-input-duration">
                                                     <span class="input-group-btn">
-                                                        <button class="btn btn-warning btn-add-single-title" type="button"><i class="fas fa-level-up-alt"></i>Add Title</button>
+                                                        <button class="btn btn-warning btn-add-single-title"
+                                                            type="button"><i class="fas fa-level-up-alt"></i>Add
+                                                            Title</button>
                                                     </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </form>
+
+
+
+
                             </div>
-                            <div class="col-lg-4 hidden-xs hidden-sm hidden-md">
-                                <img id="loading-spinner" src="img/ajax-loader.gif" alt="Loading spinner" />
-                            </div>
+                            </form>
+                        </div>
+                        <div class="col-lg-4 hidden-xs hidden-sm hidden-md">
+                            <img id="loading-spinner" src="img/ajax-loader.gif" alt="Loading spinner" />
                         </div>
                     </div>
                 </div>
             </div>
-            <div style="clear:both;"></div>
         </div>
+        <div style="clear:both;"></div>
     </div>
+</div>
 </div>
 <div id="normalizeModal" class="modal " tabindex="-1" role="dialog" aria-labelledby="normalizeModal" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="normalizeModalTitle"></h4>
             </div>
             <div class="modal-body">
@@ -158,7 +183,8 @@
     <div class="modal-dialog modal-dialog-scrollable modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="playMovieModalTitle"></h4>
             </div>
             <div class="modal-body">

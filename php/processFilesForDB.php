@@ -2,9 +2,9 @@
 
 ini_set('max_execution_time', 0);
 
-include('getDimensions.php');
-include('getDuration.php');
-include('formatSize.php');
+require 'getDimensions.php';
+require 'getDuration.php';
+require 'formatSize.php';
 
 $directory = $_POST['directory'];
 
@@ -15,7 +15,8 @@ if (empty($_POST['directory'])) {
 
 //$options = $_POST['options'];
 //$options = array("false","false","false","false","false","false");
-$options = array("true","false","false","false","false","true");
+// $options = array("true","false","false","false","false","true");
+$options = array("false","true","true","true","false","false");
 //var_dump($options);
 
 $filesArray = array();
@@ -41,7 +42,7 @@ foreach ($iterator as $fileInfo) {
     $fileExtension =pathinfo($fileInfo->getBasename(), PATHINFO_EXTENSION);
     $dimensions = getDimensions($fileNameAndPath);
     $duration = getDuration($fileNameAndPath);
-
+    // quickLogFile($fileNameAndPath, $dimensions, $duration);
     $filesArray[] = array(
       'Title' => $fileName,
       'baseName' => $baseName,
@@ -77,18 +78,21 @@ for ($i=0;$i<$lengthFilesArray;$i++) {
     'isLarger' => false,
     'DateCreatedInDB' => '',
     'ID' => ''
-  );
+    );
 }
 
-$filesArrayReducedSizesSummed = array_reduce($filesArrayToReduce, function ($a, $b) {
-    if (isset($a[$b['Title']])) {
-        $a[$b['Title']]['Size'] += $b['Size'];
-        $a[$b['Title']]['Duration'] += $b['Duration'];
-    } else {
-        $a[$b['Title']] = $b;
+$filesArrayReducedSizesSummed = array_reduce(
+    $filesArrayToReduce,
+    function ($a, $b) {
+        if (isset($a[$b['Title']])) {
+            $a[$b['Title']]['Size'] += $b['Size'];
+            $a[$b['Title']]['Duration'] += $b['Duration'];
+        } else {
+            $a[$b['Title']] = $b;
+        }
+        return $a;
     }
-    return $a;
-});
+);
 
 $filesArrayReducedSizesSummed = array_values($filesArrayReducedSizesSummed);
 
@@ -108,7 +112,7 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
     $duration = $filesArrayReducedSizesSummed['Duration'];
     $path = $filesArrayReducedSizesSummed['Path'];
 
-    include "db_connect.php";
+    include 'db_connect.php';
 
     $title = $db->real_escape_string($title);
     $path = $db->real_escape_string($path);
@@ -208,7 +212,8 @@ function addToDB($title, $dimensions, $size, $duration, $path, $db, $table)
 
     if ($db->query(
         "INSERT IGNORE INTO `".$table."` (title, dimensions, filesize, duration, filepath, date_created) VALUES ('$title', '$dimensions', '$size', '$duration', '$path', NOW())"
-    )) {
+    )
+    ) {
         $newRow = mysqli_fetch_assoc($db->query("SELECT * FROM `".$table."` WHERE title = '$title'"));
 
         $newIDToReturn = $newRow['id'];
@@ -368,13 +373,13 @@ function returnHTML($filesArrayReducedSizesSummed)
     echo safe_json_encode($returnedArray);
 }
 
-// function quickLogFile($title)
-// {
-//     global $directory;
-//     $myfile = fopen("$directory/updated.txt", "a") or die("Unable to open file!");
-//
-//     $txt = "$title\n\n";
-//
-//     fwrite($myfile, $txt);
-//     fclose($myfile);
-// }
+function quickLogFile($fileNameAndPath, $dimensions, $duration)
+{
+    global $directory;
+    $myfile = fopen("$directory/dimensions_duration.txt", "a") or die("Unable to open file!");
+
+    $txt = "$fileNameAndPath\t$dimensions\t$duration\n\n";
+
+    fwrite($myfile, $txt);
+    fclose($myfile);
+}

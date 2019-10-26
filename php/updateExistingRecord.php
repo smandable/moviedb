@@ -1,6 +1,6 @@
 <?php
 
-include "db_connect.php";
+require 'db_connect.php';
 
   $copyResultRowValues = $_POST['copyResultRowValues'];
 
