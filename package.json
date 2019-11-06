@@ -21,6 +21,7 @@
     "clipboard-polyfill": "^2.8.6",
     "colors": "^1.4.0",
     "ffprobe": "^1.1.0",
+    "findup-sync": "^4.0.0",
     "jquery": "^3.4.1",
     "locutus": "^2.0.11",
     "lodash": "^4.17.15",
@@ -34,7 +35,7 @@
     "grunt-contrib-sass": "^1.0.0",
     "grunt-contrib-watch": "^1.1.0",
     "node-bourbon": "^4.2.8",
-    "sass": "^1.23.1"
+    "sass": "^1.23.3"
   },
   "repository": {
     "type": "git",
