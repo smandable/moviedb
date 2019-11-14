@@ -12,3 +12,6 @@ test/
 etc/
 data/
 vendor/
+css/
+.DS_Store
+
