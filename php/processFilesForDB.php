@@ -14,17 +14,12 @@ if (empty($_POST['directory'])) {
 }
 
 //$options = $_POST['options'];
-//$options = array("false","false","false","false","false","false");
+$options = array("false","false","false","false","true","false");
 // $options = array("true","false","false","false","false","true");
-$options = array("false","true","true","true","false","false");
+//$options = array("false","true","true","true","false","false");
 //var_dump($options);
 
 $filesArray = array();
-
-$pattern1 = '/\.[a-z1-9]{3,4}$/i';
-$pattern2 = '/ - Scene.*/i';
-$pattern3 = '/ - CD.*/i';
-$pattern4 = '/ - Bonus.*| Bonus.*/i';
 
 $iterator = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
@@ -34,6 +29,10 @@ foreach ($iterator as $fileInfo) {
     if ($fileInfo->getBasename() === '.DS_Store' || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble'|| $fileInfo->getBasename() === 'updated.txt') {
         continue;
     }
+    $pattern1 = '/\.[a-z1-9]{3,4}$/i';
+    $pattern2 = '/ - Scene.*/i';
+    $pattern3 = '/ - CD.*/i';
+    $pattern4 = '/ - Bonus.*| Bonus.*/i';
     $baseName = $fileInfo->getBasename();
     $fileName = $baseName;
     $fileName = preg_replace(array($pattern1, $pattern2, $pattern3, $pattern4), '', $fileName);
@@ -99,13 +98,11 @@ $filesArrayReducedSizesSummed = array_values($filesArrayReducedSizesSummed);
 $lengthFilesArrayReducedSizesSummed = count($filesArrayReducedSizesSummed);
 
 for ($i=0;$i<$lengthFilesArrayReducedSizesSummed;$i++) {
-    checkDatabaseForMovie($filesArrayReducedSizesSummed[$i], $filesArray);
+    checkDatabaseForMovie($directory, $options, $filesArrayReducedSizesSummed[$i], $filesArray);
 }
 
-function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
+function checkDatabaseForMovie($directory, $options, &$filesArrayReducedSizesSummed, &$filesArray)
 {
-    global $directory;
-    global $options;
     $title = $filesArrayReducedSizesSummed['Title'];
     $dimensions = $filesArrayReducedSizesSummed['Dimensions'];
     $size = $filesArrayReducedSizesSummed['Size'];
@@ -203,7 +200,6 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed, &$filesArray)
 
 function addToDB($title, $dimensions, $size, $duration, $path, $db, $table)
 {
-    global $directory;
     $pattern1 = '/to move\//i';
     $pattern2 = '/names fixed\//i';
     $replaceWith = 'recorded/';
@@ -252,9 +248,8 @@ function moveDuplicateFile($title, $filesArray)
     }
 }
 
-function moveRecordedFile($title, $filesArray)
+function moveRecordedFile($directory, $title, $filesArray)
 {
-    global $directory;
     $pattern1 = '/to move\//i';
     $pattern2 = '/names fixed\//i';
     $replaceWith = 'recorded/';
@@ -298,9 +293,8 @@ function updateDB($title, $id, $db, $table)
     $db->query("UPDATE `".$table."` SET title='$title' WHERE id='$id'");
 }
 
-function findFilesToRename($filesMissingSpacePoundSpace01)
+function findFilesToRename($directory, $filesMissingSpacePoundSpace01)
 {
-    global $directory;
     $directory = $directory.'duplicates/';
     $directory = new \RecursiveDirectoryIterator($directory);
     $iterator = new \RecursiveIteratorIterator($directory);

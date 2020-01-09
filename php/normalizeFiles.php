@@ -17,16 +17,17 @@ $filesProcessed = array();
 $filesProcessedSorted = array();
 
 getFiles($directory, $files);
+processFiles($directory, $files, $filesProcessed);
 
-function getFiles($directory, $files)
+function getFiles($directory, &$files)
 {
-    global $files;
 
     $directory = new \RecursiveDirectoryIterator($directory);
     $iterator = new \RecursiveIteratorIterator($directory);
 
     foreach ($iterator as $file) {
-        if ($file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
+        if (
+            $file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
             || $file->getBasename() === 'Thumbs.db' || $file->getBasename() === '.AppleDouble'
         ) {
             continue;
@@ -40,14 +41,10 @@ function getFiles($directory, $files)
 
         $files[] = array('Path' => $path, 'originalFileName' => $originalFileName, 'newFileName' => $newFileName, 'fileExtension' => $fileExtension, 'fileSize' => $fileSize);
     }
-    processFiles();
 }
 
-function processFiles()
+function processFiles($directory, &$files, &$filesProcessed)
 {
-    global $directory;
-    global $files;
-    global $filesProcessed;
 
     foreach ($files as $file) {
         $path = $file['Path'];
