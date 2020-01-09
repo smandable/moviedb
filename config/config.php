@@ -2,7 +2,7 @@
 
 return (object) array(
     'host' => 'localhost:3306',
-    'username' => 'root',
+    'username' => 'sean',
     'pass' => 'spm024',
     //'database' => 'movieLibraryTEST',
     'database' => 'movieLibraryPROD',
