@@ -191,7 +191,7 @@ function checkDatabaseForMovie($directory, $options, &$filesArrayReducedSizesSum
         $filesArrayReducedSizesSummed['ID'] = addToDB($title, $dimensions, $size, $duration, $path, $db, $table);
 
         if ($options[5] == "true") {
-            moveRecordedFile($title, $filesArray);
+            moveRecordedFile($directory, $title, $filesArray);
         }
     }
 
