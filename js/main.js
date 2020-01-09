@@ -17,9 +17,9 @@ var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 // $('#input-directory').val("/Volumes/Recorded 1/recorded/");
 //$('#input-directory').val("/home/sean/Download/names fixed/");
 //$('#input-directory').val("/media/sean/500 GB Samsung/Download/names fixed/");
-$('#input-directory').val("/media/sean/2 TB/names fixed/");
+$('#input-directory').val("/media/sean/Recorded 1/recorded/");
 
-$('.btn-start-processing-dir').on("click", function(event) {
+$('.btn-start-processing-dir').on("click", function (event) {
     event.preventDefault();
     directory = $('#input-directory').val();
 
@@ -49,7 +49,7 @@ function editCurrentRow(id, columnToUpdate, valueToUpdate) {
     }
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
     var intervalID;
 
     function copy_search_term(e) {
@@ -64,7 +64,7 @@ $(document).ready(function() {
 
     $('.ui-grid-coluiGrid-0005').on('keydown', _.debounce(copy_search_term, 800));
 
-    $('.recent-terms ul').on('click', 'li', function(event) {
+    $('.recent-terms ul').on('click', 'li', function (event) {
         var recentTerm = $(this).text();
         var input = $('.ui-grid-coluiGrid-0005').find('input[type=text]');
 
@@ -72,7 +72,7 @@ $(document).ready(function() {
         input.focus();
     });
 
-    $('.recent-terms button').on("click", function(event) {
+    $('.recent-terms button').on("click", function (event) {
         $('.recent-terms ul').empty();
     });
 
@@ -113,7 +113,7 @@ function playMovie(path) {
     }
 }
 
-$('#directory-results table').on("click", ".btn-update-with-result", function(event) {
+$('#directory-results table').on("click", ".btn-update-with-result", function (event) {
 
     copyResultRowValues = [];
     var row = $(this).closest("tr");
@@ -141,8 +141,8 @@ function handleUpdateExistingRecordResponse(data) {
     angular.element($('#movie-controller')).scope().refreshData();
 }
 
-$(document).ready(function() {
-    $('#movie-controller').on("click", ".cell-size .ui-grid-cell-contents", function(event) {
+$(document).ready(function () {
+    $('#movie-controller').on("click", ".cell-size .ui-grid-cell-contents", function (event) {
         var size = $(this).val();
         size = size.replace(new RegExp(",", "g"), "");
         size = parseFloat(size);
@@ -150,7 +150,7 @@ $(document).ready(function() {
     });
 });
 
-$('input[type=radio]').on('change', function() {
+$('input[type=radio]').on('change', function () {
 
     $('.collapse').not($('div.' + $(this).attr('class'))).slideUp();
     $('.collapse.' + $(this).attr('class')).slideDown();
@@ -158,7 +158,7 @@ $('input[type=radio]').on('change', function() {
     $('#single-title-input').css('border', '1px solid #ccc');
 });
 
-$('.btn-add-single-title').on("click", function(event) {
+$('.btn-add-single-title').on("click", function (event) {
     event.preventDefault();
     var stl = $.trim($("#single-title-input").val());
     if (stl) {
@@ -173,7 +173,7 @@ $('.btn-add-single-title').on("click", function(event) {
     }
 });
 
-$('.btn-process-dir-database-ops').on("click", function(event) {
+$('.btn-process-dir-database-ops').on("click", function (event) {
     event.preventDefault();
     processFilesForDB(directory);
 });
@@ -187,7 +187,7 @@ function processFilesForDB(directory) {
         data: {
             directory: directory
         },
-    }).always(function(response) {
+    }).always(function (response) {
         handleProcessFilesForDBResult(response);
         $("#loading-spinner").css('display', 'none');
     });
@@ -285,12 +285,12 @@ function handleProcessFilesForDBResult(response) {
 // 	deleteIt();
 // }
 
-$(document).ready(function() {
+$(document).ready(function () {
     $('[data-toggle="tooltip"]').tooltip();
 
     $.fn.editable.defaults.mode = 'inline';
 
-    $("#directory-results table").on("click", "a", function(e) {
+    $("#directory-results table").on("click", "a", function (e) {
         e.preventDefault();
 
         var pk = $(this).closest("tr").find("td:nth-of-type(1)").text();
@@ -300,25 +300,25 @@ $(document).ready(function() {
             pk: pk,
             name: 'title',
             url: "php/editRowInResultsTable.php",
-            success: function(response) {}
+            success: function (response) {}
         });
     });
 
 });
 
-$('#directory-results').on("click", ".btn-refresh", function(event) {
+$('#directory-results').on("click", ".btn-refresh", function (event) {
     $("#directory-results table tr").remove();
     $('#mode').css('display', 'block');
     $('#directory-results').css('display', 'none');
 });
 
-$('#duplicates').on("click", ".btn-paste-results", function(event) {
+$('#duplicates').on("click", ".btn-paste-results", function (event) {
 
     clipboard.writeText($('.duplicate-text').val());
     $(this).closest('.input-group').remove();
 });
 
-$('.ui-grid-cell').on("click", ".btn-copy-title", function(event) {
+$('.ui-grid-cell').on("click", ".btn-copy-title", function (event) {
 
     clipboard.writeText($(this).closest('.ui-grid-coluiGrid-0005 .ui-grid-cell-contents').val());
 });
@@ -333,7 +333,7 @@ function addMovie(nameToAdd, dimensions, size) {
             dimensions: dimensions,
             filesize: size
         },
-    }).always(function(data) {
+    }).always(function (data) {
         handleAddMovieResult(data);
     });
 }
@@ -353,7 +353,7 @@ function handleAddMovieResult(data) {
     angular.element($('#movie-controller')).scope().refreshData();
 }
 
-$('#duplicates').on("click", ".btn-find-file", function(event) {
+$('#duplicates').on("click", ".btn-find-file", function (event) {
     var fileName = $('.duplicate-text').val();
     findFile(fileName);
 });
@@ -370,7 +370,7 @@ function processFiles(directory) {
         data: {
             directory: directory
         },
-    }).always(function(response) {
+    }).always(function (response) {
         handleProcessFilesResult(response);
         $("#loading-spinner").css('display', 'none');
     });
@@ -420,14 +420,14 @@ function handleProcessFilesResult(response) {
     // }
 }
 
-$('#normalizeModal').on('hidden.bs.modal', function() {
+$('#normalizeModal').on('hidden.bs.modal', function () {
     dbOpsBtnWrapper.addClass('inline-flex').outerWidth();
-    dbOpsBtnWrapper.addClass('fade-in').one(transitionEnd, function() {
+    dbOpsBtnWrapper.addClass('fade-in').one(transitionEnd, function () {
 
     });
 });
 
-$('#modal-rename-files-btn').on("click", function() {
+$('#modal-rename-files-btn').on("click", function () {
     renameTheFiles();
 });
 
@@ -436,7 +436,7 @@ function renameTheFiles() {
         type: "POST",
         url: "php/renameTheFiles.php",
         dataType: "json",
-    }).always(function(response) {
+    }).always(function (response) {
         handleRenameTheFilesResult(response);
     });
 }
@@ -448,10 +448,10 @@ function handleRenameTheFilesResult(response) {
     $('.modal-body').css('padding', '10px');
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
     $.fn.editable.defaults.mode = 'inline';
 
-    $("#file-results table").on("click", "a", function(e) {
+    $("#file-results table").on("click", "a", function (e) {
         e.preventDefault();
 
         var path = $(this).closest('tr').children('td:first-of-type').text();
@@ -463,13 +463,13 @@ $(document).ready(function() {
             type: 'text',
             pk: pk,
             name: 'title',
-            params: function(params) {
+            params: function (params) {
                 params.path = path;
                 params.originalFileName = originalFileName;
                 return params;
             },
             url: "php/renameSingleFile.php",
-            success: function(response) {
+            success: function (response) {
                 if (response == "fail") {
                     $(this).closest("tr").find("td:nth-of-type(2)").text(originalFileName);
                     $(this).closest("tr").find("td:nth-of-type(3)").html('<a>' + originalFileName + '</a>');
@@ -484,7 +484,7 @@ $(document).ready(function() {
     });
 });
 
-$('#file-results table').on("click", "th", function(event) {
+$('#file-results table').on("click", "th", function (event) {
 
     var table = $(this).parents('table').eq(0);
     var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()));
@@ -496,7 +496,7 @@ $('#file-results table').on("click", "th", function(event) {
         table.append(rows[i]);
     }
 });
-$('#directory-results table').on("click", "th", function(event) {
+$('#directory-results table').on("click", "th", function (event) {
 
     var table = $(this).parents('table').eq(0);
     var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()));
@@ -510,7 +510,7 @@ $('#directory-results table').on("click", "th", function(event) {
 });
 
 function comparer(index) {
-    return function(a, b) {
+    return function (a, b) {
         var valA = getCellValue(a, index),
             valB = getCellValue(b, index);
         return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.toString().localeCompare(valB);
@@ -563,7 +563,7 @@ function number_format(number, decimals, dec_point, thousands_sep) {
         sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
         dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
         s = '',
-        toFixedFix = function(n, prec) {
+        toFixedFix = function (n, prec) {
             var k = Math.pow(10, prec);
             return '' + Math.round(n * k) / k;
         };
