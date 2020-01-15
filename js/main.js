@@ -12,12 +12,9 @@ var dbOpsButton = $('.btn-process-dir-database-ops');
 var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 
 //default
-//$('#input-directory').val("/Volumes/Misc 1/to move/");
-//$('#input-directory').val("/Users/sean/Download/bi/");
-// $('#input-directory').val("/Volumes/Recorded 1/recorded/");
-//$('#input-directory').val("/home/sean/Download/names fixed/");
-//$('#input-directory').val("/media/sean/500 GB Samsung/Download/names fixed/");
-$('#input-directory').val("/media/sean/Recorded 1/recorded/");
+
+//$('#input-directory').val("/media/sean/Recorded 1/recorded/");
+$("#input-directory").val("/home/sean/Downloads/names fixed/");
 
 $('.btn-start-processing-dir').on("click", function (event) {
     event.preventDefault();

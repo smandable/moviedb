@@ -12,6 +12,9 @@ test/
 etc/
 data/
 vendor/
-css/
+css
 .DS_Store
 
+css/main.css
+css/main.css.map
+*.sql

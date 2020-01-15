@@ -17,7 +17,18 @@ $filesProcessed = array();
 $filesProcessedSorted = array();
 
 getFiles($directory, $files);
+$numFiles = count($files);
+//echo "$numFiles\n";
+
 processFiles($directory, $files, $filesProcessed);
+
+foreach ($filesProcessed as $key => $row) {
+    $filesProcessedSorted[$key] = $row['newFileName'];
+}
+
+array_multisort($filesProcessedSorted, SORT_ASC, $filesProcessed);
+
+returnHTML($filesProcessed);
 
 function getFiles($directory, &$files)
 {
@@ -204,17 +215,6 @@ function checkConflicts($originalFileName, $newFileName, $fileExtension, $path, 
         }
     }
 }
-
-//I'm thinking of re-running this for cleanup's sake, I mean if something in cleanupFunctions() causes there to be multiple spaces or something...
-//getFiles($directory, $files);
-
-foreach ($filesProcessed as $key => $row) {
-    $filesProcessedSorted[$key] = $row['newFileName'];
-}
-
-array_multisort($filesProcessedSorted, SORT_ASC, $filesProcessed);
-
-returnHTML($filesProcessed);
 
 function returnHTML($filesProcessed)
 {

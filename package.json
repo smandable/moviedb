@@ -35,7 +35,7 @@
     "grunt-contrib-sass": "^1.0.0",
     "grunt-contrib-watch": "^1.1.0",
     "node-bourbon": "^4.2.8",
-    "sass": "^1.24.3"
+    "sass": "^1.24.4"
   },
   "repository": {
     "type": "git",

@@ -12,12 +12,13 @@ if (empty($_POST['directory'])) {
     echo 'Directory is required.';
     exit();
 }
-
 //$options = $_POST['options'];
-$options = array("false","false","false","false","true","false");
-// $options = array("true","false","false","false","false","true");
+
+//$options vars are: moveDuplicateFile, updateSize, updateDimensions, updateDuration, updatePath, moveRecordedFile
+
+//$options = array("false","false","false","false","true","false");
+$options = array("true","false","false","false","false","false");
 //$options = array("false","true","true","true","false","false");
-//var_dump($options);
 
 $filesArray = array();
 
