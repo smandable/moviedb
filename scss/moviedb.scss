@@ -1,8 +1,9 @@
 body {
-    font-family: "Merriweather Sans"sans-serif;
+    font-family: "Merriweather Sans" sans-serif;
     background-color: #000;
     padding-top: 0;
     padding-bottom: 0;
+
     //font-family: "Raleway", Arial, sans-serif;
     //font-family: "Istok Web";
     // background-color: #303030;
@@ -67,6 +68,7 @@ body {
             padding-bottom: 5px;
             line-height: 1;
             margin-bottom: 10px;
+            height: 90vh;
 
             @media screen and (min-width: 768px) {
                 padding-left: 10px;
@@ -148,6 +150,7 @@ body {
 
         .myMoviesGrid {
             color: #000;
+
             // height: 720px;
             height: 520px;
         }
@@ -172,10 +175,14 @@ body {
             .ui-grid-filter-container {
                 padding: 4px;
             }
+            .ui-grid-filter-container
+                .ui-grid-filter-button
+                [class^="ui-grid-icon"] {
+                color: black;
+            }
         }
 
         .ui-grid-canvas {
-
             .ui-grid-cell,
             .ui-grid-cell .ui-grid-vertical-bar,
             .ui-grid-row {
@@ -231,6 +238,7 @@ body {
             .ui-grid-coluiGrid-0008,
             .ui-grid-coluiGrid-0009 {
                 text-align: left;
+
                 //padding-left: 3px;
             }
 
@@ -296,7 +304,7 @@ body {
                 display: contents;
                 min-width: 193px;
 
-                input[type='checkbox'] {
+                input[type="checkbox"] {
                     margin: 9px 0 0 3px;
                 }
             }
@@ -423,7 +431,7 @@ body {
     #directory-results,
     #mode,
     .movies {
-        input[type='text'] {
+        input[type="text"] {
             background-color: #ebebeb;
             color: #333;
             padding-bottom: 0;
@@ -497,7 +505,6 @@ body {
             max-height: 520px;
 
             table {
-
                 a,
                 a:hover {
                     color: #fff;
@@ -508,10 +515,21 @@ body {
                 /* Make inline editables take the full width of their parents */
                 .editable-container.editable-inline,
                 .editable-container.editable-inline .control-group.form-group,
-                .editable-container.editable-inline .control-group.form-group .editable-input,
-                .editable-container.editable-inline .control-group.form-group .editable-input input:not([type=radio]):not([type=checkbox]):not([type=submit]),
-                .editable-container.editable-inline .control-group.form-group .editable-input select,
-                .editable-container.editable-inline .control-group.form-group .editable-input textarea {
+                .editable-container.editable-inline
+                    .control-group.form-group
+                    .editable-input,
+                .editable-container.editable-inline
+                    .control-group.form-group
+                    .editable-input
+                    input:not([type="radio"]):not([type="checkbox"]):not([type="submit"]),
+                .editable-container.editable-inline
+                    .control-group.form-group
+                    .editable-input
+                    select,
+                .editable-container.editable-inline
+                    .control-group.form-group
+                    .editable-input
+                    textarea {
                     width: 90%;
                 }
 
@@ -678,11 +696,18 @@ body {
             margin-top: 20px;
         }
 
-        .col-lg-6,
-        .col-xs-12.col-lg-8 {
+        #progress {
+            // color: wheat;
+            // margin-top: 5rem;
+            width: 100%;
+            height: 100%;
+            border: 1px solid green;
+        }
+
+        .col-lg-6 {
             padding-left: 5px;
 
-            &~.col-lg-6 {
+            & ~ .col-lg-6 {
                 h3:first-of-type {
                     margin-top: 20px;
                     margin-bottom: 10px;
@@ -690,8 +715,11 @@ body {
             }
         }
 
-        .col-lg-4 {
+        .col-xs-11.col-lg-8 {
+            padding-left: 0;
+        }
 
+        .col-xs-1 {
             #loading-spinner {
                 display: none;
                 margin-top: 40px;
@@ -719,7 +747,7 @@ body {
                     border-color: darkgreen;
                 }
 
-                input[type=radio] {
+                input[type="radio"] {
                     display: none;
                     margin-top: 2px;
                     margin-right: 5px;
@@ -738,7 +766,7 @@ body {
             color: #fff;
             padding: 6px 12px;
             border-color: #d58512;
-            line-height: 1.0;
+            line-height: 1;
             height: 30px;
 
             &:hover {
@@ -746,7 +774,7 @@ body {
             }
         }
 
-        .form-group~.form-group {
+        .form-group ~ .form-group {
             margin-bottom: 0;
         }
 
@@ -781,14 +809,14 @@ body {
                 .input-group.input-text-single {
                     display: block;
 
-                    input[type='text'] {
+                    input[type="text"] {
                         border-left: solid 1px #000;
                         width: 15%;
                         height: 30px;
                         padding-right: 4px;
                     }
 
-                    input[type='text']:first-of-type {
+                    input[type="text"]:first-of-type {
                         margin-left: 0;
                         border-left: none;
                         width: 35%;
@@ -800,12 +828,12 @@ body {
                         }
                     }
 
-                    input[type='text']:nth-of-type(3) {
+                    input[type="text"]:nth-of-type(3) {
                         border-left: solid 1px #000;
                         width: 10%;
                     }
 
-                    input[type='text']:nth-of-type(4) {
+                    input[type="text"]:nth-of-type(4) {
                         border-left: solid 1px #000;
                         width: 15%;
                     }
@@ -874,7 +902,6 @@ body {
 }
 
 .config {
-
     #db-setting,
     #tbl-setting {
         hr {
@@ -902,7 +929,7 @@ body {
     }
 
     #active-tbl {
-        .btn-group>.btn {
+        .btn-group > .btn {
             margin-right: 20px;
             border-radius: 4px;
 
@@ -932,12 +959,14 @@ body {
     #loading-spinner {
         display: none;
         margin-left: 55px;
+
         // margin-top: 50px;
     }
 }
 
 .db-ops-btn-wrapper {
     opacity: 0;
+
     //width: 100%;
     display: inline-block;
     transition: opacity 300ms;
@@ -974,6 +1003,7 @@ body {
     @media screen and (min-width: 768px) {
         left: auto;
         width: 70vw;
+
         //top: 30px;
     }
 
@@ -986,11 +1016,11 @@ body {
     }
 
     #file-results {
-
         // margin-top: 20px;
         //height: 70vh;
         table {
             $bknd: #555;
+
             width: 100%;
 
             tr {
@@ -1013,6 +1043,7 @@ body {
 
                 &.file-renamed {
                     background-color: forestgreen;
+
                     //border: 1px solid green;
                 }
 
@@ -1154,10 +1185,21 @@ body {
         /* Make inline editables take the full width of their parents */
         .editable-container.editable-inline,
         .editable-container.editable-inline .control-group.form-group,
-        .editable-container.editable-inline .control-group.form-group .editable-input,
-        .editable-container.editable-inline .control-group.form-group .editable-input input:not([type=radio]):not([type=checkbox]):not([type=submit]),
-        .editable-container.editable-inline .control-group.form-group .editable-input select,
-        .editable-container.editable-inline .control-group.form-group .editable-input textarea {
+        .editable-container.editable-inline
+            .control-group.form-group
+            .editable-input,
+        .editable-container.editable-inline
+            .control-group.form-group
+            .editable-input
+            input:not([type="radio"]):not([type="checkbox"]):not([type="submit"]),
+        .editable-container.editable-inline
+            .control-group.form-group
+            .editable-input
+            select,
+        .editable-container.editable-inline
+            .control-group.form-group
+            .editable-input
+            textarea {
             width: 95% !important;
         }
 

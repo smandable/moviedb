@@ -5,6 +5,6 @@ return (object) array(
     'username' => 'sean',
     'pass' => 'spm024',
     //'database' => 'movieLibraryTEST',
-    'database' => 'movieLibraryPROD',
+    'database' => 'movieLibraryTEST',
     'table' => 'movies_het'
 );

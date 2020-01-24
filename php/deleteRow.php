@@ -15,5 +15,5 @@ if (!$result) {
     die($db->error);
 }
   echo "Successfully deleted record " . $id . "\n";
-  $results->close();
+  
 $db->close();

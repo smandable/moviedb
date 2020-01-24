@@ -25,6 +25,7 @@
     "jquery": "^3.4.1",
     "locutus": "^2.0.11",
     "lodash": "^4.17.15",
+    "npm-update": "^2.1.0",
     "npm-upgrade": "^2.0.2",
     "popper.js": "^1.16.0",
     "ruby": "^0.6.1",
@@ -35,7 +36,7 @@
     "grunt-contrib-sass": "^1.0.0",
     "grunt-contrib-watch": "^1.1.0",
     "node-bourbon": "^4.2.8",
-    "sass": "^1.24.4"
+    "sass": "^1.25.0"
   },
   "repository": {
     "type": "git",
