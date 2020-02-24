@@ -1,4 +1,5 @@
 <?php
+$dontRenameThese = $_POST['dontRenameThese'];
 
 session_id("files");
 
@@ -11,15 +12,20 @@ foreach ($_SESSION['files'] as &$file) {
     $fileNameAndPath = $path . $file['fileName'];
 
     if (isset($file['newFileName'])) {
-        $newFileName = $file['newFileName'];
-        $newFileNameAndPath = $path . $newFileName;
+        if (!in_array($file['fileName'], $dontRenameThese)) {
+            $newFileName = $file['newFileName'];
+            $newFileNameAndPath = $path . $newFileName;
 
-        if (!file_exists($newFileNameAndPath)) {
-            rename($fileNameAndPath, $newFileNameAndPath);
-            $file['fileName'] = $newFileName;
-            $file['fileWasRenamed'] = true;
-        } else {
-            $file['fileExists'] = true;
+            if (!file_exists($newFileNameAndPath)) {
+                rename($fileNameAndPath, $newFileNameAndPath);
+                $file['fileName'] = $newFileName;
+                $file['fileNameAndPath'] = $newFileNameAndPath;
+                $newFileName = preg_replace('/\.[a-z1-9]{3,4}$/', '', $newFileName);
+                $file['fileNameNoExtension'] = $newFileName;
+                $file['fileWasRenamed'] = true;
+            } else {
+                $file['fileExists'] = true;
+            }
         }
     }
 }

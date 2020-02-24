@@ -2,9 +2,8 @@
 
 ini_set('max_execution_time', 0);
 
-require 'getDimensions.php';
-require 'getDuration.php';
 require 'formatSize.php';
+require 'renameTheFilesMissing01.php';
 
 $directory = $_POST['directory'];
 
@@ -14,114 +13,105 @@ if (empty($_POST['directory'])) {
 }
 //$options = $_POST['options'];
 
-//$options vars are: moveDuplicateFile, updateSize, updateDimensions, updateDuration, updatePath, moveRecordedFile
+//$options are: moveDuplicateFile, updateSize, updatefileDimensions, updateDuration, updatePath, moveRecordedFile
 
 //$options = array("false", "false", "false", "false", "true", "false");
 //$options = array("true","false","false","false","false","false");
-$options = array("false","true","true","true","true","false");
+//$options = array("false", "true", "true", "true", "true", "false");
 
-$filesArray = array();
+$titlesArray = array();
 
-$iterator = new RecursiveIteratorIterator(
-    new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
-);
+session_id("files");
+session_start();
 
-foreach ($iterator as $fileInfo) {
-    if ($fileInfo->getBasename() === '.DS_Store' || $fileInfo->getBasename() === 'Thumbs.db' || $fileInfo->getBasename() === '.AppleDouble' || $fileInfo->getBasename() === 'updated.txt') {
-        continue;
+populateTitlesArray($titlesArray);
+
+$titlesArray = array_values($titlesArray);
+
+for ($i = 0; $i < count($titlesArray); $i++) {
+    checkDatabaseForTitle($titlesArray[$i]);
+}
+
+//renameTheFilesMissing01($titlesArray);
+
+//var_dump($titlesArray);
+
+returnHTML($titlesArray);
+
+function populateTitlesArray(&$titlesArray)
+{
+    foreach ($_SESSION["files"] as $file) {
+        $title = $file["fileNameNoExtension"];
+        $titleSize = $file["fileSize"];
+        $titleDimensions = $file["fileDimensions"];
+        $titleDuration = $file["fileDuration"];
+        //This will only get the path of the first file, if it's broken into CDs. I don't care.
+        $titlePath = $file["fileNameAndPath"];
+
+        $pattern1 = '/ - Scene.*/i';
+        $pattern2 = '/ - CD.*/i';
+        $pattern3 = '/ - Bonus.*| Bonus.*/i';
+
+        $title = preg_replace(array($pattern1, $pattern2, $pattern3), '', $title);
+
+        $titlesArray[] = array(
+            'title' => $title,
+            'titleSize' => $titleSize,
+            'titleDimensions' => $titleDimensions,
+            'titleDuration' => $titleDuration,
+            'titlePath' => $titlePath
+
+        );
     }
-    $pattern1 = '/\.[a-z1-9]{3,4}$/i';
-    $pattern2 = '/ - Scene.*/i';
-    $pattern3 = '/ - CD.*/i';
-    $pattern4 = '/ - Bonus.*| Bonus.*/i';
-
-    // $fileName = $fileInfo->getBasename();
-    $fileName = preg_replace(array($pattern1, $pattern2, $pattern3, $pattern4), '', $fileName);
-    // $fileNameAndPath = $fileInfo->getPathname();
-    // $fileSize = filesize($fileInfo->getPathname());
-    // $fileExtension = pathinfo($fileInfo->getBasename(), PATHINFO_EXTENSION);
-    $dimensions = getDimensions($fileNameAndPath);
-    $duration = getDuration($fileNameAndPath);
-    // quickLogFile($fileNameAndPath, $dimensions, $duration);
-    $filesArray[] = array(
-        'Title' => $fileName,
-        'Dimensions' => $dimensions,
-        'Duration' => $duration,
-        'DurationInDB' => '',
-        'Size' => $fileSize,
-        'SizeInDB' => '',
-        'Path' => $fileNameAndPath,
-        'PathInDB' => '',
-        'Duplicate' => false,
-        'isLarger' => false,
-        'DateCreatedInDB' => '',
-        'ID' => ''
+    $titlesArray = array_reduce(
+        $titlesArray,
+        function ($a, $b) {
+            if (isset($a[$b['title']])) {
+                $a[$b['title']]['titleSize'] += $b['titleSize'];
+                $a[$b['title']]['titleDuration'] += $b['titleDuration'];
+            } else {
+                $a[$b['title']] = $b;
+            }
+            return $a;
+        }
     );
 }
 
-$filesSorted = array();
-
-foreach ($filesArray as $key => $row) {
-    $filesSorted[$key] = $row['Path'];
-}
-
-//array_multisort($filesSorted, SORT_ASC, $filesArray);
-
-$filesArrayReducedSizesSummed = array_reduce(
-    $filesArray,
-    function ($a, $b) {
-        if (isset($a[$b['Title']])) {
-            $a[$b['Title']]['Size'] += $b['Size'];
-            $a[$b['Title']]['Duration'] += $b['Duration'];
-        } else {
-            $a[$b['Title']] = $b;
-        }
-        return $a;
-    }
-);
-
-$filesArrayReducedSizesSummed = array_values($filesArrayReducedSizesSummed);
-
-$lengthFilesArrayReducedSizesSummed = count($filesArrayReducedSizesSummed);
-
-for ($i = 0; $i < $lengthFilesArrayReducedSizesSummed; $i++) {
-    checkDatabaseForMovie($directory, $options, $filesArrayReducedSizesSummed[$i], $filesArray);
-}
-
-function checkDatabaseForMovie($directory, $options, &$filesArrayReducedSizesSummed, &$filesArray)
+function checkDatabaseForTitle(&$titlesArray)
 {
-    $title = $filesArrayReducedSizesSummed['Title'];
-    $dimensions = $filesArrayReducedSizesSummed['Dimensions'];
-    $size = $filesArrayReducedSizesSummed['Size'];
-    $duration = $filesArrayReducedSizesSummed['Duration'];
-    $path = $filesArrayReducedSizesSummed['Path'];
+    $title = $titlesArray["title"];
+    $titleSize = $titlesArray["titleSize"];
+    $titleDimensions = $titlesArray["titleDimensions"];
+    $titleDuration = $titlesArray["titleDuration"];
+    $titlePath = $titlesArray["titlePath"];
 
     include 'db_connect.php';
 
     $title = $db->real_escape_string($title);
-    $path = $db->real_escape_string($path);
+    //$title = mysqli_real_escape_string($db, $title);
 
-    $spacePoundSpace = " # ";
-    $spacePoundSpace01 = " # 01";
+    $titlePath = $db->real_escape_string($titlePath);
 
     // If file being read from directory HAS a number in it, look for that title in the DB WITHOUT a number.
     // If found, add " # 01" to it. This is only to update that record in the db.
 
     if (preg_match('/# [0-9]+$/', $title)) {
-        $tmpTitle = preg_split('/ # [0-9]+/', $title);
-        $resultT = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$tmpTitle[0]'");
+        $titleN = preg_split('/ # [0-9]+/', $title);
 
-        if ($resultT->num_rows > 0) {
-            $titleSpacePoundSpace01 = $tmpTitle[0] . $spacePoundSpace01;
-            $db->query("UPDATE `" . $table . "` SET title='$titleSpacePoundSpace01' WHERE title='$tmpTitle[0]'");
-            $rowT = mysqli_fetch_assoc($resultT);
-            $idT = $rowT['id'];
-            $originalTitle = $rowT['title'];
-            $pathT = $rowT['filepath'];
+        $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$titleN[0]'");
 
-            if ($pathT != "") {
-                $pathT = str_replace($originalTitle, $titleSpacePoundSpace01, $pathT);
-                $db->query("UPDATE `" . $table . "` SET filepath='$pathT' WHERE id='$idT'");
+        if ($result->num_rows > 0) {
+            $title = $titleN[0] . " # 01";
+
+            $db->query("UPDATE `" . $table . "` SET title='$title' WHERE title='$titleN[0]'");
+            $row = mysqli_fetch_assoc($result);
+
+            $id = $row['id'];
+            $pathInDB = $row['filepath'];
+
+            if ($pathInDB != "") {
+                $pathInDB = str_replace($titleN[0], $title, $pathInDB);
+                $db->query("UPDATE `" . $table . "` SET filepath='$pathInDB' WHERE id='$id'");
             }
         }
     }
@@ -130,76 +120,54 @@ function checkDatabaseForMovie($directory, $options, &$filesArrayReducedSizesSum
     // If found, add file to $filesMissingSpacePoundSpace01 array, and set $title to $title + # 01
 
     if (!preg_match('/# [0-9]+$/', $title)) {
-        $titleSpacePoundSpace = $title . $spacePoundSpace;
-        $titleSpacePoundSpace01 = $title . $spacePoundSpace01;
+        $title01 = $title . " # 01";
 
-        $resultN = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$titleSpacePoundSpace01'");
-        $rowN = mysqli_fetch_assoc($resultN);
-        if ($resultN->num_rows > 0) {
-            $filesMissingSpacePoundSpace01[] = array('title' => $title);
-            $title = $titleSpacePoundSpace01;
-        }
-        $resultW = $db->query("SELECT * FROM `" . $table . "` WHERE title LIKE '$titleSpacePoundSpace%'");
-        $rowW = mysqli_fetch_assoc($resultW);
-        if ($resultW->num_rows > 0) {
-            $filesMissingSpacePoundSpace01[] = array('title' => $title);
-            $title = $titleSpacePoundSpace01;
+        $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$title01'");
+
+        if ($result->num_rows > 0) {
+            $fileMissing01 = true;
+
+            $titlesArray['duplicate'] = true;
+            $titlesArray["fileMissing01"] = $fileMissing01;
+
+            $title = $title01;
         }
     }
-
+    $result = null;
     $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$title'");
     $row = mysqli_fetch_assoc($result);
 
     if ($result->num_rows > 0) {
-        $filesArrayReducedSizesSummed['Duplicate'] = true;
-        $filesArrayReducedSizesSummed['ID'] = $row['id'];
-        $filesArrayReducedSizesSummed['DateCreatedInDB'] = $row['date_created'];
-        $filesArrayReducedSizesSummed['SizeInDB'] = $row['filesize'];
-        $filesArrayReducedSizesSummed['DurationInDB'] = $row['duration'];
-        $filesArrayReducedSizesSummed['PathInDB'] = $row['filepath'];
-        $filesArrayReducedSizesSummed['isLarger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
-
-        if ($options[0] == "true") {
-            moveDuplicateFile($title, $filesArray);
-        }
-        if ($options[1] == "true") {
-            updateSize($title, $size, $db, $table);
-        }
-        if ($options[2] == "true") {
-            updateDimensions($title, $dimensions, $db, $table);
-        }
-        if ($options[3] == "true") {
-            updateDuration($title, $duration, $db, $table);
-        }
-        if ($options[4] == "true") {
-            updatePath($title, $path, $db, $table);
-        }
+        $titlesArray['duplicate'] = true;
+        $titlesArray['id'] = $row['id'];
+        $titlesArray['dateCreatedInDB'] = $row['date_created'];
+        $titlesArray['dimensionsInDB'] = $row['dimensions'];
+        $titlesArray['sizeInDB'] = $row['filesize'];
+        $titlesArray['durationInDB'] = $row['duration'];
+        $titlesArray['pathInDB'] = $row['filepath'];
+        $titlesArray['isLarger'] = compareFileSizeToDB($titlesArray['titleSize'], $titlesArray['sizeInDB']);
     } else {
-        $filesArrayReducedSizesSummed['ID'] = addToDB($title, $dimensions, $size, $duration, $path, $db, $table);
-
-        if ($options[5] == "true") {
-            moveRecordedFile($directory, $title, $filesArray);
-        }
+        $titlesArray['id'] = addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePath, $db, $table);
     }
-
+    
     $db->close();
 }
 
-function addToDB($title, $dimensions, $size, $duration, $path, $db, $table)
+function addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePath, $db, $table)
 {
     $pattern1 = '/to move\//i';
     $pattern2 = '/names fixed\//i';
     $replaceWith = 'recorded/';
 
-    $path = preg_replace(array($pattern1, $pattern2), $replaceWith, $path);
+    $titlePath = preg_replace(array($pattern1, $pattern2), $replaceWith, $titlePath);
 
     if ($db->query(
-        "INSERT IGNORE INTO `" . $table . "` (title, dimensions, filesize, duration, filepath, date_created) VALUES ('$title', '$dimensions', '$size', '$duration', '$path', NOW())"
+        "INSERT IGNORE INTO `" . $table . "` (title, dimensions, filesize, duration, filepath, date_created) VALUES ('$title', '$titleDimensions', '$titleSize', '$titleDuration', '$titlePath', NOW())"
     )) {
-        $newRow = mysqli_fetch_assoc($db->query("SELECT * FROM `" . $table . "` WHERE title = '$title'"));
+        $row = mysqli_fetch_assoc($db->query("SELECT * FROM `" . $table . "` WHERE title = '$title'"));
 
-        $newIDToReturn = $newRow['id'];
-        return $newIDToReturn;
+        $returnedID = $row['id'];
+        return $returnedID;
     } else {
         printf("Error in addToDB(): %s\n", $db->sqlstate);
         printf("Error in addToDB() message: %s\n", $db->error);
@@ -212,10 +180,11 @@ function compareFileSizeToDB($size, $sizeInDB)
     if (($sizeInDB > 0) && ($sizeInDB < $size)) {
         $isLarger = true;
     }
+
     return $isLarger;
 }
 
-function moveDuplicateFile($title, $filesArray)
+function moveDuplicateFiles($title, $filesArray)
 {
     global $directory;
     $destination = $directory . 'duplicates/';
@@ -226,7 +195,7 @@ function moveDuplicateFile($title, $filesArray)
         if (!is_file($file['Path'])) {
             continue;
         }
-        if ($file['Title'] == stripslashes($title)) {
+        if ($file['title'] == stripslashes($title)) {
             $rename_file = $destination . $file['baseName'];
             str_replace("'", "\'", $rename_file);
             rename($file['Path'], $rename_file);
@@ -250,7 +219,7 @@ function moveRecordedFile($directory, $title, $filesArray)
         if (!is_file($file['Path'])) {
             continue;
         }
-        if ($file['Title'] == stripslashes($title)) {
+        if ($file['title'] == stripslashes($title)) {
             $rename_file = $destination . $file['baseName'];
             str_replace("'", "\'", $rename_file);
             rename($file['Path'], $rename_file);
@@ -262,103 +231,41 @@ function updateSize($title, $size, $db, $table)
 {
     $db->query("UPDATE `" . $table . "` SET filesize='$size' WHERE title='$title'");
 }
-function updateDimensions($title, $dimensions, $db, $table)
+
+function updatefileDimensions($title, $fileDimensions, $db, $table)
 {
-    $db->query("UPDATE `" . $table . "` SET dimensions='$dimensions' WHERE title='$title'");
+    $db->query("UPDATE `" . $table . "` SET fileDimensions='$fileDimensions' WHERE title='$title'");
 }
+
 function updateDuration($title, $duration, $db, $table)
 {
     $db->query("UPDATE `" . $table . "` SET duration='$duration' WHERE title='$title'");
 }
+
 function updatePath($title, $path, $db, $table)
 {
     $db->query("UPDATE `" . $table . "` SET filepath='$path' WHERE title='$title'");
 }
+
 function updateDB($title, $id, $db, $table)
 {
     $db->query("UPDATE `" . $table . "` SET title='$title' WHERE id='$id'");
 }
 
-function findFilesToRename($directory, $filesMissingSpacePoundSpace01)
+function returnHTML($titlesArray)
 {
-    $directory = $directory . 'duplicates/';
-    $directory = new \RecursiveDirectoryIterator($directory);
-    $iterator = new \RecursiveIteratorIterator($directory);
-    $spacePoundSpace01 = ' # 01';
-    $spaceDashSpace = ' - ';
-    $pattern1 = '/\.[a-z1-9]{3,4}$/';
+    $titlesArray = array_values($titlesArray);
 
-    foreach ($filesMissingSpacePoundSpace01 as $fileMissingOne) {
-        $titleMissingOne = $fileMissingOne['title'];
-
-        foreach ($iterator as $file) {
-            if ($file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store') {
-                continue;
-            }
-            $fileName = $file->getBasename();
-            $originalFileName = $fileName;
-            $fileExtension = pathinfo($file->getBasename(), PATHINFO_EXTENSION);
-            $fileExtension = "." . $fileExtension;
-            $fileName = preg_replace($pattern1, '', $fileName);
-
-            if (strcasecmp($titleMissingOne, $fileName) == 0) {
-                $fileName = $fileName . $spacePoundSpace01 . $fileExtension;
-                str_replace("'", "\'", $fileName);
-                rename($directory . $originalFileName, $directory . $fileName);
-            }
-
-            if ($beginningOfFileName = stristr($fileName, ' - Scene_', true)) {
-                if (strcasecmp($titleMissingOne, $beginningOfFileName) == 0) {
-                    $tmpFileName = preg_split('/ - /', $fileName);
-                    $fileName = $tmpFileName[0] . $spacePoundSpace01 . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
-                    str_replace("'", "\'", $fileName);
-                    rename($directory . $originalFileName, $directory . $fileName);
-                }
-            }
-            if ($beginningOfFileName = stristr($fileName, ' - CD', true)) {
-                if (strcasecmp($titleMissingOne, $beginningOfFileName) == 0) {
-                    $tmpFileName = preg_split('/ - /', $fileName);
-                    $fileName = $tmpFileName[0] . $spacePoundSpace01 . $spaceDashSpace . $tmpFileName[1] . $fileExtension;
-                    str_replace("'", "\'", $fileName);
-                    rename($directory . $originalFileName, $directory . $fileName);
-                }
-            }
-        }
-    }
-}
-
-returnHTML($filesArrayReducedSizesSummed);
-
-function returnHTML($filesArrayReducedSizesSummed)
-{
-    $lengthFilesArrayReducedSizesSummed = count($filesArrayReducedSizesSummed);
-    $returnedArray = array();
-
-    for ($i = 0; $i < $lengthFilesArrayReducedSizesSummed; $i++) {
-        $returnedArray['data'][$i] = array(
-            'Title' => $filesArrayReducedSizesSummed[$i]["Title"],
-            'Dimensions' => $filesArrayReducedSizesSummed[$i]["Dimensions"],
-            'Size' => $filesArrayReducedSizesSummed[$i]["Size"],
-            'Duration' => $filesArrayReducedSizesSummed[$i]["Duration"],
-            'DurationInDB' => $filesArrayReducedSizesSummed[$i]["DurationInDB"],
-            'Path' => $filesArrayReducedSizesSummed[$i]["Path"],
-            'Duplicate' => $filesArrayReducedSizesSummed[$i]["Duplicate"],
-            'isLarger' => $filesArrayReducedSizesSummed[$i]["isLarger"],
-            'SizeInDB' => $filesArrayReducedSizesSummed[$i]["SizeInDB"],
-            'DateCreatedInDB' => $filesArrayReducedSizesSummed[$i]["DateCreatedInDB"],
-            'ID' => $filesArrayReducedSizesSummed[$i]["ID"]
-        );
-    }
     include "safe_json_encode.php";
-    echo safe_json_encode($returnedArray);
+    echo safe_json_encode($titlesArray);
 }
 
-function quickLogFile($fileNameAndPath, $dimensions, $duration)
+function quickLogFile($fileNameAndPath, $fileDimensions, $duration)
 {
     global $directory;
-    $myfile = fopen("$directory/dimensions_duration.txt", "a") or die("Unable to open file!");
+    $myfile = fopen("$directory/fileDimensions_duration.txt", "a") or die("Unable to open file!");
 
-    $txt = "$fileNameAndPath\t$dimensions\t$duration\n\n";
+    $txt = "$fileNameAndPath\t$fileDimensions\t$duration\n\n";
 
     fwrite($myfile, $txt);
     fclose($myfile);

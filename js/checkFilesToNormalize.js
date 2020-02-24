@@ -1,7 +1,8 @@
+dontRenameThese = [];
+
 function checkFilesToNormalize() {
     //$("#loading-spinner").css("display", "inline-flex");
 
-    console.info("checkFilesToNormalize");
     $.ajax({
         type: "POST",
         url: "php/checkFilesToNormalize.php",
@@ -37,7 +38,9 @@ function checkFilesToNormalizeResult(response) {
             fileName +
             "</td><td><a>" +
             newFileName +
-            "</a></span></td></tr>";
+            "</a></td><td>" +
+            '<input type="checkbox" class="dont-rename"></input>' +
+            "</tr>";
 
         $(tbody).append(row);
     }
@@ -57,8 +60,11 @@ function renameTheFilesToNormalize() {
     $.ajax({
         type: "POST",
         url: "php/renameTheFilesToNormalize.php",
-        dataType: "json"
-    }).always(function (response) {
+        dataType: "json",
+        data: {
+            dontRenameThese: dontRenameThese
+        }
+    }).always(function(response) {
         handleRenameTheFilesToNormalizeResult(response);
     });
 }
@@ -93,8 +99,22 @@ function handleRenameTheFilesToNormalizeResult(response) {
             fileName +
             "</td><td><a>" +
             newFileName +
-            "</a></span></td></tr>";
+            "</a></td><td>" +
+            "</tr>";
 
         $(tbody).append(row);
     }
 }
+
+$("#file-results table").on("change", ":checkbox", function() {
+
+    if ($(this).is(":checked")) {
+
+        dontRenameThese.push($(this)
+                .parents("tr")
+                .find("td:nth-of-type(3)")
+                .text());
+    } else {
+        // console.log($(this).val() + " is now unchecked");
+    }
+});

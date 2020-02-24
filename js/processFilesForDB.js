@@ -12,106 +12,99 @@ function processFilesForDB(directory) {
         $("#loading-spinner").css("display", "none");
     });
 }
+
 function handleProcessFilesForDBResult(response) {
     $("#mode").css("display", "none");
     $("#directory-results").css("display", "block");
 
-    totalCount = response.data.length;
+    totalCount = response.length;
     newMovies = 0;
-    numDuplicates = 0;
+    numduplicates = 0;
     totalSizeNew = 0;
     totalSizeDuplicates = 0;
 
-    for (i = 0; i < response.data.length; i++) {
-        var name = response.data[i]["Title"];
-        var dimensions = response.data[i]["Dimensions"];
-        var size = response.data[i]["Size"];
-        var duration = response.data[i]["Duration"];
-        //var durationNoMS = duration.split(".")[0];
-        var durationInDB = response.data[i]["DurationInDB"];
-        //var durationInDBNoMS = durationInDB.split(".")[0];
-        var isDuplicate = response.data[i]["Duplicate"];
-        var isLarger = response.data[i]["isLarger"];
-        var sizeInDB = response.data[i]["SizeInDB"];
-        var dateCreated = response.data[i]["DateCreatedInDB"];
-        var path = response.data[i]["Path"];
-        // var newID = response.data[i]['NewID'];
-        var id = response.data[i]["ID"];
-        //console.info("response.data: ", response.data);
-        if (name.length > 80) {
-            name = name.substring(0, 80);
+    for (i = 0; i < response.length; i++) {
+        var title = response[i]["title"];
+        var titleDimensions = response[i]["titleDimensions"];
+        var dimensionsInDB = response[i]["dimensionsInDB"];
+        var titleSize = response[i]["titleSize"];
+        titleSize = parseFloat(titleSize);
+        var titleDuration = response[i]["titleDuration"];
+        var durationInDB = response[i]["durationInDB"];
+        var isLarger = response[i]["isLarger"];
+        var sizeInDB = parseFloat(response[i]["sizeInDB"]);
+        sizeInDB = parseFloat(sizeInDB);
+        var dateCreatedInDB = response[i]["dateCreatedInDB"];
+        var path = response[i]["titlePath"];
+        var id = response[i]["id"];
+
+        if (title.length > 80) {
+            title = title.substring(0, 80);
         }
+
         var markup = "";
-        if (response.data[i]["Duplicate"] == false) {
+
+        if (response[i]["duplicate"]) {
+            ++numduplicates;
+            totalSizeDuplicates += titleSize;
+            toolTipSizeHTML = "";
+            toolTipDimensionsHTML = "";
+            toolTipDurationHTML = "";
+
+            if (response[i]["isLarger"]) {
+                toolTipSizeHTML =
+                    '<a href="#" data-toggle="tooltip" data-placement="top" title="' +
+                    formatSize(sizeInDB) +
+                    '"><i class="fas fa-angle-double-up"></i></a>';
+                toolTipDimensionsHTML =
+                    '<a href="#" data-toggle="tooltip" data-placement="top" title="' +
+                    formatSize(dimensionsInDB) +
+                    '"><i class="fas fa-angle-double-up"></i></a>';
+                toolTipDurationHTML =
+                    '<a href="#" data-toggle="tooltip" data-placement="top" title="' +
+                    formatSize(durationInDB) +
+                    '"><i class="fas fa-angle-double-up"></i></a>';
+            }
+            markup =
+                '"<tr><td class="' +
+                id +
+                '">' +
+                '<a href="#">' +
+                title +
+                '</a></td><td class="' +
+                titleDimensions +
+                '">' +
+                titleDimensions +
+                toolTipDimensionsHTML +
+                '</td><td class="' +
+                titleSize +
+                '">' +
+                formatSize(titleSize) +
+                toolTipSizeHTML +
+                '</td><td class="' +
+                titleDuration +
+                '">' +
+                formatTitleDuration(titleDuration) +
+                toolTipDurationHTML +
+                "</td><td>" +
+                dateCreatedInDB +
+                '</td><td class="dup-not-new">duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
+                '<i class="fas fa-copy"></i>Update DB</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
+        } else {
             ++newMovies;
-            totalSizeNew += size;
+            totalSizeNew += titleSize;
 
             markup =
-                "<tr><td>" +
-                id +
-                '</td><td><a href="#">' +
-                name +
+                '<tr><td><a href="#">' +
+                title +
                 "</a></td><td>" +
-                dimensions +
+                titleDimensions +
                 "</td><td>" +
-                formatSize(size) +
-                '<span class="tsize">' +
-                size +
-                "</span></td><td>" +
-                formatDuration(duration) +
-                '<span class="tduration">' +
-                duration +
-                "</span>" +
-                '</td><td></td><td class="new-not-dup">New</td><td><button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update DB</button><!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>-->' +
-                '<button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
-        } else if (response.data[i]["Duplicate"] == true) {
-            ++numDuplicates;
-            totalSizeDuplicates += size;
-
-            if (response.data[i]["isLarger"] == true) {
-                markup =
-                    "<tr><td>" +
-                    id +
-                    '</td><td><a href="#">' +
-                    name +
-                    "</a></td><td>" +
-                    dimensions +
-                    "</td><td>" +
-                    formatSize(size) +
-                    '<span class="tsize">' +
-                    size +
-                    '</span><a href="#" data-toggle="tooltip" data-placement="top" title="' +
-                    formatSize(sizeInDB) +
-                    '"><i class="fas fa-angle-double-up"></i></a></td><td>' +
-                    formatDuration(duration) +
-                    '<span class="tduration">' +
-                    duration +
-                    "</span></td><td>" +
-                    dateCreated +
-                    '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
-                    '<i class="fas fa-copy"></i>Update DB</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
-            } else {
-                markup =
-                    "<tr><td>" +
-                    id +
-                    '</td><td><a href="#">' +
-                    name +
-                    "</a></td><td>" +
-                    dimensions +
-                    "</td><td>" +
-                    formatSize(size) +
-                    '<span class="tsize">' +
-                    size +
-                    "</span></td><td>" +
-                    formatDuration(duration) +
-                    '<span class="tduration">' +
-                    duration +
-                    "</span></td>" +
-                    "<td>" +
-                    dateCreated +
-                    '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update DB</button>' +
-                    '<!--button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
-            }
+                formatSize(titleSize) +
+                "</td><td>" +
+                formatTitleDuration(titleDuration) +
+                '</td><td></td><td class="new-not-dup">New</td><td><!--<button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update</button>--><!--<button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>-->' +
+                '<!--<button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button>--></td></tr>';
         }
         $("#directory-results table").append(markup);
     }
@@ -119,12 +112,14 @@ function handleProcessFilesForDBResult(response) {
     $("#directory-results #totals").html(
         '<span>Total: <span class="num-span">' +
             totalCount +
-            '</span></span><span>New: <span class="num-span">' +
+            " (" +
+            formatSize(totalSizeNew + totalSizeDuplicates) +
+            ')</span></span><span>New: <span class="num-span">' +
             newMovies +
             " (" +
             formatSize(totalSizeNew) +
             ')</span></span><span>Duplicates: <span class="num-span">' +
-            numDuplicates +
+            numduplicates +
             " (" +
             formatSize(totalSizeDuplicates) +
             ")</span></span>"

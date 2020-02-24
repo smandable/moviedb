@@ -188,11 +188,10 @@ $("#directory-results table").on("click", ".btn-update-with-result", function(
     var row = $(this).closest("tr");
 
     copyResultRowValues = [
-        row.find("td:nth-child(1)").text(),
-        row.find("td:nth-child(2)").text(),
-        row.find("td:nth-child(3)").text(),
-        row.find("td:nth-child(4) .tsize").text(),
-        row.find("td:nth-child(5) .tduration").text()
+        row.find("td:nth-child(1)").attr("class"),
+        row.find("td:nth-child(2)").attr("class"),
+        row.find("td:nth-child(3)").attr("class"),
+        row.find("td:nth-child(4)").attr("class")
     ];
 
     updateExistingRecord(copyResultRowValues);
@@ -205,11 +204,11 @@ function updateExistingRecord(copyResultRowValues) {
         data: {
             copyResultRowValues: copyResultRowValues
         },
-        success: handleUpdateExistingRecordResponse
+        success: handleUpdateExistingRecordResponse()
     });
 }
 
-function handleUpdateExistingRecordResponse(data) {
+function handleUpdateExistingRecordResponse() {
     angular
         .element($("#movie-controller"))
         .scope()

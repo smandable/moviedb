@@ -43,18 +43,19 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 					editCurrentRow(rowEntity.id, colDef.name, newValue);
 				});
 			},
-			columnDefs: [{
-					name: 'ID',
-					field: 'id',
-					width: 65,
-					enableFiltering: false,
-					enableCellEdit: false,
-					cellClass: 'cell-id'
-				},
+			columnDefs: [
+				// {
+				// 	name: 'ID',
+				// 	field: 'id',
+				// 	width: 65,
+				// 	enableFiltering: false,
+				// 	enableCellEdit: false,
+				// 	cellClass: 'cell-id'
+				// },
 				{
 					name: 'Title',
 					field: 'title',
-					width: 520,
+					width: 560,
 					enableFiltering: true,
 					enableCellEdit: true,
 					cellClass: 'cell-title'
@@ -62,7 +63,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				{
 					name: 'Dimensions',
 					field: 'dimensions',
-					width: 110,
+					width: 120,
 					enableFiltering: false,
 					enableCellEdit: true,
 					cellClass: 'cell-dimensions'
@@ -70,7 +71,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				{
 					name: 'Size',
 					field: 'filesize',
-					width: 80,
+					width: 70,
 					enableFiltering: false,
 					enableCellEdit: true,
 					cellClass: 'cell-size',
@@ -79,7 +80,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 				{
 					name: 'Duration',
 					field: 'duration',
-					width: 90,
+					width: 100,
 					enableFiltering: false,
 					enableCellEdit: true,
 					cellClass: 'cell-size',
@@ -295,7 +296,7 @@ app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$
 	.filter('durationFilter', function() {
 		return function(value) {
 			if (value != null) {
-				return formatDuration(value);
+				return formatTitleDuration(value);
 			}
 		};
 	})

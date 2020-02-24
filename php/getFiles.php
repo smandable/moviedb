@@ -1,4 +1,3 @@
-
 <?php
 
 require 'getDimensions.php';
@@ -15,7 +14,6 @@ getFiles($directory);
 
 function getFiles($directory)
 {
-
     $files = array();
 
     $directory = new \RecursiveDirectoryIterator($directory);
@@ -36,17 +34,15 @@ function getFiles($directory)
         $fileNameNoExtension = $file->getBasename($fileExtension);
         $fileSize = filesize($file->getPathname());
 
-
         //My gods - both of these cause a dir with ~2000 files to take ~7 MIN. Without, total time is ~370 MS
 
         //Dimensions only: 3.2 min
         //Duration only: 3.6 min
 
-        //  $fileDimensions = getDimensions($fileNameAndPath);
-        // $fileDuration = getDuration($fileNameAndPath);
-
-        $fileDimensions = "1280 x 720";
-        $fileDuration = 1300.000;
+        $fileDimensions = getDimensions($fileNameAndPath);
+        $fileDuration = getDuration($fileNameAndPath);
+        // $fileDimensions = "1280 x 720";
+        // $fileDuration = 1300.000;
 
         $files[] = array('path' => $path, 'fileName' => $fileName, 'fileNameAndPath' => $fileNameAndPath, 'fileExtension' => $fileExtension, 'fileNameNoExtension' => $fileNameNoExtension, 'fileSize' => $fileSize, 'fileDimensions' => $fileDimensions, 'fileDuration' => $fileDuration);
     }

@@ -29,7 +29,7 @@ function formatSize(size) {
     return size;
 }
 
-function formatDuration(duration) {
+function formatTitleDuration(duration) {
     if (duration !== null) {
         var sec_num = parseInt(duration, 10); // don't forget the second param
         var hours = Math.floor(sec_num / 3600);
