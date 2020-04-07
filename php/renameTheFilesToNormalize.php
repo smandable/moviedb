@@ -1,5 +1,10 @@
 <?php
-$dontRenameThese = $_POST['dontRenameThese'];
+
+// if (isset($_POST['dontRenameThese'])) {
+//     $dontRenameThese = $_POST['dontRenameThese'];
+// } else {
+//     $dontRenameThese = '';
+// }
 
 session_id("files");
 
@@ -10,9 +15,9 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 foreach ($_SESSION['files'] as &$file) {
     $path = $file['path'] . "/";
     $fileNameAndPath = $path . $file['fileName'];
-
-    if (isset($file['newFileName'])) {
-        if (!in_array($file['fileName'], $dontRenameThese)) {
+    if (!isset($file['dontRename'])) {
+        if (isset($file['newFileName'])) {
+            // if (!in_array($file['fileName'], $dontRenameThese)) {
             $newFileName = $file['newFileName'];
             $newFileNameAndPath = $path . $newFileName;
 
@@ -26,6 +31,7 @@ foreach ($_SESSION['files'] as &$file) {
             } else {
                 $file['fileExists'] = true;
             }
+            //  }
         }
     }
 }

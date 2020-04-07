@@ -1,22 +1,23 @@
 dontRenameThese = [];
 
-function checkFilesToNormalize() {
-    //$("#loading-spinner").css("display", "inline-flex");
+function checkFileNamesToNormalize() {
+    $("#progressbar").css("display", "block");
 
     $.ajax({
         type: "POST",
-        url: "php/checkFilesToNormalize.php",
+        url: "php/checkFileNamesToNormalize.php",
         dataType: "json",
         data: {
             directory: directory
         }
     }).always(function (response) {
-        checkFilesToNormalizeResult(response);
-        $("#loading-spinner").css("display", "none");
+        //  $("#progressbar").css("display", "none");
+        checkFileNamesToNormalizeResult(response);
+      
     });
 }
 
-function checkFilesToNormalizeResult(response) {
+function checkFileNamesToNormalizeResult(response) {
     $("#file-data tbody ~ tbody").empty();
     var tbody = $("#file-results table").children("tbody:nth-of-type(2)");
 
@@ -34,9 +35,9 @@ function checkFilesToNormalizeResult(response) {
         var row =
             "<tr><td>" +
             path +
-            "</td><td>" +
-            fileName +
             "</td><td><a>" +
+            fileName +
+            "</a></td><td><a>" +
             newFileName +
             "</a></td><td>" +
             '<input type="checkbox" class="dont-rename"></input>' +
@@ -52,11 +53,38 @@ $("#normalizeModal").on("hidden.bs.modal", function () {
     dbOpsBtnWrapper.addClass("fade-in").one(transitionEnd, function () {});
 });
 
+
+$(document).ready(function () {
+
+    $("#file-results table").on("change", ":checkbox", function () {
+
+        var originalFileName = $(this)
+            .closest("tr")
+            .find("td:nth-of-type(2)")
+            .text();
+
+       // console.log(originalFileName);
+
+        $.ajax({
+            type: "POST",
+            url: "php/updateSessionWithRenameProp.php",
+            dataType: "json",
+            data: {
+                originalFileName: originalFileName
+            }
+        })
+
+    });
+
+});
+
+
 $("#modal-rename-files-btn").on("click", function () {
     renameTheFilesToNormalize();
 });
 
 function renameTheFilesToNormalize() {
+
     $.ajax({
         type: "POST",
         url: "php/renameTheFilesToNormalize.php",
@@ -64,7 +92,7 @@ function renameTheFilesToNormalize() {
         data: {
             dontRenameThese: dontRenameThese
         }
-    }).always(function(response) {
+    }).always(function (response) {
         handleRenameTheFilesToNormalizeResult(response);
     });
 }
@@ -106,14 +134,14 @@ function handleRenameTheFilesToNormalizeResult(response) {
     }
 }
 
-$("#file-results table").on("change", ":checkbox", function() {
+$("#file-results table").on("change", ":checkbox", function () {
 
     if ($(this).is(":checked")) {
 
         dontRenameThese.push($(this)
-                .parents("tr")
-                .find("td:nth-of-type(3)")
-                .text());
+            .parents("tr")
+            .find("td:nth-of-type(3)")
+            .text());
     } else {
         // console.log($(this).val() + " is now unchecked");
     }

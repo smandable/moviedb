@@ -1,4 +1,4 @@
-$("input[type=radio]").on("change", function() {
+$("input[type=radio]").on("change", function () {
     $(".collapse")
         .not($("div." + $(this).attr("class")))
         .slideUp();
@@ -6,7 +6,7 @@ $("input[type=radio]").on("change", function() {
     $("#single-title-input").css("border", "1px solid #ccc");
 });
 
-$(".btn-add-single-title").on("click", function(event) {
+$(".btn-add-single-title").on("click", function (event) {
     event.preventDefault();
     var stl = $.trim($("#single-title-input").val());
     if (stl) {
@@ -21,7 +21,49 @@ $(".btn-add-single-title").on("click", function(event) {
     }
 });
 
-$(".btn-process-dir-database-ops").on("click", function(event) {
+$(".btn-process-dir-database-ops").on("click", function (event) {
     event.preventDefault();
-    processFilesForDB(directory);
+    $("#progressbar").css("display", "block");
+
+    //     do {
+    //    document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
+    //     } while ($('#information div:contains("Process completed")').length == 0);
+    //processFilesForDB(directory);
+    //updateSessionWithDimensionAndDuration();
+    //processFilesForDB(directory);
+    //$("#progressbar").css("display", "none");
+
+    if ($('#information div:contains("Process completed")').length == 0) {
+        console.log("process completed length b: ", $('#information div:contains("Process completed")').length);
+        document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
+
+    //processFilesForDB(directory);
+    console.log("process completed length a: ", $('#information div:contains("Process completed")').length);
+    //console.log("process completed");
+     }
 });
+
+// document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
+
+$(document).ready(function () {
+    //console.log("process completed length: ", $('#information div:contains("Process completed")').length);
+
+    if ($('#information div:contains("Process completed")').length > 0) {
+        //processFilesForDB(directory);
+        console.log("process completed");
+    }
+});
+
+
+// function updateSessionWithDimensionAndDuration() {
+//     //  $("#progressbar").css("display", "block");
+//     $.ajax({
+//         type: "POST",
+//         url: "php/updateSessionWithDimensionAndDuration.php",
+//         dataType: "json",
+//         async :false,
+//     }).done(function () {
+//         document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
+//       processFilesForDB(directory);
+//     });
+// }

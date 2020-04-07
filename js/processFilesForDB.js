@@ -1,5 +1,5 @@
 function processFilesForDB(directory) {
-    $("#loading-spinner").css("display", "inline-block");
+
     $.ajax({
         type: "POST",
         url: "php/processFilesForDB.php",
@@ -7,14 +7,17 @@ function processFilesForDB(directory) {
         data: {
             directory: directory
         }
-    }).always(function(response) {
+    }).always(function (response) {
         handleProcessFilesForDBResult(response);
-        $("#loading-spinner").css("display", "none");
+        //$("#loading-spinner").css("display", "none");
     });
 }
 
 function handleProcessFilesForDBResult(response) {
     $("#mode").css("display", "none");
+    $(".ui-grid-viewport").css("height", "100px");
+    $(".ui-grid").css("height", "100px");
+    // $(".grid").css("overflow-y", "hidden");
     $("#directory-results").css("display", "block");
 
     totalCount = response.length;
@@ -88,8 +91,8 @@ function handleProcessFilesForDBResult(response) {
                 toolTipDurationHTML +
                 "</td><td>" +
                 dateCreatedInDB +
-                '</td><td class="dup-not-new">duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
-                '<i class="fas fa-copy"></i>Update DB</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';
+                '</td><td class="dup-not-new">D</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
+                '<i class="fas fa-copy"></i>Update</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i></button></td></tr>';
         } else {
             ++newMovies;
             totalSizeNew += titleSize;
@@ -103,26 +106,26 @@ function handleProcessFilesForDBResult(response) {
                 formatSize(titleSize) +
                 "</td><td>" +
                 formatTitleDuration(titleDuration) +
-                '</td><td></td><td class="new-not-dup">New</td><td><!--<button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update</button>--><!--<button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>-->' +
-                '<!--<button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button>--></td></tr>';
+                '</td><td></td><td class="new-not-dup">N</td><td><!--<button class="btn btn-warning btn-update-with-result" type="button"><i class="fas fa-copy"></i>Update</button>--><!--<button class="btn btn-default btn-delete"><i class="fa fa-trash"></i></button>-->' +
+                '<!--<button class="btn btn-success btn-play"><i class="fas fa-play"></i></button>--></td></tr>';
         }
         $("#directory-results table").append(markup);
     }
 
     $("#directory-results #totals").html(
         '<span>Total: <span class="num-span">' +
-            totalCount +
-            " (" +
-            formatSize(totalSizeNew + totalSizeDuplicates) +
-            ')</span></span><span>New: <span class="num-span">' +
-            newMovies +
-            " (" +
-            formatSize(totalSizeNew) +
-            ')</span></span><span>Duplicates: <span class="num-span">' +
-            numduplicates +
-            " (" +
-            formatSize(totalSizeDuplicates) +
-            ")</span></span>"
+        totalCount +
+        " (" +
+        formatSize(totalSizeNew + totalSizeDuplicates) +
+        ')</span></span><span>New: <span class="num-span">' +
+        newMovies +
+        " (" +
+        formatSize(totalSizeNew) +
+        ')</span></span><span>Duplicates: <span class="num-span">' +
+        numduplicates +
+        " (" +
+        formatSize(totalSizeDuplicates) +
+        ")</span></span>"
     );
     angular
         .element($("#movie-controller"))

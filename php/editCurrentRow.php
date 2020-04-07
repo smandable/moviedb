@@ -27,14 +27,14 @@ if ($columnToUpdate == 'Title') {
         $db->query("UPDATE `" . $table . "` SET filepath='$path' WHERE id='$id'");
     }
 }
-if ($columnToUpdate == 'Dimensions') {
+if ($columnToUpdate == 'Scale') {
     $db->query("UPDATE `" . $table . "` SET dimensions='$valueToUpdate' WHERE id='$id'");
 }
 if ($columnToUpdate == 'Size') {
     $valueToUpdate = formatSize($valueToUpdate);
     $db->query("UPDATE `" . $table . "` SET filesize='$valueToUpdate' WHERE id='$id'");
 }
-if ($columnToUpdate == 'Duration') {
+if ($columnToUpdate == 'Time') {
     $db->query("UPDATE `" . $table . "` SET duration='$valueToUpdate' WHERE id='$id'");
 }
 

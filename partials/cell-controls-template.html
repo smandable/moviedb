@@ -1,13 +1,13 @@
 <div class="ui-grid-cell-contents">
     <button class="btn btn-danger" ng-click="grid.appScope.deleteButtonClickHandler.onClick(row.entity.id)">
-        <i class="fas fa-trash"></i>Del
+        <i class="fas fa-trash"></i>
     </button>
     <!-- <button class="btn btn-warning btn-paste-results" ng-click="grid.appScope.pasteResultsButtonClickHandler.onClick(row.entity.id)">
         <i class="fas fa-paste"></i>Paste
     </button> -->
 
     <button class="btn btn-success btn-play" ng-class="{true: 'disabled'}[row.entity.filepath == null]" ng-click="grid.appScope.playButtonClickHandler.onClick(row.entity.filepath)">
-        <i class="fas fa-play"></i>Play
+        <i class="fas fa-play"></i>
     </button>
     <input type="checkbox" class="row-select-checkbox" ng-click="grid.appScope.rowCheckboxHandler.onClick(row.entity.id, row.entity.filesize)"></input>
 </div>

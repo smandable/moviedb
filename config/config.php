@@ -2,9 +2,9 @@
 
 return (object) array(
     'host' => 'localhost:3306',
-    'username' => 'sean',
+    'username' => 'root',
     'pass' => 'spm024',
-    //'database' => 'movieLibraryPROD',
-    'database' => 'movieLibraryPROD',
+    //'database' => 'movieLibraryTEST',
+    'database' => 'movieLibraryTEST',
     'table' => 'movies_het'
 );

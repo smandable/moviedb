@@ -9,15 +9,15 @@
 session_id("files");
 session_start();
 
+//var_dump($_SESSION["files"]);
+
 checkFiles();
 
 returnHTML();
 
 function checkFiles()
 {
-
     foreach ($_SESSION["files"] as &$file) {
-
         $path = $file["path"];
         $fileName = $file["fileName"];
         $fileExtension = $file["fileExtension"];
@@ -91,7 +91,7 @@ function cleanupFunctions($fileNameNoExtension)
 {
     $fileNameNoExtension = preg_replace('/1080p/i', '', $fileNameNoExtension); // Look for '1080p', replace with nothing
     $fileNameNoExtension = preg_replace('/720p/i', '', trim($fileNameNoExtension)); // Look for '720p', replace with nothing
-    $fileNameNoExtension = preg_replace('/DVDRip/i', '', trim($fileNameNoExtension)); // Look for 'DVDRip', replace with nothing
+    $fileNameNoExtension = preg_replace('/DVDRip/i', '', trim($fileNameNoExtension)); // Look for 'DVDRip', replace with nothingcheckFileNamesToNormalize
     $fileNameNoExtension = preg_replace('/x264/i', '', trim($fileNameNoExtension)); // Look for 'x264', replace with nothing
     $fileNameNoExtension = preg_replace('/XCITE/i', '', trim($fileNameNoExtension)); // Look for 'XCITE', replace with nothing
     $fileNameNoExtension = preg_replace('/KTR/i', '', trim($fileNameNoExtension)); // Look for 'KTR', replace with nothing
@@ -136,4 +136,8 @@ function returnHTML()
 {
     include "safe_json_encode.php";
     echo safe_json_encode($_SESSION["files"]);
+
+    // session_id("files");
+    // session_start();
+    // $_SESSION["files"] = $files;
 }
