@@ -25,22 +25,14 @@ $(".btn-process-dir-database-ops").on("click", function (event) {
     event.preventDefault();
     $("#progressbar").css("display", "block");
 
-    //     do {
-    //    document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
-    //     } while ($('#information div:contains("Process completed")').length == 0);
-    //processFilesForDB(directory);
-    //updateSessionWithDimensionAndDuration();
-    //processFilesForDB(directory);
-    //$("#progressbar").css("display", "none");
+    document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
 
-    if ($('#information div:contains("Process completed")').length == 0) {
-        console.log("process completed length b: ", $('#information div:contains("Process completed")').length);
-        document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
+    interval = numFiles * 100; // 500?
 
-    //processFilesForDB(directory);
-    console.log("process completed length a: ", $('#information div:contains("Process completed")').length);
-    //console.log("process completed");
-     }
+    setTimeout(function run() {
+       processFilesForDB(directory);
+    }, interval);
+
 });
 
 // document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
@@ -48,10 +40,10 @@ $(".btn-process-dir-database-ops").on("click", function (event) {
 $(document).ready(function () {
     //console.log("process completed length: ", $('#information div:contains("Process completed")').length);
 
-    if ($('#information div:contains("Process completed")').length > 0) {
-        //processFilesForDB(directory);
-        console.log("process completed");
-    }
+    // if ($('#information div:contains("Process completed")').length > 0) {
+    //     //processFilesForDB(directory);
+    //     console.log("process completed");
+    // }
 });
 
 

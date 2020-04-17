@@ -55,13 +55,15 @@ function countFiles(directory) {
         type: "POST",
         url: "php/countFiles.php",
         dataType: "json",
-        async :false,
+        async: false,
         data: {
             directory: directory
         }
     }).done(function (response) {
-       $("#progressbar").empty();
-    //    console.log("calling getFileNamesAndSizes: ", response, directory);
+        $("#progressbar").empty();
+        //    console.log("calling getFileNamesAndSizes: ", response, directory);
+        numFiles = response;
+        console.log("numfiles: ", numFiles);
         getFileNamesAndSizes(response, directory);
     });
 
@@ -69,19 +71,19 @@ function countFiles(directory) {
 
 function getFileNamesAndSizes(numFiles, directory) {
     // console.log("in getFileNamesAndSizes: ", numFiles, directory);
-   $("#progressbar").css("display", "block");
+    $("#progressbar").css("display", "block");
     $.ajax({
         type: "POST",
         url: "php/getFileNamesAndSizes.php",
         dataType: "json",
-        async :false,
+        async: false,
         data: {
             numFiles: numFiles,
             directory: directory
         }
     }).always(function (response) {
         //console.log("response in getFileNamesAndSizes", response);
-       //$("#progressbar").css("display", "none");
+        //$("#progressbar").css("display", "none");
         handleGetFileNamesAndSizesResult(response);
     });
 }

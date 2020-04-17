@@ -9,7 +9,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@fortawesome/fontawesome-free": "^5.12.0",
+    "@fortawesome/fontawesome-free": "^5.13.0",
     "angular": "^1.7.9",
     "angular-animate": "^1.7.9",
     "angular-modal-service": "^0.15.3",
@@ -26,17 +26,17 @@
     "locutus": "^2.0.11",
     "lodash": "^4.17.15",
     "npm-update": "^2.1.0",
-    "npm-upgrade": "^2.0.2",
-    "popper.js": "^1.16.0",
+    "npm-upgrade": "^2.0.3",
+    "popper.js": "^1.16.1",
     "ruby": "^0.6.1",
-    "underscore": "^1.9.2"
+    "underscore": "^1.10.2"
   },
   "devDependencies": {
-    "grunt": "^1.0.4",
+    "grunt": "^1.1.0",
     "grunt-contrib-sass": "^1.0.0",
     "grunt-contrib-watch": "^1.1.0",
     "node-bourbon": "^4.2.8",
-    "sass": "^1.25.0"
+    "sass": "^1.26.3"
   },
   "repository": {
     "type": "git",
