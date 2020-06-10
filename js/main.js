@@ -32,10 +32,12 @@ var transitionEnd2 = "webkitTransitionEnd msTransitionEnd transitionend";
 //default
 
 //$("#input-directory").val("/run/media/sean/Recorded 1/recorded/");
-$("#input-directory").val("/run/media/sean/Recorded 4/names fixed/");
+// $("#input-directory").val("/run/media/sean/Recorded 4/names fixed/");
 //$("#input-directory").val("/home/sean/Downloads/test/");
+// $("#input-directory").val("f:\\names fixed\\");
+$("#input-directory").val("f:\\test\\");
 
-$(".btn-start-processing-dir").on("click", function (event) {
+$(".btn-start-processing-dir").on("click", function(event) {
     event.preventDefault();
     directory = $("#input-directory").val();
 
@@ -59,7 +61,7 @@ function countFiles(directory) {
         data: {
             directory: directory
         }
-    }).done(function (response) {
+    }).done(function(response) {
         $("#progressbar").empty();
         //    console.log("calling getFileNamesAndSizes: ", response, directory);
         numFiles = response;
@@ -81,7 +83,7 @@ function getFileNamesAndSizes(numFiles, directory) {
             numFiles: numFiles,
             directory: directory
         }
-    }).always(function (response) {
+    }).always(function(response) {
         //console.log("response in getFileNamesAndSizes", response);
         //$("#progressbar").css("display", "none");
         handleGetFileNamesAndSizesResult(response);
@@ -93,7 +95,7 @@ function handleGetFileNamesAndSizesResult(response) {
     //return totalNumFiles;
 }
 
-$(document).ready(function () {
+$(document).ready(function() {
     var intervalID;
 
     function copy_search_term(e) {
@@ -115,7 +117,7 @@ $(document).ready(function () {
         _.debounce(copy_search_term, 800)
     );
 
-    $(".recent-terms ul").on("click", "li", function (event) {
+    $(".recent-terms ul").on("click", "li", function(event) {
         var recentTerm = $(this).text();
         var input = $(".ui-grid-coluiGrid-0005").find("input[type=text]");
 
@@ -123,7 +125,7 @@ $(document).ready(function () {
         input.focus();
     });
 
-    $(".recent-terms button").on("click", function (event) {
+    $(".recent-terms button").on("click", function(event) {
         $(".recent-terms ul").empty();
     });
 });
@@ -185,7 +187,7 @@ function playMovie(path) {
     function handlePlayMovieResponse(data) {}
 }
 
-$("#directory-results table").on("click", ".btn-update-with-result", function () {
+$("#directory-results table").on("click", ".btn-update-with-result", function() {
     copyResultRowValues = [];
     var row = $(this).closest("tr");
 
@@ -217,11 +219,11 @@ function handleUpdateExistingRecordResponse() {
         .refreshData();
 }
 
-$(document).ready(function () {
+$(document).ready(function() {
     $("#movie-controller").on(
         "click",
         ".cell-size .ui-grid-cell-contents",
-        function (event) {
+        function(event) {
             var size = $(this).val();
             size = size.replace(new RegExp(",", "g"), "");
             size = parseFloat(size);
@@ -230,12 +232,12 @@ $(document).ready(function () {
     );
 });
 
-$(document).ready(function () {
+$(document).ready(function() {
     $('[data-toggle="tooltip"]').tooltip();
 
     $.fn.editable.defaults.mode = "inline";
 
-    $("#directory-results table").on("click", "a", function (e) {
+    $("#directory-results table").on("click", "a", function(e) {
         e.preventDefault();
 
         var pk = $(this)
@@ -248,12 +250,12 @@ $(document).ready(function () {
             pk: pk,
             name: "title",
             url: "php/editRowInResultsTable.php",
-            success: function (response) {}
+            success: function(response) {}
         });
     });
 });
 
-$("#directory-results").on("click", ".btn-refresh", function (event) {
+$("#directory-results").on("click", ".btn-refresh", function(event) {
     $("#directory-results table tr").remove();
     $(".ui-grid-viewport").css("height", "65vh");
     $(".ui-grid").css("height", "auto");
@@ -268,14 +270,14 @@ $("#directory-results").on("click", ".btn-refresh", function (event) {
         .refreshData();
 });
 
-$("#duplicates").on("click", ".btn-paste-results", function (event) {
+$("#duplicates").on("click", ".btn-paste-results", function(event) {
     clipboard.writeText($(".duplicate-text").val());
     $(this)
         .closest(".input-group")
         .remove();
 });
 
-$(".ui-grid-cell").on("click", ".btn-copy-title", function (event) {
+$(".ui-grid-cell").on("click", ".btn-copy-title", function(event) {
     clipboard.writeText(
         $(this)
         .closest(".ui-grid-coluiGrid-0005 .ui-grid-cell-contents")
@@ -293,7 +295,7 @@ function addMovie(nameToAdd, dimensions, size) {
             dimensions: dimensions,
             filesize: size
         }
-    }).always(function (data) {
+    }).always(function(data) {
         handleAddMovieResult(data);
     });
 }
@@ -320,7 +322,7 @@ function handleAddMovieResult(data) {
         .refreshData();
 }
 
-$("#duplicates").on("click", ".btn-find-file", function (event) {
+$("#duplicates").on("click", ".btn-find-file", function(event) {
     var fileName = $(".duplicate-text").val();
     findFile(fileName);
 });
@@ -328,10 +330,10 @@ $("#duplicates").on("click", ".btn-find-file", function (event) {
 var dbOpsBtnWrapper = $(".db-ops-btn-wrapper");
 var transitionEnd = "webkitTransitionEnd msTransitionEnd transitionend";
 
-$(document).ready(function () {
+$(document).ready(function() {
     $.fn.editable.defaults.mode = "inline";
 
-    $("#file-results table").on("click", "a", function (e) {
+    $("#file-results table").on("click", "a", function(e) {
         e.preventDefault();
 
         var path = $(this)
@@ -352,13 +354,13 @@ $(document).ready(function () {
             type: "text",
             pk: pk,
             name: "title",
-            params: function (params) {
+            params: function(params) {
                 params.path = path;
                 params.originalFileName = originalFileName;
                 return params;
             },
             url: "php/renameSingleFile.php",
-            success: function (response) {
+            success: function(response) {
                 if (response == "fail") {
                     $(this)
                         .closest("tr")
@@ -393,7 +395,7 @@ $(document).ready(function () {
     });
 });
 
-$("#file-results table").on("click", "th", function (event) {
+$("#file-results table").on("click", "th", function(event) {
     var table = $(this)
         .parents("table")
         .eq(0);
@@ -409,7 +411,7 @@ $("#file-results table").on("click", "th", function (event) {
         table.append(rows[i]);
     }
 });
-$("#directory-results table").on("click", "th", function (event) {
+$("#directory-results table").on("click", "th", function(event) {
     var table = $(this)
         .parents("table")
         .eq(0);

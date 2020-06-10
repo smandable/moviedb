@@ -9,8 +9,6 @@
 session_id("files");
 session_start();
 
-//var_dump($_SESSION["files"]);
-
 checkFiles();
 
 returnHTML();
@@ -101,9 +99,8 @@ function cleanupFunctions($fileNameNoExtension)
     $fileNameNoExtension = preg_replace('/XXX/i', '', trim($fileNameNoExtension)); // Look for 'XXX', replace with nothing
     $fileNameNoExtension = preg_replace('/MP4/i', '', trim($fileNameNoExtension)); // Look for 'MP4', replace with nothing
     $fileNameNoExtension = preg_replace('/^gush\./i', '', trim($fileNameNoExtension)); // Look for 'gush.', replace with nothing
-    $fileNameNoExtension = preg_replace('/(\sVol|Vol\s|Vol\.|\.Vol|Vol)/i', ' ', trim($fileNameNoExtension)); // ' Vol' or 'Vol ' or 'Vol.' or '.Vol' or 'Vol' to ' '
+    $fileNameNoExtension = preg_replace('/(Vol\s|Vol\.|\.Vol)/i', ' ', trim($fileNameNoExtension)); // 'Vol ' or 'Vol.' or '.Vol' to ' '
     $fileNameNoExtension = preg_replace('/all star/i', 'All-Star', trim($fileNameNoExtension)); // 'all star' to All-Star
-    //$fileNameNoExtension = preg_replace('/cant/i', 'Can\'t, trim($fileNameNoExtension)); // 'cant' to Can't
     $fileNameNoExtension = preg_replace('/disc/i', 'CD', trim($fileNameNoExtension)); // 'disc' to CD
     $fileNameNoExtension = preg_replace('/disk(\s*)/i', 'CD', trim($fileNameNoExtension)); // 'disk' or 'disk ' to CD
     $fileNameNoExtension = preg_replace('/cd/i', 'CD', trim($fileNameNoExtension)); // 'cd' to CD
@@ -136,8 +133,4 @@ function returnHTML()
 {
     include "safe_json_encode.php";
     echo safe_json_encode($_SESSION["files"]);
-
-    // session_id("files");
-    // session_start();
-    // $_SESSION["files"] = $files;
 }
