@@ -30,7 +30,7 @@ var fname = "";
 //     deleteIt();
 // }
 
-// $('#refreshButton').on("click", function (event) {
+// $('#refreshButton').one("click", function (event) {
 //     event.preventDefault();
 //
 //     angular.element($('#movie-controller')).scope().refreshData();
@@ -38,36 +38,36 @@ var fname = "";
 
 function bs_input_file() {
 
-	$(".input-file").before(function() {
-		var element = $("<input type='file' style='visibility:hidden; height:0' class='fname-input'>");
-		element.attr("name", $(this).attr("name"));
-		element.change(function() {
-			element.next(element).find('input').val((element.val()).split('\\').pop());
-		});
-		$(this).find("button.btn-choose-file").click(function() {
-			$('.btn-start-processing-file').removeAttr("disabled");
-			element.click();
-		});
-		// $(this).find("button.btn-choose-dir").click(function () {
-		//     $('.btn-start-processing-dir').removeAttr("disabled");
-		//     element.click();
-		// });
-		$(this).find('input').css("cursor", "pointer");
-		$(this).find('input').mousedown(function() {
-			$('.btn-start').removeAttr("disabled");
-			$(this).parents('.input-file').prev().click();
-			return false;
-		});
-		fname = element;
-		return fname;
-	});
+    $(".input-file").before(function() {
+        var element = $("<input type='file' style='visibility:hidden; height:0' class='fname-input'>");
+        element.attr("name", $(this).attr("name"));
+        element.change(function() {
+            element.next(element).find('input').val((element.val()).split('\\').pop());
+        });
+        $(this).find("button.btn-choose-file").click(function() {
+            $('.btn-start-processing-file').removeAttr("disabled");
+            element.click();
+        });
+        // $(this).find("button.btn-choose-dir").click(function () {
+        //     $('.btn-start-processing-dir').removeAttr("disabled");
+        //     element.click();
+        // });
+        $(this).find('input').css("cursor", "pointer");
+        $(this).find('input').mousedown(function() {
+            $('.btn-start').removeAttr("disabled");
+            $(this).parents('.input-file').prev().click();
+            return false;
+        });
+        fname = element;
+        return fname;
+    });
 }
 
 $(function() {
-	bs_input_file();
+    bs_input_file();
 });
 
-// $('input[type=radio]').on('change', function () {
+// $('input[type=radio]').one('change', function () {
 //
 //     if (!this.checked) return
 //
@@ -77,7 +77,7 @@ $(function() {
 //     $('#single-title-input').css('border', '1px solid #ccc');
 // });
 //
-// $('.btn-add-single-title').on("click", function (event) {
+// $('.btn-add-single-title').one("click", function (event) {
 //     event.preventDefault();
 //     var stl = $.trim($("#single-title-input").val());
 //     if (stl) {
@@ -94,7 +94,7 @@ $(function() {
 //     }
 // });
 //
-// $('.btn-start-processing-file').on("click", function (event) {
+// $('.btn-start-processing-file').one("click", function (event) {
 //     event.preventDefault();
 //     //console.log('btn-start-processing-file click handler');
 //     var ifl = $.trim($("#input-file-input").val());
@@ -131,7 +131,7 @@ $(function() {
 //     }
 // });
 //
-// $('.btn-add-title').on("click", function (event) {
+// $('.btn-add-title').one("click", function (event) {
 //     event.preventDefault();
 //     var mtl = $.trim($("#input-file-record-name").val());
 //     if (mtl) {
@@ -149,7 +149,7 @@ $(function() {
 // // $('#input-directory').val("/Users/sean/Download/tmp/names fixed/");
 // $('#input-directory').val("/Users/sean/Download/tmp/names fixed/");
 //
-// $('.btn-start-processing-dir').on("click", function (event) {
+// $('.btn-start-processing-dir').one("click", function (event) {
 //     event.preventDefault();
 //
 //     directory = $('#input-directory').val();
@@ -230,13 +230,13 @@ $(function() {
 //     $('#import-records .record-name').val(lines[currentLineIndex]);
 // }
 //
-// $('#duplicates').on("click", ".btn-copy-title", function (event) {
+// $('#duplicates').one("click", ".btn-copy-title", function (event) {
 //
 //     clipboard.writeText($('.duplicate-text').val());
 //     $(this).closest('.input-group').remove();
 // });
 //
-// $('#from-directory').on("click", ".btn-copy-title", function (event) {
+// $('#from-directory').one("click", ".btn-copy-title", function (event) {
 //
 //     clipboard.writeText($('.duplicate-text').val());
 //     $(this).closest('.input-group').remove();
@@ -247,12 +247,12 @@ $(function() {
 //     }
 // });
 //
-// $('.ui-grid-cell').on("click", ".btn-copy-title", function (event) {
+// $('.ui-grid-cell').one("click", ".btn-copy-title", function (event) {
 //
 //     clipboard.writeText($(this).closest('.ui-grid-coluiGrid-0005 .ui-grid-cell-contents').val());
 // });
 //
-// $(document).on("click", '.btn-add-title-modal', function (event) {
+// $(document).one("click", '.btn-add-title-modal', function (event) {
 //     event.preventDefault();
 //
 //     var motl = $(this).parents('.input-text').children("#input-dir-record-name");
@@ -269,12 +269,12 @@ $(function() {
 //     }
 // });
 //
-// $(document).on("click", '.btn-remove-title-modal', function (event) {
+// $(document).one("click", '.btn-remove-title-modal', function (event) {
 //
 //     $(this).closest('.input-group').remove();
 // });
 //
-// $(document).on("click", '.btn-add-all-modal', function (event) {
+// $(document).one("click", '.btn-add-all-modal', function (event) {
 //     // event.preventDefault();
 //     while (numTitlesFromDirectory > 0) {
 //
@@ -323,7 +323,7 @@ $(function() {
 //     angular.element($('#movie-controller')).scope().refreshData();
 // }
 //
-// $('#duplicates').on("click", ".btn-find-file", function (event) {
+// $('#duplicates').one("click", ".btn-find-file", function (event) {
 //     var fileName = $('.duplicate-text').val();
 //     findFile(fileName);
 // });

@@ -5,14 +5,14 @@ var directories = [];
 var startingFile = 0;
 var endingFile;
 
-$("#normalizeLink").on("click", function(event) {
+$("#normalizeLink").one("click", function(event) {
     $("#normalize-db").css("display", "block");
     $("#find-duplicates").css("display", "none");
     $("#utils-paths tbody").empty();
     getOptionsAndPathsFromFile();
 
 });
-$("#findDuplicatesLink").on("click", function(event) {
+$("#findDuplicatesLink").one("click", function(event) {
     $("#normalize-db").css("display", "none");
     $("#find-duplicates").css("display", "block");
 
@@ -29,7 +29,7 @@ $(document).ready(function() {
     });
 
 
-    $('#btn-normalize').on("click", function(event) {
+    $('#btn-normalize').one("click", function(event) {
         event.preventDefault();
 
         $('#utils-paths tbody tr').each(function() {
@@ -41,7 +41,7 @@ $(document).ready(function() {
     });
 });
 
-$('#chkbox-options input[type=checkbox]').on("change", function(event) {
+$('#chkbox-options input[type=checkbox]').one("change", function(event) {
     event.preventDefault();
     var key = $(this).attr('value');
     if ($(this).prop("checked")) {
@@ -251,7 +251,7 @@ function countFiles(directory) {
 
 //Check DB for Duplicates
 
-$('#btn-find-duplicates').on("click", function(event) {
+$('#btn-find-duplicates').one("click", function(event) {
     event.preventDefault();
     checkDBForDuplicates();
 
@@ -324,7 +324,7 @@ function handleCheckDBForDuplicatesResult(response) {
     // $("#directory-results .col-lg-2").html('<button class="btn btn-success btn-refresh" type="button">Refresh</button>');
 }
 
-$('#directory-results').on("click", ".btn-delete", function(event) {
+$('#directory-results').one("click", ".btn-delete", function(event) {
     var path = $(this).closest('tr').children('td:first-of-type').text();
     var fileName = $(this).closest('tr').children('td:nth-of-type(3)').text();
     var fileNameAndPath = path + "/" + fileName;

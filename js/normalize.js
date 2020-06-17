@@ -1,7 +1,7 @@
 $('#input-directory').val("/Volumes/Misc 1/to move/");
 //$('#input-directory').val("/Users/sean/Downloads/test/");
 
-$('.btn-start-processing-dir').on("click", function(event) {
+$('.btn-start-processing-dir').one("click", function(event) {
     event.preventDefault();
 
     directory = $('#input-directory').val();
@@ -39,7 +39,7 @@ $('.btn-start-processing-dir').on("click", function(event) {
 var dbOpsButton = $('.btn-process-dir-database-ops');
 var transitionEnd2 = 'webkitTransitionEnd msTransitionEnd transitionend';
 
-$('.btn-process-dir-rename-files').on("click", function(event) {
+$('.btn-process-dir-rename-files').one("click", function(event) {
     event.preventDefault();
 
     $.ajax({
@@ -60,7 +60,7 @@ function handlerenameSingleFileResult(response) {
     });
 }
 
-$('#file-data').on("click", ".btn-default", function(event) {
+$('#file-data').one("click", ".btn-default", function(event) {
 
     if ($(this).hasClass("btn-show-original-filename")) {
         $(this).closest('tr').children('td:nth-of-type(2)').css("display", "table-cell");
@@ -78,7 +78,7 @@ $('#file-data').on("click", ".btn-default", function(event) {
 
 });
 
-$('#file-data').on("click", ".btn-revert", function(event) {
+$('#file-data').one("click", ".btn-revert", function(event) {
     var path = $(this).closest('tr').children('td:first-of-type').text();
     path = path + "/";
     var originalFileName = $(this).closest("tr").find("td:nth-of-type(2)").text();
@@ -218,7 +218,7 @@ String.prototype.compose = (function() {
 $(document).ready(function() {
     $.fn.editable.defaults.mode = 'inline';
 
-    $("#file-results table").on("click", "a", function(e) {
+    $("#file-results table").one("click", "a", function(e) {
         e.preventDefault();
 
         var path = $(this).closest('tr').children('td:first-of-type').text();
@@ -251,7 +251,7 @@ $(document).ready(function() {
     });
 });
 
-$('#file-results table').on("click", "th", function(event) {
+$('#file-results table').one("click", "th", function(event) {
 
     var table = $(this).parents('table').eq(0);
     var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()));

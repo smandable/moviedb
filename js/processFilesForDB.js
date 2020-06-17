@@ -1,13 +1,12 @@
 function processFilesForDB(directory) {
-
     $.ajax({
         type: "POST",
         url: "php/processFilesForDB.php",
         dataType: "json",
         data: {
-            directory: directory
-        }
-    }).always(function (response) {
+            directory: directory,
+        },
+    }).always(function(response) {
         handleProcessFilesForDBResult(response);
         //$("#loading-spinner").css("display", "none");
     });
@@ -53,7 +52,7 @@ function handleProcessFilesForDBResult(response) {
             toolTipSizeHTML = "";
             toolTipDimensionsHTML = "";
             toolTipDurationHTML = "";
-
+            updateBtn = "";
             if (response[i]["isLarger"]) {
                 toolTipSizeHTML =
                     '<a href="#" data-toggle="tooltip" data-placement="top" title="' +
@@ -67,6 +66,10 @@ function handleProcessFilesForDBResult(response) {
                     '<a href="#" data-toggle="tooltip" data-placement="top" title="' +
                     formatSize(durationInDB) +
                     '"><i class="fas fa-angle-double-up"></i></a>';
+
+                updateBtn =
+                    '<button class="btn btn-warning btn-update-with-result" type="button">' +
+                    '<i class="fas fa-copy"></i>Update</i></button>';
             }
             markup =
                 '"<tr><td class="' +
@@ -91,8 +94,9 @@ function handleProcessFilesForDBResult(response) {
                 toolTipDurationHTML +
                 "</td><td>" +
                 dateCreatedInDB +
-                '</td><td class="dup-not-new">D</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
-                '<i class="fas fa-copy"></i>Update</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i></button></td></tr>';
+                '</td><td class="dup-not-new">D</td><td>' +
+                updateBtn +
+                '<button class="btn btn-success btn-play"><i class="fas fa-play"></i></button></td></tr>';
         } else {
             ++newMovies;
             totalSizeNew += titleSize;
@@ -127,10 +131,7 @@ function handleProcessFilesForDBResult(response) {
         formatSize(totalSizeDuplicates) +
         ")</span></span>"
     );
-    angular
-        .element($("#movie-controller"))
-        .scope()
-        .refreshData();
+    angular.element($("#movie-controller")).scope().refreshData();
 
     $("#directory-results .col-lg-2").html(
         '<button class="btn btn-success btn-refresh" type="button">Refresh</button>'

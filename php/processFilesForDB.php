@@ -20,6 +20,7 @@ if (empty($_POST['directory'])) {
 //$options = array("false", "true", "true", "true", "true", "false");
 
 $titlesArray = array();
+$duplicateTitlesArray = array();
 
 session_id("files");
 session_start();
@@ -29,12 +30,14 @@ populateTitlesArray($titlesArray);
 $titlesArray = array_values($titlesArray);
 
 for ($i = 0; $i < count($titlesArray); $i++) {
-    checkDatabaseForTitle($titlesArray[$i]);
+    checkDatabaseForTitle($directory, $titlesArray[$i], $duplicateTitlesArray);
 }
 
 //renameTheFilesMissing01($titlesArray);
 
-//var_dump($titlesArray);
+$allFiles = $_SESSION["files"];
+
+searchSessionForDuplicateFiles($duplicateTitlesArray, $allFiles);
 
 returnHTML($titlesArray);
 
@@ -76,8 +79,7 @@ function populateTitlesArray(&$titlesArray)
         }
     );
 }
-
-function checkDatabaseForTitle(&$titlesArray)
+function checkDatabaseForTitle($directory, &$titlesArray, &$duplicateTitlesArray)
 {
     $title = $titlesArray["title"];
     $titleSize = $titlesArray["titleSize"];
@@ -117,7 +119,7 @@ function checkDatabaseForTitle(&$titlesArray)
     }
 
     // If file being read from directory DOES NOT have a number in it, look for that title in the DB WITH a number + " 01".
-    // If found, add file to $filesMissingSpacePoundSpace01 array, and set $title to $title + # 01
+    // If found, add file to $filesMissingSpacePoundSpace01 array, and set $title to $title + # 01. Then move into duplicates dir.
 
     if (!preg_match('/# [0-9]+$/', $title)) {
         $title01 = $title . " # 01";
@@ -131,6 +133,7 @@ function checkDatabaseForTitle(&$titlesArray)
             $titlesArray["fileMissing01"] = $fileMissing01;
 
             $title = $title01;
+            //    array_push($duplicateTitlesArray, $title);
         }
     }
     $result = null;
@@ -145,14 +148,15 @@ function checkDatabaseForTitle(&$titlesArray)
         $titlesArray['sizeInDB'] = $row['filesize'];
         $titlesArray['durationInDB'] = $row['duration'];
         $titlesArray['pathInDB'] = $row['filepath'];
-        $titlesArray['isLarger'] = compareFileSizeToDB($titlesArray['titleSize'], $titlesArray['sizeInDB']);
+        $isLarger = $titlesArray['isLarger'] = compareFileSizeToDB($titlesArray['titleSize'], $titlesArray['sizeInDB']);
+
+        $duplicateTitlesArray[] = array('title' => $title, 'isLarger' => $isLarger);
     } else {
         $titlesArray['id'] = addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePath, $db, $table);
     }
-    
+
     $db->close();
 }
-
 function addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePath, $db, $table)
 {
     $pattern1 = '/to move\//i';
@@ -173,7 +177,6 @@ function addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePat
         printf("Error in addToDB() message: %s\n", $db->error);
     }
 }
-
 function compareFileSizeToDB($size, $sizeInDB)
 {
     $isLarger = false;
@@ -183,23 +186,39 @@ function compareFileSizeToDB($size, $sizeInDB)
 
     return $isLarger;
 }
-
-function moveDuplicateFiles($title, $filesArray)
+function searchSessionForDuplicateFiles($duplicateTitlesArray, $allFiles)
 {
-    global $directory;
-    $destination = $directory . 'duplicates/';
+
+    foreach ($allFiles as $file) {
+        $path = $file["path"];
+        $fileName = $file["fileName"];
+
+        for ($i = 0; $i < count($duplicateTitlesArray); $i++) {
+            if (strpos($file["fileNameNoExtension"], $duplicateTitlesArray[$i]['title']) > -1) {
+
+                $destination = $path . "\\duplicates\\";
+
+                if ($duplicateTitlesArray[$i]["isLarger"] == true) {
+
+                    $destination = $path . "\\duplicates\\larger\\";
+                }
+                moveDuplicateFiles($path, $destination, $fileName);
+            }
+        }
+    }
+}
+function moveDuplicateFiles($path, $destination, $fileName)
+{
     if (!is_dir($destination)) {
         mkdir($destination, 0777, true);
     }
-    foreach ($filesArray as $file) {
-        if (!is_file($file['Path'])) {
-            continue;
-        }
-        if ($file['title'] == stripslashes($title)) {
-            $rename_file = $destination . $file['baseName'];
-            str_replace("'", "\'", $rename_file);
-            rename($file['Path'], $rename_file);
-        }
+
+    if (!is_file($path)) {
+        $file_to_rename = $path . "\\" . $fileName;
+        $rename_file = $destination . $fileName;
+
+        str_replace("'", "\'", $rename_file);
+        rename($file_to_rename, $rename_file);
     }
 }
 
@@ -260,13 +279,13 @@ function returnHTML($titlesArray)
     echo safe_json_encode($titlesArray);
 }
 
-function quickLogFile($fileNameAndPath, $fileDimensions, $duration)
-{
-    global $directory;
-    $myfile = fopen("$directory/fileDimensions_duration.txt", "a") or die("Unable to open file!");
+// function quickLogFile($directory, $duplicateTitle)
+// {
 
-    $txt = "$fileNameAndPath\t$fileDimensions\t$duration\n\n";
+//     $myfile = fopen("$directory/fileDimensions_duration.txt", "a") or die("Unable to open file!");
 
-    fwrite($myfile, $txt);
-    fclose($myfile);
-}
+//     $txt = "$directory$destination\n\n";
+
+//     fwrite($myfile, $txt);
+//     fclose($myfile);
+// }

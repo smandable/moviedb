@@ -1,4 +1,4 @@
-$("input[type=radio]").on("change", function () {
+$("input[type=radio]").one("change", function() {
     $(".collapse")
         .not($("div." + $(this).attr("class")))
         .slideUp();
@@ -6,7 +6,7 @@ $("input[type=radio]").on("change", function () {
     $("#single-title-input").css("border", "1px solid #ccc");
 });
 
-$(".btn-add-single-title").on("click", function (event) {
+$(".btn-add-single-title").one("click", function(event) {
     event.preventDefault();
     var stl = $.trim($("#single-title-input").val());
     if (stl) {
@@ -21,7 +21,7 @@ $(".btn-add-single-title").on("click", function (event) {
     }
 });
 
-$(".btn-process-dir-database-ops").on("click", function (event) {
+$(".btn-process-dir-database-ops").one("click", function(event) {
     event.preventDefault();
     $("#progressbar").css("display", "block");
 
@@ -30,14 +30,14 @@ $(".btn-process-dir-database-ops").on("click", function (event) {
     interval = numFiles * 100; // 500?
 
     setTimeout(function run() {
-       processFilesForDB(directory);
+        processFilesForDB(directory);
     }, interval);
 
 });
 
 // document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
 
-$(document).ready(function () {
+$(document).ready(function() {
     //console.log("process completed length: ", $('#information div:contains("Process completed")').length);
 
     // if ($('#information div:contains("Process completed")').length > 0) {

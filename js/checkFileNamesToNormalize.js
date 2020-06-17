@@ -10,10 +10,10 @@ function checkFileNamesToNormalize() {
         data: {
             directory: directory
         }
-    }).always(function (response) {
+    }).always(function(response) {
         //  $("#progressbar").css("display", "none");
         checkFileNamesToNormalizeResult(response);
-      
+
     });
 }
 
@@ -48,22 +48,22 @@ function checkFileNamesToNormalizeResult(response) {
     // if (!$('#normalizeModal').hasClass('in')) {
     $("#normalizeModal").modal("show");
 }
-$("#normalizeModal").on("hidden.bs.modal", function () {
+$("#normalizeModal").one("hidden.bs.modal", function() {
     dbOpsBtnWrapper.addClass("inline-flex").outerWidth();
-    dbOpsBtnWrapper.addClass("fade-in").one(transitionEnd, function () {});
+    dbOpsBtnWrapper.addClass("fade-in").one(transitionEnd, function() {});
 });
 
 
-$(document).ready(function () {
+$(document).ready(function() {
 
-    $("#file-results table").on("change", ":checkbox", function () {
+    $("#file-results table").one("change", ":checkbox", function() {
 
         var originalFileName = $(this)
             .closest("tr")
             .find("td:nth-of-type(2)")
             .text();
 
-       // console.log(originalFileName);
+        // console.log(originalFileName);
 
         $.ajax({
             type: "POST",
@@ -79,7 +79,7 @@ $(document).ready(function () {
 });
 
 
-$("#modal-rename-files-btn").on("click", function () {
+$("#modal-rename-files-btn").one("click", function() {
     renameTheFilesToNormalize();
 });
 
@@ -92,7 +92,7 @@ function renameTheFilesToNormalize() {
         data: {
             dontRenameThese: dontRenameThese
         }
-    }).always(function (response) {
+    }).always(function(response) {
         handleRenameTheFilesToNormalizeResult(response);
     });
 }
@@ -134,7 +134,7 @@ function handleRenameTheFilesToNormalizeResult(response) {
     }
 }
 
-$("#file-results table").on("change", ":checkbox", function () {
+$("#file-results table").one("change", ":checkbox", function() {
 
     if ($(this).is(":checked")) {
 

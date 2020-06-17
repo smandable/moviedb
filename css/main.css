@@ -8876,6 +8876,10 @@ body #directory-results #table-wrap table tr td button svg,
 body #directory-results #table-wrap table tr th button svg {
   margin-right: 5px;
 }
+body #directory-results #table-wrap table tr td button .btn-play,
+body #directory-results #table-wrap table tr th button .btn-play {
+  float: right;
+}
 body #directory-results #table-wrap table tr td:hover {
   background-color: #333333;
 }

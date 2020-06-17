@@ -1,28 +1,28 @@
-app.controller('HeaderCtrl', function ($scope, $location, $http) {
-    $scope.isActive = function (viewLocation) {
+app.controller('HeaderCtrl', function($scope, $location, $http) {
+    $scope.isActive = function(viewLocation) {
         return viewLocation === $location.path();
     };
 });
 
-app.controller('Home', ['$scope', function ($scope) {
+app.controller('Home', ['$scope', function($scope) {
     $scope.home = "Home";
 }])
-app.controller('UtilitiesCtrl', ['$scope', function ($scope) {
+app.controller('UtilitiesCtrl', ['$scope', function($scope) {
     $scope.config = "Utilities";
 }])
 
-app.controller('ConfigCtrl', ['$scope', function ($scope) {
+app.controller('ConfigCtrl', ['$scope', function($scope) {
     $scope.config = "Config";
 }])
 
 app.controller('NormalizeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$httpParamSerializer', '$location',
-    function ($scope, $http, $timeout, $q, $interval, $httpParamSerializer, $location) {
+    function($scope, $http, $timeout, $q, $interval, $httpParamSerializer, $location) {
         $scope.normalize = "Normalize";
     }
 ])
 
 app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$q', '$interval', '$httpParamSerializer', '$location',
-    function ($scope, $http, $timeout, uiGridConstants, $q, $interval, $httpParamSerializer, $location) {
+    function($scope, $http, $timeout, uiGridConstants, $q, $interval, $httpParamSerializer, $location) {
 
         $scope.movies = "Movies";
 
@@ -37,9 +37,9 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
             showColumnFooter: false,
             gridFooterTemplate: 'partials/grid-footer-template.html',
             excessRows: 20,
-            onRegisterApi: function (gridApi) {
+            onRegisterApi: function(gridApi) {
                 $scope.gridApi = gridApi;
-                $scope.gridApi.edit.on.afterCellEdit($scope, function (rowEntity, colDef, newValue) {
+                $scope.gridApi.edit.on.afterCellEdit($scope, function(rowEntity, colDef, newValue) {
                     editCurrentRow(rowEntity.id, colDef.name, newValue);
                 });
             },
@@ -105,18 +105,18 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
                     cellClass: 'cell-controls'
                 }
             ]
-		};
-		
-		//$scope.gridOptions.columnDefs[5].enableFiltering = false;
-		
-        var getData = function () {
+        };
+
+        //$scope.gridOptions.columnDefs[5].enableFiltering = false;
+
+        var getData = function() {
             $.ajax({
                 url: "php/getAllMovies.php",
                 type: 'GET',
                 dataType: "json",
-                success: function (response) {
+                success: function(response) {
 
-                    $timeout(function () {
+                    $timeout(function() {
                         $scope.gridOptions.data = response.data;
                     });
                 }
@@ -125,27 +125,27 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
         getData();
 
         $scope.deleteButtonClickHandler = {
-            onClick: function (id) {
+            onClick: function(id) {
                 deleteRow(id);
                 $scope.refreshData();
             }
         };
 
         $scope.pasteResultsButtonClickHandler = {
-            onClick: function (id) {
+            onClick: function(id) {
                 pasteResults(id);
                 $scope.refreshData();
             }
         };
 
         $scope.playButtonClickHandler = {
-            onClick: function (path) {
+            onClick: function(path) {
                 playMovie(path);
             }
         };
 
         $scope.rowCheckboxHandler = {
-            onClick: function (id, size) {
+            onClick: function(id, size) {
 
                 chkbx = $(event.target).closest('.ui-grid-cell-contents').find('.row-select-checkbox');
                 size = parseInt(size, 10);
@@ -165,13 +165,13 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
         };
 
 
-        $('#footer-btns').on("click", ".btn-get-checked-sizes", function (event) {
+        $('#footer-btns').one("click", ".btn-get-checked-sizes", function(event) {
             //console.log('clicked');
             clipboard.writeText($('.unformatted').val());
         });
 
         $scope.multipleDeleteButtonClickHandler = {
-            onClick: function () {
+            onClick: function() {
                 for (i = 0; i < $scope.rowsToDelete.length; i++) {
                     // console.log('rowsToDelete[i]: ', $scope.rowsToDelete[i]);
                     deleteRow($scope.rowsToDelete[i]);
@@ -186,7 +186,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
         };
 
         $scope.multipleSizesClickHandler = {
-            onClick: function () {
+            onClick: function() {
                 clipboard.writeText(sizeOfDeletedTitles);
                 $scope.rowsToDelete = [];
 
@@ -197,13 +197,13 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
         };
 
         $scope.numTitlesAdded = 0;
-        $scope.updateNumTitlesAdded = function () {
+        $scope.updateNumTitlesAdded = function() {
             // console.log("$scope.numTitlesAdded: ", $scope.numTitlesAdded);
 
             $scope.numTitlesAdded++;
         };
 
-        $scope.refreshData = function () {
+        $scope.refreshData = function() {
             $scope.gridOptions.myData = [];
             getData();
         };
@@ -236,13 +236,13 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 // }]);
 
 app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$httpParamSerializer', '$route', '$routeParams', '$location',
-        function ($scope, $http, $timeout, $q, $interval, $httpParamSerializer, $route, $routeParams, $location) {
+        function($scope, $http, $timeout, $q, $interval, $httpParamSerializer, $route, $routeParams, $location) {
             // $scope.mode = "Mode";
             // $scope.$route = $route;
             // $scope.$location = $location;
             // $scope.$routeParams = $routeParams;
 
-            // $('.btn-start-processing-dir').on("click", function(event) {
+            // $('.btn-start-processing-dir').one("click", function(event) {
             // 	//event.preventDefault();
             //
             // 	directory = $('#input-directory').val();
@@ -287,8 +287,8 @@ app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$
     // 		}
     // 	])
 
-    .filter('sizeFilter', function () {
-        return function (value) {
+.filter('sizeFilter', function() {
+        return function(value) {
             if (value != 0) {
                 return formatSize(value);
             } else {
@@ -296,8 +296,8 @@ app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$
             }
         };
     })
-    .filter('durationFilter', function () {
-        return function (value) {
+    .filter('durationFilter', function() {
+        return function(value) {
             if (value != null) {
                 return formatTitleDuration(value);
             }

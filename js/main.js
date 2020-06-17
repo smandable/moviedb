@@ -4,10 +4,7 @@ function includeExternalScripts(file) {
     script.type = "text/javascript";
     script.defer = true;
 
-    document
-        .getElementsByTagName("head")
-        .item(0)
-        .appendChild(script);
+    document.getElementsByTagName("head").item(0).appendChild(script);
 }
 includeExternalScripts("js/formattersAndFilters.js");
 includeExternalScripts("js/clickHandlers.js");
@@ -37,7 +34,7 @@ var transitionEnd2 = "webkitTransitionEnd msTransitionEnd transitionend";
 // $("#input-directory").val("f:\\names fixed\\");
 $("#input-directory").val("f:\\test\\");
 
-$(".btn-start-processing-dir").on("click", function(event) {
+$(".btn-start-processing-dir").one("click", function(event) {
     event.preventDefault();
     directory = $("#input-directory").val();
 
@@ -46,7 +43,6 @@ $(".btn-start-processing-dir").on("click", function(event) {
     countFiles(directory);
     // console.log(numFiles);
     //getFileNamesAndSizes(numFiles, directory);
-
 });
 
 // numFiles = countFiles(directory);
@@ -59,8 +55,8 @@ function countFiles(directory) {
         dataType: "json",
         async: false,
         data: {
-            directory: directory
-        }
+            directory: directory,
+        },
     }).done(function(response) {
         $("#progressbar").empty();
         //    console.log("calling getFileNamesAndSizes: ", response, directory);
@@ -68,7 +64,6 @@ function countFiles(directory) {
         console.log("numfiles: ", numFiles);
         getFileNamesAndSizes(response, directory);
     });
-
 }
 
 function getFileNamesAndSizes(numFiles, directory) {
@@ -81,8 +76,8 @@ function getFileNamesAndSizes(numFiles, directory) {
         async: false,
         data: {
             numFiles: numFiles,
-            directory: directory
-        }
+            directory: directory,
+        },
     }).always(function(response) {
         //console.log("response in getFileNamesAndSizes", response);
         //$("#progressbar").css("display", "none");
@@ -100,9 +95,7 @@ $(document).ready(function() {
 
     function copy_search_term(e) {
         var tst = $.trim(
-            $(".ui-grid-coluiGrid-0005")
-            .find("input[type=text]")
-            .val()
+            $(".ui-grid-coluiGrid-0005").find("input[type=text]").val()
         );
         if (tst) {
             var exists = $(".recent-terms ul li:contains(" + tst + ")").length;
@@ -112,12 +105,12 @@ $(document).ready(function() {
         }
     }
 
-    $(".ui-grid-coluiGrid-0005").on(
+    $(".ui-grid-coluiGrid-0005").one(
         "keydown",
         _.debounce(copy_search_term, 800)
     );
 
-    $(".recent-terms ul").on("click", "li", function(event) {
+    $(".recent-terms ul").one("click", "li", function(event) {
         var recentTerm = $(this).text();
         var input = $(".ui-grid-coluiGrid-0005").find("input[type=text]");
 
@@ -125,7 +118,7 @@ $(document).ready(function() {
         input.focus();
     });
 
-    $(".recent-terms button").on("click", function(event) {
+    $(".recent-terms button").one("click", function(event) {
         $(".recent-terms ul").empty();
     });
 });
@@ -139,16 +132,13 @@ function editCurrentRow(id, columnToUpdate, valueToUpdate) {
         data: {
             id: id,
             columnToUpdate: columnToUpdate,
-            valueToUpdate: valueToUpdate
+            valueToUpdate: valueToUpdate,
         },
-        success: handleEditCurrentRowResponse
+        success: handleEditCurrentRowResponse,
     });
 
     function handleEditCurrentRowResponse(data) {
-        angular
-            .element($("#movie-controller"))
-            .scope()
-            .refreshData();
+        angular.element($("#movie-controller")).scope().refreshData();
         return;
     }
 }
@@ -159,16 +149,13 @@ function deleteRow(id) {
         url: "php/deleteRow.php",
         dataType: "json",
         data: {
-            id: id
+            id: id,
         },
-        success: handleDeleteRowResponse
+        success: handleDeleteRowResponse,
     });
 
     function handleDeleteRowResponse(data) {
-        angular
-            .element($("#movie-controller"))
-            .scope()
-            .refreshData();
+        angular.element($("#movie-controller")).scope().refreshData();
         return;
     }
 }
@@ -179,48 +166,49 @@ function playMovie(path) {
         url: "php/playMovie.php",
         dataType: "json",
         data: {
-            path: path
+            path: path,
         },
-        success: handlePlayMovieResponse
+        success: handlePlayMovieResponse,
     });
 
     function handlePlayMovieResponse(data) {}
 }
 
-$("#directory-results table").on("click", ".btn-update-with-result", function() {
-    copyResultRowValues = [];
-    var row = $(this).closest("tr");
+$("#directory-results table").one(
+    "click",
+    ".btn-update-with-result",
+    function() {
+        copyResultRowValues = [];
+        var row = $(this).closest("tr");
 
-    copyResultRowValues = [
-        row.find("td:nth-child(1)").attr("class"),
-        row.find("td:nth-child(2)").attr("class"),
-        row.find("td:nth-child(3)").attr("class"),
-        row.find("td:nth-child(4)").attr("class")
-    ];
+        copyResultRowValues = [
+            row.find("td:nth-child(1)").attr("class"),
+            row.find("td:nth-child(2)").attr("class"),
+            row.find("td:nth-child(3)").attr("class"),
+            row.find("td:nth-child(4)").attr("class"),
+        ];
 
-    updateExistingRecord(copyResultRowValues);
-});
+        updateExistingRecord(copyResultRowValues);
+    }
+);
 
 function updateExistingRecord(copyResultRowValues) {
     return $.ajax({
         type: "POST",
         url: "php/updateExistingRecord.php",
         data: {
-            copyResultRowValues: copyResultRowValues
+            copyResultRowValues: copyResultRowValues,
         },
-        success: handleUpdateExistingRecordResponse()
+        success: handleUpdateExistingRecordResponse(),
     });
 }
 
 function handleUpdateExistingRecordResponse() {
-    angular
-        .element($("#movie-controller"))
-        .scope()
-        .refreshData();
+    angular.element($("#movie-controller")).scope().refreshData();
 }
 
 $(document).ready(function() {
-    $("#movie-controller").on(
+    $("#movie-controller").one(
         "click",
         ".cell-size .ui-grid-cell-contents",
         function(event) {
@@ -237,25 +225,22 @@ $(document).ready(function() {
 
     $.fn.editable.defaults.mode = "inline";
 
-    $("#directory-results table").on("click", "a", function(e) {
+    $("#directory-results table").one("click", "a", function(e) {
         e.preventDefault();
 
-        var pk = $(this)
-            .closest("tr")
-            .find("td:nth-of-type(1)")
-            .text();
+        var pk = $(this).closest("tr").find("td:nth-of-type(1)").text();
 
         $(this).editable({
             type: "text",
             pk: pk,
             name: "title",
             url: "php/editRowInResultsTable.php",
-            success: function(response) {}
+            success: function(response) {},
         });
     });
 });
 
-$("#directory-results").on("click", ".btn-refresh", function(event) {
+$("#directory-results").one("click", ".btn-refresh", function(event) {
     $("#directory-results table tr").remove();
     $(".ui-grid-viewport").css("height", "65vh");
     $(".ui-grid").css("height", "auto");
@@ -264,24 +249,17 @@ $("#directory-results").on("click", ".btn-refresh", function(event) {
     $("#directory-results").css("display", "none");
     $(".btn-process-dir-database-ops").css("display", "none");
     $("#information").css("display", "none");
-    angular
-        .element($("#movie-controller"))
-        .scope()
-        .refreshData();
+    angular.element($("#movie-controller")).scope().refreshData();
 });
 
-$("#duplicates").on("click", ".btn-paste-results", function(event) {
+$("#duplicates").one("click", ".btn-paste-results", function(event) {
     clipboard.writeText($(".duplicate-text").val());
-    $(this)
-        .closest(".input-group")
-        .remove();
+    $(this).closest(".input-group").remove();
 });
 
-$(".ui-grid-cell").on("click", ".btn-copy-title", function(event) {
+$(".ui-grid-cell").one("click", ".btn-copy-title", function(event) {
     clipboard.writeText(
-        $(this)
-        .closest(".ui-grid-coluiGrid-0005 .ui-grid-cell-contents")
-        .val()
+        $(this).closest(".ui-grid-coluiGrid-0005 .ui-grid-cell-contents").val()
     );
 });
 
@@ -293,8 +271,8 @@ function addMovie(nameToAdd, dimensions, size) {
         data: {
             title: nameToAdd,
             dimensions: dimensions,
-            filesize: size
-        }
+            filesize: size,
+        },
     }).always(function(data) {
         handleAddMovieResult(data);
     });
@@ -316,13 +294,10 @@ function handleAddMovieResult(data) {
     } else {
         $("#single-title-input").css("border", "1px solid green");
     }
-    angular
-        .element($("#movie-controller"))
-        .scope()
-        .refreshData();
+    angular.element($("#movie-controller")).scope().refreshData();
 }
 
-$("#duplicates").on("click", ".btn-find-file", function(event) {
+$("#duplicates").one("click", ".btn-find-file", function(event) {
     var fileName = $(".duplicate-text").val();
     findFile(fileName);
 });
@@ -333,18 +308,12 @@ var transitionEnd = "webkitTransitionEnd msTransitionEnd transitionend";
 $(document).ready(function() {
     $.fn.editable.defaults.mode = "inline";
 
-    $("#file-results table").on("click", "a", function(e) {
+    $("#file-results table").one("click", "a", function(e) {
         e.preventDefault();
 
-        var path = $(this)
-            .closest("tr")
-            .children("td:first-of-type")
-            .text();
+        var path = $(this).closest("tr").children("td:first-of-type").text();
         path = path + "/";
-        var pk = $(this)
-            .closest("tr")
-            .find("td:nth-of-type(2)")
-            .text();
+        var pk = $(this).closest("tr").find("td:nth-of-type(2)").text();
         var originalFileName = $(this)
             .closest("tr")
             .find("td:nth-of-type(2)")
@@ -390,15 +359,13 @@ $(document).ready(function() {
 
                     getFileNamesAndSizes(directory);
                 }
-            }
+            },
         });
     });
 });
 
-$("#file-results table").on("click", "th", function(event) {
-    var table = $(this)
-        .parents("table")
-        .eq(0);
+$("#file-results table").one("click", "th", function(event) {
+    var table = $(this).parents("table").eq(0);
     var rows = table
         .find("tr:gt(0)")
         .toArray()
@@ -411,10 +378,8 @@ $("#file-results table").on("click", "th", function(event) {
         table.append(rows[i]);
     }
 });
-$("#directory-results table").on("click", "th", function(event) {
-    var table = $(this)
-        .parents("table")
-        .eq(0);
+$("#directory-results table").one("click", "th", function(event) {
+    var table = $(this).parents("table").eq(0);
     var rows = table
         .find("tr:gt(0)")
         .toArray()
