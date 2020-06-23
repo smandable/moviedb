@@ -21,15 +21,10 @@ var cleanedNamesDeDuped = [];
 var numTitlesFromDirectory = 0;
 var copyResultRowValues = [];
 var numFiles = 0;
-// console.info(numFiles);
 
 var dbOpsButton = $(".btn-process-dir-database-ops");
 var transitionEnd2 = "webkitTransitionEnd msTransitionEnd transitionend";
 
-//default
-
-//$("#input-directory").val("/run/media/sean/Recorded 1/recorded/");
-// $("#input-directory").val("/run/media/sean/Recorded 4/names fixed/");
 //$("#input-directory").val("/home/sean/Downloads/test/");
 $("#input-directory").val("f:\\names fixed\\");
 
@@ -37,14 +32,8 @@ $(".btn-start-processing-dir").one("click", function(event) {
     event.preventDefault();
     directory = $("#input-directory").val();
 
-    //totalNumFiles = countFiles(directory);
-    //console.info(totalNumFiles);
     countFiles(directory);
-    // console.log(numFiles);
-    //getFileNamesAndSizes(numFiles, directory);
 });
-
-// numFiles = countFiles(directory);
 
 function countFiles(directory) {
     $("#progressbar").html("<span>Counting number of files...</span>");
@@ -58,7 +47,6 @@ function countFiles(directory) {
         },
     }).done(function(response) {
         $("#progressbar").empty();
-        //    console.log("calling getFileNamesAndSizes: ", response, directory);
         numFiles = response;
         console.log("numfiles: ", numFiles);
         getFileNamesAndSizes(response, directory);
@@ -66,7 +54,6 @@ function countFiles(directory) {
 }
 
 function getFileNamesAndSizes(numFiles, directory) {
-    // console.log("in getFileNamesAndSizes: ", numFiles, directory);
     $("#progressbar").css("display", "block");
     $.ajax({
         type: "POST",
@@ -78,15 +65,12 @@ function getFileNamesAndSizes(numFiles, directory) {
             directory: directory,
         },
     }).always(function(response) {
-        //console.log("response in getFileNamesAndSizes", response);
-        //$("#progressbar").css("display", "none");
         handleGetFileNamesAndSizesResult(response);
     });
 }
 
 function handleGetFileNamesAndSizesResult(response) {
     checkFileNamesToNormalize();
-    //return totalNumFiles;
 }
 
 $(document).ready(function() {
