@@ -2,33 +2,33 @@
 
 ini_set('max_execution_time', 0);
 
-include('formatSize.php');
+require 'formatSize.php';
 
-include "db_connect.php";
+require "db_connect.php";
 
 //$result = $db->query("SELECT a.id, a.title, a.dimensions, a.filesize, a.duration, a.date_created, a.filepath, b.id, b.title, b.dimensions, b.filesize, b.duration, b.date_created FROM movies_het a INNER JOIN movies_het b ON b.title = a.title AND b.id > a.id GROUP BY b.title ORDER BY b.title ASC;");
-$result = $db->query("SELECT id, title, dimensions, filesize, duration, filepath, date_created FROM `".$table."` ORDER BY title ASC");
+$result = $db->query("SELECT id, title, dimensions, filesize, duration, filepath, date_created FROM `" . $table . "` ORDER BY title ASC");
 
 $options = array();
 
-    while ($row = mysqli_fetch_assoc($result)) {
-        $options[] = array(
-          'id'      => $row['id'],
-          'title'    => $row['title'],
-          'dimensions'    => $row['dimensions'],
-          'duration'    => $row['duration'],
-          'filesize'    => $row['filesize'],
-          'filepath'    => $row['filepath'],
-          'date_created'    => $row['date_created']
-      );
-    }
+while ($row = mysqli_fetch_assoc($result)) {
+    $options[] = array(
+        'id'      => $row['id'],
+        'title'    => $row['title'],
+        'dimensions'    => $row['dimensions'],
+        'duration'    => $row['duration'],
+        'filesize'    => $row['filesize'],
+        'filepath'    => $row['filepath'],
+        'date_created'    => $row['date_created']
+    );
+}
 
 //modify http header to json
- header('Cache-Control: no-cache, must-revalidate');
- header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
- header('Content-type: application/json');
+header('Cache-Control: no-cache, must-revalidate');
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+header('Content-type: application/json');
 
-include "safe_json_encode.php";
+require "safe_json_encode.php";
 echo safe_json_encode($options);
 
 $db->close();

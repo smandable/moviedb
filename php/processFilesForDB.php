@@ -275,7 +275,7 @@ function returnHTML($titlesArray)
 {
     $titlesArray = array_values($titlesArray);
 
-    include "safe_json_encode.php";
+    require "safe_json_encode.php";
     echo safe_json_encode($titlesArray);
 }
 

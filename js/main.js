@@ -31,8 +31,7 @@ var transitionEnd2 = "webkitTransitionEnd msTransitionEnd transitionend";
 //$("#input-directory").val("/run/media/sean/Recorded 1/recorded/");
 // $("#input-directory").val("/run/media/sean/Recorded 4/names fixed/");
 //$("#input-directory").val("/home/sean/Downloads/test/");
-// $("#input-directory").val("f:\\names fixed\\");
-$("#input-directory").val("f:\\test\\");
+$("#input-directory").val("f:\\names fixed\\");
 
 $(".btn-start-processing-dir").one("click", function(event) {
     event.preventDefault();

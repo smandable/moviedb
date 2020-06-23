@@ -7,7 +7,7 @@ function renameTheFilesMissing01(&$titlesArray)
 
         foreach ($_SESSION['files'] as &$file) {
             $path = $file['path'] . "/";
-       
+
             if ((isset($titleR['fileMissing01'])) && (!preg_match("/ # 01/", ($file['fileName'])))) {
                 $tmpFileName = array('','');
                 $pattern = '';
@@ -37,7 +37,7 @@ function renameTheFilesMissing01(&$titlesArray)
                     $position = "in - CD test";
                     logFile($loopNum, $position, $file['fileNameNoExtension'], $titleR['title'], $newFileName);
                 }
-                    
+
                 str_replace("'", "\'", $newFileName);
 
                 rename($file['fileNameAndPath'], $path . $newFileName . $pattern . $digit . $file['fileExtension']);
@@ -52,7 +52,7 @@ function renameTheFilesMissing01(&$titlesArray)
         }
     }
 
-    // include "safe_json_encode.php";
+    // require "safe_json_encode.php";
 // echo safe_json_encode($_SESSION["files"]);
 }
 

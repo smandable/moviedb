@@ -389,7 +389,7 @@ function returnHTML($filesArrayReducedSizesSummed)
             'ID' => $filesArrayReducedSizesSummed[$i]["ID"]
         );
     }
-    include "safe_json_encode.php";
+    require "safe_json_encode.php";
     echo safe_json_encode($returnedArray);
 }
 

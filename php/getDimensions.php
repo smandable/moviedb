@@ -3,7 +3,6 @@
 function getDimensions($fileNameAndPath)
 {
     $path = $fileNameAndPath;
-    //$path = str_replace("'", "'\''", $path);
     $path = escapeshellarg($path);
 
     //exec("/usr/bin/ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=noprint_wrappers=1 '$path'", $O, $S); /*- linux */

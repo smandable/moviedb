@@ -9143,7 +9143,7 @@ body #import-records #duplicates p {
 @media screen and (min-width: 768px) {
   .modal-dialog {
     left: auto;
-    width: 70vw;
+    width: 90vw;
   }
 }
 .modal-dialog .modal-content {
@@ -9182,15 +9182,16 @@ body #import-records #duplicates p {
 .modal-dialog #file-results table tr th {
   padding: 7px;
   text-align: left;
+  display: inline-block;
 }
 .modal-dialog #file-results table tr th:nth-of-type(1) {
   display: none;
 }
 .modal-dialog #file-results table tr th:nth-of-type(2), .modal-dialog #file-results table tr th:nth-of-type(3) {
-  width: 37.5%;
+  width: 45%;
 }
 .modal-dialog #file-results table tr th:nth-of-type(4) {
-  width: 1%;
+  width: 5px;
 }
 .modal-dialog #file-results table tr th:nth-of-type(3), .modal-dialog #file-results table tr th:nth-of-type(4) {
   border-left: 1px solid white;
@@ -9199,6 +9200,7 @@ body #import-records #duplicates p {
   padding: 7px;
   text-align: left;
   white-space: nowrap;
+  display: inline-block;
 }
 .modal-dialog #file-results table tr td .editable-click,
 .modal-dialog #file-results table tr td a,
@@ -9213,11 +9215,19 @@ body #import-records #duplicates p {
 .modal-dialog #file-results table tr td:nth-of-type(1) {
   display: none;
 }
+.modal-dialog #file-results table tr td:nth-of-type(2), .modal-dialog #file-results table tr td:nth-of-type(3) {
+  width: 45%;
+}
+.modal-dialog #file-results table tr td:nth-of-type(4) {
+  width: 5px;
+}
 .modal-dialog #file-results table tr td:nth-of-type(3), .modal-dialog #file-results table tr td:nth-of-type(4), .modal-dialog #file-results table tr td:nth-of-type(5), .modal-dialog #file-results table tr td:nth-of-type(6) {
   border-left: 1px solid white;
 }
 .modal-dialog #file-results table tr td:nth-of-type(3) {
   padding-left: 0;
+  display: inline-block;
+  overflow: hidden;
 }
 .modal-dialog #file-results table tr td:nth-of-type(3) a {
   padding-left: 7px;

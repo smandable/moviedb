@@ -151,7 +151,7 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
             $filesArrayReducedSizesSummed['isLarger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
 
             if ($options[0] == "true") {
-                moveDuplicateFile($title, $filesArray);
+              //  moveDuplicateFile($title, $filesArray);
             }
             if ($options[1] == "true") {
                 updateDimensions($title, $dimensions, $db, $table, $directory);
@@ -215,8 +215,7 @@ function addToDB($title, $dimensions, $size, $duration, $path, $db, $table)
 
     if ($db->query(
         "INSERT IGNORE INTO `" . $table . "` (title, dimensions, filesize, duration, filepath, date_created) VALUES ('$title', '$dimensions', '$size', '$duration', '$path', NOW())"
-    )
-    ) {
+    )) {
         $newRow = mysqli_fetch_assoc($db->query("SELECT * FROM `" . $table . "` WHERE title = '$title'"));
         // $newRow = mysqli_fetch_assoc($newResult);
         $newIDToReturn = $newRow['id'];

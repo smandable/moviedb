@@ -1,5 +1,4 @@
 <?php
-
 // if (isset($_POST['searchPattern '])) {
 //     $searchPattern  = $_POST['searchPattern'];
 // } else {

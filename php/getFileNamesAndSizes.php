@@ -37,8 +37,7 @@ function getFileNames($numFiles, $directory)
         // echo "in foreach\n";
         $percent = intval($i / $numFiles * 100) . "%";
 
-        if (
-            $file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
+        if ($file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
             || $file->getBasename() === 'Thumbs.db' || $file->getBasename() === '.AppleDouble'
         ) {
             continue;
