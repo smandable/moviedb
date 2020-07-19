@@ -3,7 +3,7 @@
 require 'getDimensions.php';
 require 'getDuration.php';
 
-ini_set('max_execution_time', 0); // to get unlimited php script execution time
+ini_set('max_execution_time', 0);
 
 
 if (session_status() !== PHP_SESSION_ACTIVE) {

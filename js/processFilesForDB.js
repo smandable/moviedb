@@ -95,8 +95,8 @@ function handleProcessFilesForDBResult(response) {
                 "</td><td>" +
                 dateCreatedInDB +
                 '</td><td class="dup-not-new">D</td><td>' +
-                updateBtn +
-                '<button class="btn btn-success btn-play"><i class="fas fa-play"></i></button></td></tr>';
+                updateBtn;
+            // '<button class="btn btn-success btn-play"><i class="fas fa-play"></i></button></td></tr>';
         } else {
             ++newMovies;
             totalSizeNew += titleSize;

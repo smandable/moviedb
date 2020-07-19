@@ -1,8 +1,6 @@
 <?php
 
-// require 'getDimensions.php';
-// require 'getDuration.php';
-//require 'formatSize.php';
+ini_set('max_execution_time', 0);
 
 $directory = $_POST['directory'];
 
@@ -25,7 +23,6 @@ getFileNames($numFiles, $directory);
 function getFileNames($numFiles, $directory)
 {
     $i = 0;
-    // echo "$i\n";
     $percent = intval($i / $numFiles * 100) . "%";
 
     $files = array();
@@ -34,10 +31,10 @@ function getFileNames($numFiles, $directory)
     $iterator = new \RecursiveIteratorIterator($directory);
 
     foreach ($iterator as $file) {
-        // echo "in foreach\n";
         $percent = intval($i / $numFiles * 100) . "%";
 
-        if ($file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
+        if (
+            $file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
             || $file->getBasename() === 'Thumbs.db' || $file->getBasename() === '.AppleDouble'
         ) {
             continue;
@@ -59,7 +56,6 @@ function getFileNames($numFiles, $directory)
         ob_flush();
         flush();
         $i++;
-        // var_dump($files);
     }
 
     echo '<script>
@@ -67,13 +63,9 @@ function getFileNames($numFiles, $directory)
             parent.document.getElementById("information").innerHTML="<div style=\"text-align:center; font-weight:bold\">Process completed</div>"
         </script>';
 
-    //session_destroy();
     unset($_SESSION["i"]);
 
     array_multisort($files, SORT_ASC);
 
-    //session_id("files");
-    //session_start();
     $_SESSION["files"] = $files;
-    // var_dump($_SESSION["files"]);
 }

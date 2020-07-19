@@ -8,12 +8,10 @@ function checkFileNamesToNormalize() {
         url: "php/checkFileNamesToNormalize.php",
         dataType: "json",
         data: {
-            directory: directory
-        }
+            directory: directory,
+        },
     }).always(function(response) {
-        //  $("#progressbar").css("display", "none");
         checkFileNamesToNormalizeResult(response);
-
     });
 }
 
@@ -53,45 +51,36 @@ $("#normalizeModal").one("hidden.bs.modal", function() {
     dbOpsBtnWrapper.addClass("fade-in").one(transitionEnd, function() {});
 });
 
-
 $(document).ready(function() {
-
     $("#file-results table").one("change", ":checkbox", function() {
-
         var originalFileName = $(this)
             .closest("tr")
             .find("td:nth-of-type(2)")
             .text();
-
-        // console.log(originalFileName);
 
         $.ajax({
             type: "POST",
             url: "php/updateSessionWithRenameProp.php",
             dataType: "json",
             data: {
-                originalFileName: originalFileName
-            }
-        })
-
+                originalFileName: originalFileName,
+            },
+        });
     });
-
 });
-
 
 $("#modal-rename-files-btn").one("click", function() {
     renameTheFilesToNormalize();
 });
 
 function renameTheFilesToNormalize() {
-
     $.ajax({
         type: "POST",
         url: "php/renameTheFilesToNormalize.php",
         dataType: "json",
         data: {
-            dontRenameThese: dontRenameThese
-        }
+            dontRenameThese: dontRenameThese,
+        },
     }).always(function(response) {
         handleRenameTheFilesToNormalizeResult(response);
     });
@@ -135,14 +124,9 @@ function handleRenameTheFilesToNormalizeResult(response) {
 }
 
 $("#file-results table").one("change", ":checkbox", function() {
-
     if ($(this).is(":checked")) {
-
-        dontRenameThese.push($(this)
-            .parents("tr")
-            .find("td:nth-of-type(3)")
-            .text());
-    } else {
-        // console.log($(this).val() + " is now unchecked");
+        dontRenameThese.push(
+            $(this).parents("tr").find("td:nth-of-type(3)").text()
+        );
     }
 });

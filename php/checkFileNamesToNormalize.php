@@ -98,6 +98,7 @@ function cleanupFunctions($fileNameNoExtension)
     $fileNameNoExtension = preg_replace('/XXX/i', '', trim($fileNameNoExtension)); // Look for 'XXX', replace with nothing
     $fileNameNoExtension = preg_replace('/MP4/i', '', trim($fileNameNoExtension)); // Look for 'MP4', replace with nothing
     $fileNameNoExtension = preg_replace('/^gush\./i', '', trim($fileNameNoExtension)); // Look for 'gush.', replace with nothing
+    $fileNameNoExtension = preg_replace('/(\s+)vs(\s+)/i', ' vs. ', trim($fileNameNoExtension)); // ' vs ' to 'vs.'
     $fileNameNoExtension = preg_replace('/(Vol\s|Vol\.|\.Vol)/i', ' ', trim($fileNameNoExtension)); // 'Vol ' or 'Vol.' or '.Vol' to ' '
     $fileNameNoExtension = preg_replace('/all star/i', 'All-Star', trim($fileNameNoExtension)); // 'all star' to All-Star
     $fileNameNoExtension = preg_replace('/disc/i', 'CD', trim($fileNameNoExtension)); // 'disc' to CD

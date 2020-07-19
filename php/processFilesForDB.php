@@ -3,7 +3,8 @@
 ini_set('max_execution_time', 0);
 
 require 'formatSize.php';
-require 'renameTheFilesMissing01.php';
+require 'renameFilesMissing01.php';
+require 'renameDuplicateFilesMissing01.php';
 
 $directory = $_POST['directory'];
 
@@ -21,6 +22,8 @@ if (empty($_POST['directory'])) {
 
 $titlesArray = array();
 $duplicateTitlesArray = array();
+$duplicateTitlesMissing01Array = array();
+$titlesMissing01Array = array();
 
 session_id("files");
 session_start();
@@ -30,14 +33,14 @@ populateTitlesArray($titlesArray);
 $titlesArray = array_values($titlesArray);
 
 for ($i = 0; $i < count($titlesArray); $i++) {
-    checkDatabaseForTitle($directory, $titlesArray[$i], $duplicateTitlesArray);
+    checkDatabaseForTitle($titlesArray[$i], $duplicateTitlesArray, $duplicateTitlesMissing01Array, $titlesMissing01Array);
 }
-
-//renameTheFilesMissing01($titlesArray);
 
 $allFiles = $_SESSION["files"];
 
-searchSessionForDuplicateFiles($duplicateTitlesArray, $allFiles);
+renameFilesMissing01($titlesMissing01Array);
+renameDuplicateFilesMissing01($duplicateTitlesMissing01Array);
+searchSessionForDuplicateFiles($duplicateTitlesArray, $duplicateTitlesMissing01Array);
 
 returnHTML($titlesArray);
 
@@ -79,7 +82,7 @@ function populateTitlesArray(&$titlesArray)
         }
     );
 }
-function checkDatabaseForTitle($directory, &$titlesArray, &$duplicateTitlesArray)
+function checkDatabaseForTitle(&$titlesArray, &$duplicateTitlesArray, &$duplicateTitlesMissing01Array, &$titlesMissing01Array)
 {
     $title = $titlesArray["title"];
     $titleSize = $titlesArray["titleSize"];
@@ -89,55 +92,75 @@ function checkDatabaseForTitle($directory, &$titlesArray, &$duplicateTitlesArray
 
     include 'db_connect.php';
 
-    $title = $db->real_escape_string($title);
-    //$title = mysqli_real_escape_string($db, $title);
-
-    $titlePath = $db->real_escape_string($titlePath);
-
     // If file being read from directory HAS a number in it, look for that title in the DB WITHOUT a number.
     // If found, add " # 01" to it. This is only to update that record in the db.
 
     if (preg_match('/# [0-9]+$/', $title)) {
         $titleN = preg_split('/ # [0-9]+/', $title);
 
-        $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$titleN[0]'");
+        str_replace("'", "\'", $titleN[0]);
+
+        $titleN = $titleN[0];
+        $titleN = $db->real_escape_string($titleN);
+
+        $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$titleN'");
 
         if ($result->num_rows > 0) {
-            $title = $titleN[0] . " # 01";
 
-            $db->query("UPDATE `" . $table . "` SET title='$title' WHERE title='$titleN[0]'");
+            $title1 = $titleN . " # 01";
+
+            $db->query("UPDATE `" . $table . "` SET title='$title1' WHERE title='$titleN'");
             $row = mysqli_fetch_assoc($result);
 
             $id = $row['id'];
             $pathInDB = $row['filepath'];
-
+            $pathInDB = $db->real_escape_string($pathInDB);
             if ($pathInDB != "") {
-                $pathInDB = str_replace($titleN[0], $title, $pathInDB);
+                $pathInDB = str_replace($titleN, $title1, $pathInDB);
                 $db->query("UPDATE `" . $table . "` SET filepath='$pathInDB' WHERE id='$id'");
             }
+            $result->free();
         }
     }
 
-    // If file being read from directory DOES NOT have a number in it, look for that title in the DB WITH a number + " 01".
-    // If found, add file to $filesMissingSpacePoundSpace01 array, and set $title to $title + # 01. Then move into duplicates dir.
+    // If file being read from directory DOES NOT have a number in it, look for that title in the DB WITH a number + " # 01".
+    // If found, add file to $duplicateTitlesMissing01Array array, and set $title to $title + # 01.
 
     if (!preg_match('/# [0-9]+$/', $title)) {
         $title01 = $title . " # 01";
+        $title01Escaped = $db->real_escape_string($title01);
 
-        $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$title01'");
+        $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$title01Escaped'");
+        $row = mysqli_fetch_assoc($result);
 
         if ($result->num_rows > 0) {
-            $fileMissing01 = true;
+            $sizeInDB = $row['filesize'];
+            $isLarger = compareFileSizeToDB($titlesArray['titleSize'], $sizeInDB);
+            $duplicateTitlesMissing01Array[] = array('title' => $title, 'isLarger' => $isLarger);
+            $title = $title01;
+            $result->free();
+        }
 
-            $titlesArray['duplicate'] = true;
-            $titlesArray["fileMissing01"] = $fileMissing01;
+        // Now look for the title, but with any number after it (but not # 01)
+
+        $titleWithPound = $title . " # ";
+        $titleWithPoundEscaped = $db->real_escape_string($titleWithPound);
+
+        $result = $db->query("SELECT * FROM `" . $table . "` WHERE title LIKE '$titleWithPoundEscaped%' ");
+
+        $row = mysqli_fetch_assoc($result);
+        if ($result->num_rows > 0) {
+            $titleMissing01 = $title;
+            $titlesMissing01Array[] = array('title' => $titleMissing01);
 
             $title = $title01;
-            //    array_push($duplicateTitlesArray, $title);
+            $result->free();
         }
     }
+
     $result = null;
-    $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$title'");
+    $titleEscaped = $db->real_escape_string($title);
+    $result = $db->query("SELECT * FROM `" . $table . "` WHERE title = '$titleEscaped'");
     $row = mysqli_fetch_assoc($result);
 
     if ($result->num_rows > 0) {
@@ -151,19 +174,23 @@ function checkDatabaseForTitle($directory, &$titlesArray, &$duplicateTitlesArray
         $isLarger = $titlesArray['isLarger'] = compareFileSizeToDB($titlesArray['titleSize'], $titlesArray['sizeInDB']);
 
         $duplicateTitlesArray[] = array('title' => $title, 'isLarger' => $isLarger);
+        $result->free();
     } else {
-        $titlesArray['id'] = addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePath, $db, $table);
+        $titlesArray['id'] = addToDB($titleEscaped, $titleSize, $titleDimensions, $titleDuration, $titlePath, $db, $table);
+        $result->free();
     }
 
     $db->close();
 }
 function addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePath, $db, $table)
 {
+    //$title = $db->real_escape_string($title);
     $pattern1 = '/to move\//i';
     $pattern2 = '/names fixed\//i';
     $replaceWith = 'recorded/';
 
     $titlePath = preg_replace(array($pattern1, $pattern2), $replaceWith, $titlePath);
+    $titlePath = $db->real_escape_string($titlePath);
 
     if ($db->query(
         "INSERT IGNORE INTO `" . $table . "` (title, dimensions, filesize, duration, filepath, date_created) VALUES ('$title', '$titleDimensions', '$titleSize', '$titleDuration', '$titlePath', NOW())"
@@ -186,15 +213,25 @@ function compareFileSizeToDB($size, $sizeInDB)
 
     return $isLarger;
 }
-function searchSessionForDuplicateFiles($duplicateTitlesArray, $allFiles)
+
+function searchSessionForDuplicateFiles($duplicateTitlesArray)
 {
 
-    foreach ($allFiles as $file) {
-        $path = $file["path"];
-        $fileName = $file["fileName"];
+    $pattern1 = '/ - Scene.*/i';
+    $pattern2 = '/ - CD.*/i';
+    $pattern3 = '/ - Bonus.*| Bonus.*/i';
 
-        for ($i = 0; $i < count($duplicateTitlesArray); $i++) {
-            if (strpos($file["fileNameNoExtension"], $duplicateTitlesArray[$i]['title']) > -1) {
+    for ($i = 0; $i < count($duplicateTitlesArray); $i++) {
+
+        foreach ($_SESSION["files"] as $file) {
+            $path = $file["path"];
+            $fileNameNoExtension = $file["fileNameNoExtension"];
+
+            $fileNameNoExtension = preg_replace(array($pattern1, $pattern2, $pattern3), '', $fileNameNoExtension);
+
+            if ((stripos($duplicateTitlesArray[$i]['title'], $fileNameNoExtension) === 0)) {
+
+                $fileName = $file["fileName"];
 
                 $destination = $path . "\\duplicates\\";
 
@@ -213,7 +250,7 @@ function moveDuplicateFiles($path, $destination, $fileName)
         mkdir($destination, 0777, true);
     }
 
-    if (!is_file($path)) {
+    if (!is_file($$path . "\\" . $fileName)) {
         $file_to_rename = $path . "\\" . $fileName;
         $rename_file = $destination . $fileName;
 
@@ -275,17 +312,6 @@ function returnHTML($titlesArray)
 {
     $titlesArray = array_values($titlesArray);
 
-    require "safe_json_encode.php";
+    include "safe_json_encode.php";
     echo safe_json_encode($titlesArray);
 }
-
-// function quickLogFile($directory, $duplicateTitle)
-// {
-
-//     $myfile = fopen("$directory/fileDimensions_duration.txt", "a") or die("Unable to open file!");
-
-//     $txt = "$directory$destination\n\n";
-
-//     fwrite($myfile, $txt);
-//     fclose($myfile);
-// }

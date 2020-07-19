@@ -31,7 +31,6 @@ function getFiles($directory)
         $fileExtension = "." . $fileExtension;
         $fileNameNoExtension = $file->getBasename($fileExtension);
         $fileSize = filesize($file->getPathname());
-
         $fileDimensions = getDimensions($fileNameAndPath);
         $fileDuration = getDuration($fileNameAndPath);
 

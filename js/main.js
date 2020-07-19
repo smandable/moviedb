@@ -26,7 +26,7 @@ var dbOpsButton = $(".btn-process-dir-database-ops");
 var transitionEnd2 = "webkitTransitionEnd msTransitionEnd transitionend";
 
 //$("#input-directory").val("/home/sean/Downloads/test/");
-$("#input-directory").val("f:\\names fixed\\");
+$("#input-directory").val("f:\\test\\");
 
 $(".btn-start-processing-dir").one("click", function(event) {
     event.preventDefault();
@@ -48,7 +48,6 @@ function countFiles(directory) {
     }).done(function(response) {
         $("#progressbar").empty();
         numFiles = response;
-        console.log("numfiles: ", numFiles);
         getFileNamesAndSizes(response, directory);
     });
 }
@@ -157,7 +156,7 @@ function playMovie(path) {
     function handlePlayMovieResponse(data) {}
 }
 
-$("#directory-results table").one(
+$("#directory-results table").on(
     "click",
     ".btn-update-with-result",
     function() {
@@ -231,7 +230,9 @@ $("#directory-results").one("click", ".btn-refresh", function(event) {
     $("#mode").css("display", "block");
     $("#directory-results").css("display", "none");
     $(".btn-process-dir-database-ops").css("display", "none");
+    //  $(".btn-process-dir-database-ops").prop('disabled', true);
     $("#information").css("display", "none");
+    $("#progressbar").css("display", "none");
     angular.element($("#movie-controller")).scope().refreshData();
 });
 
