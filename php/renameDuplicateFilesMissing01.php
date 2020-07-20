@@ -1,7 +1,5 @@
 <?php
 
-ini_set('max_execution_time', 0);
-
 function renameDuplicateFilesMissing01($duplicateTitlesMissing01Array)
 {
     session_id("files");
