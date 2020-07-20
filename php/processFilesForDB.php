@@ -36,7 +36,7 @@ for ($i = 0; $i < count($titlesArray); $i++) {
     checkDatabaseForTitle($titlesArray[$i], $duplicateTitlesArray, $duplicateTitlesMissing01Array, $titlesMissing01Array);
 }
 
-$allFiles = $_SESSION["files"];
+//$allFiles = $_SESSION["files"];
 
 renameFilesMissing01($titlesMissing01Array);
 renameDuplicateFilesMissing01($duplicateTitlesMissing01Array);

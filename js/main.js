@@ -26,7 +26,7 @@ var dbOpsButton = $(".btn-process-dir-database-ops");
 var transitionEnd2 = "webkitTransitionEnd msTransitionEnd transitionend";
 
 //$("#input-directory").val("/home/sean/Downloads/test/");
-$("#input-directory").val("f:\\test\\");
+$("#input-directory").val("f:\\fixed\\");
 
 $(".btn-start-processing-dir").one("click", function(event) {
     event.preventDefault();
@@ -348,7 +348,7 @@ $(document).ready(function() {
     });
 });
 
-$("#file-results table").one("click", "th", function(event) {
+$("#file-results table").on("click", "th", function(event) {
     var table = $(this).parents("table").eq(0);
     var rows = table
         .find("tr:gt(0)")
@@ -362,7 +362,7 @@ $("#file-results table").one("click", "th", function(event) {
         table.append(rows[i]);
     }
 });
-$("#directory-results table").one("click", "th", function(event) {
+$("#directory-results table").on("click", "th", function(event) {
     var table = $(this).parents("table").eq(0);
     var rows = table
         .find("tr:gt(0)")

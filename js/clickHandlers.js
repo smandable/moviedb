@@ -27,7 +27,7 @@ $(".btn-process-dir-database-ops").one("click", function(event) {
 
     document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
 
-    interval = numFiles * 100; // 500?
+    interval = numFiles * 300; // 500?
 
     setTimeout(function run() {
         processFilesForDB(directory);
