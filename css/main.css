@@ -8531,55 +8531,56 @@ body .movies .ui-grid-canvas .ui-grid-coluiGrid-0005 .ui-grid-filter-button {
   width: 10px;
 }
 body .movies .ui-grid-canvas .cell-controls,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 {
   padding-top: 1px;
+  padding-bottom: 1px;
   padding-left: 1px;
 }
 body .movies .ui-grid-canvas .cell-controls .ui-grid-cell-contents,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .ui-grid-cell-contents {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .ui-grid-cell-contents {
   padding-top: 1px;
 }
 body .movies .ui-grid-canvas .cell-controls .btn,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn {
   padding-top: 2px !important;
   padding-bottom: 2px !important;
-  margin-top: -10px;
+  margin-top: -12px;
 }
 body .movies .ui-grid-canvas .cell-controls .btn svg,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn svg {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn svg {
   margin-right: 5px;
 }
 body .movies .ui-grid-canvas .cell-controls .btn-danger,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-danger {
-  background-color: #c9302c;
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn-danger {
+  background-color: #880e0e;
   border-color: #ac2925;
-  padding-left: 8px;
-  padding-right: 6px;
+  padding-left: 10px;
+  padding-right: 20px;
 }
 body .movies .ui-grid-canvas .cell-controls .btn-danger:hover,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-danger:hover {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn-danger:hover {
   background-color: #9f2623;
 }
 body .movies .ui-grid-canvas .cell-controls .btn-warning,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-warning {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn-warning {
   background-color: #ec971f;
   padding-left: 8px;
   padding-right: 6px;
   border-color: #d58512;
 }
 body .movies .ui-grid-canvas .cell-controls .btn-warning:hover,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-warning:hover {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn-warning:hover {
   background-color: #c77c11;
 }
 body .movies .ui-grid-canvas .cell-controls .btn-success,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-success {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn-success {
   background-color: darkgreen;
   padding-left: 8px;
   padding-right: 6px;
   border-color: #003100;
 }
 body .movies .ui-grid-canvas .cell-controls .btn-success:hover,
-body .movies .ui-grid-canvas .ui-grid-coluiGrid-0010 .btn-success:hover {
+body .movies .ui-grid-canvas .ui-grid-coluiGrid-009 .btn-success:hover {
   background-color: #003100;
   border-color: darkgreen;
 }
@@ -8872,16 +8873,15 @@ body #directory-results #table-wrap table tr th.dup-not-new {
   text-align: center;
   padding-left: 0;
 }
-body #directory-results #table-wrap table tr td button svg,
-body #directory-results #table-wrap table tr th button svg {
-  margin-right: 5px;
-}
-body #directory-results #table-wrap table tr td button .btn-play,
-body #directory-results #table-wrap table tr th button .btn-play {
-  float: right;
-}
 body #directory-results #table-wrap table tr td:hover {
   background-color: #333333;
+}
+body #directory-results #table-wrap table tr button svg {
+  margin-right: 5px;
+}
+body #directory-results #table-wrap table tr button .btn-play {
+  float: right;
+  display: none;
 }
 body #directory-results #table-wrap table .tduration,
 body #directory-results #table-wrap table .tsize {

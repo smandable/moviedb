@@ -12,6 +12,7 @@ function checkFileNamesToNormalize() {
         },
     }).always(function(response) {
         checkFileNamesToNormalizeResult(response);
+        console.info(response);
     });
 }
 

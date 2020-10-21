@@ -5,7 +5,7 @@ ini_set('max_execution_time', 0);
 require 'formatSize.php';
 
 $directory = $_POST['directory'];
-
+echo $directory;
 if (empty($_POST['directory'])) {
     echo 'Directory is required.';
     exit();

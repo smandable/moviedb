@@ -25,27 +25,35 @@ $(".btn-process-dir-database-ops").one("click", function(event) {
     event.preventDefault();
     $("#progressbar").css("display", "block");
 
-    document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
+    document.getElementById("loadarea").src =
+        "php/updateSessionWithDimensionAndDuration.php";
 
     interval = numFiles * 300; // 500?
 
     setTimeout(function run() {
         processFilesForDB(directory);
     }, interval);
-
+    //processFilesForDB(directory);
+    // if ($("#information").text() === "Please wait...") {
+    //     processFilesForDB(directory);
+    // }
 });
 
 // document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
 
-$(document).ready(function() {
-    //console.log("process completed length: ", $('#information div:contains("Process completed")').length);
+// $(document).ready(function() {
 
-    // if ($('#information div:contains("Process completed")').length > 0) {
-    //     //processFilesForDB(directory);
-    //     console.log("process completed");
-    // }
-});
+// if ($("#information").text() === "Please wait...") {
+//     processFilesForDB(directory);
+// }
 
+
+//console.log("process completed length: ", $('#information div:contains("Process completed")').length);
+// if ($('#information div:contains("Process completed")').length > 0) {
+//     //processFilesForDB(directory);
+//     console.log("process completed");
+// }
+// });
 
 // function updateSessionWithDimensionAndDuration() {
 //     //  $("#progressbar").css("display", "block");

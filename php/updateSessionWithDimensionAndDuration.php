@@ -5,7 +5,6 @@ require 'getDuration.php';
 
 ini_set('max_execution_time', 0);
 
-
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -13,9 +12,6 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 if (empty($_SESSION['i'])) {
     $_SESSION['i'] = 0;
 }
-
-//session_id("files");
-
 
 $total = count($_SESSION['files']);
 
@@ -43,5 +39,4 @@ parent.document.getElementById("information").innerHTML="<div style=\"text-align
 
 </script>';
 
-//session_destroy();
 unset($_SESSION["i"]);

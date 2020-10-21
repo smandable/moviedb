@@ -10,8 +10,6 @@ if (empty($_POST['directory'])) {
 }
 $numFiles = $_POST['numFiles'];
 
-ini_set('max_execution_time', 0);
-
 session_start();
 
 if (empty($_SESSION['i'])) {

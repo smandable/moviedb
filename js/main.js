@@ -11,22 +11,22 @@ includeExternalScripts("js/clickHandlers.js");
 includeExternalScripts("js/checkFileNamesToNormalize.js");
 includeExternalScripts("js/processFilesForDB.js");
 
-var lines = [];
-var dirLines = [];
-var linesLength = 0;
-var currentLine = 0;
-var currentLineIndex = 0;
+//var lines = [];
+//var dirLines = [];
+//var linesLength = 0;
+//var currentLine = 0;
+//var currentLineIndex = 0;
 var numDupes = 0;
-var cleanedNamesDeDuped = [];
-var numTitlesFromDirectory = 0;
+// var cleanedNamesDeDuped = [];
+// var numTitlesFromDirectory = 0;
 var copyResultRowValues = [];
 var numFiles = 0;
 
 var dbOpsButton = $(".btn-process-dir-database-ops");
 var transitionEnd2 = "webkitTransitionEnd msTransitionEnd transitionend";
 
-//$("#input-directory").val("/home/sean/Downloads/test/");
-$("#input-directory").val("f:\\fixed\\");
+$("#input-directory").val("/run/media/sean/Recorded 4/test/");
+//$("#input-directory").val("f:\\fixed\\");
 
 $(".btn-start-processing-dir").one("click", function(event) {
     event.preventDefault();

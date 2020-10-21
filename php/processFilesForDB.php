@@ -186,7 +186,7 @@ function addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePat
 {
     //$title = $db->real_escape_string($title);
     $pattern1 = '/to move\//i';
-    $pattern2 = '/names fixed\//i';
+    $pattern2 = '/fixed\//i';
     $replaceWith = 'recorded/';
 
     $titlePath = preg_replace(array($pattern1, $pattern2), $replaceWith, $titlePath);
@@ -213,10 +213,8 @@ function compareFileSizeToDB($size, $sizeInDB)
 
     return $isLarger;
 }
-
 function searchSessionForDuplicateFiles($duplicateTitlesArray)
 {
-
     $pattern1 = '/ - Scene.*/i';
     $pattern2 = '/ - CD.*/i';
     $pattern3 = '/ - Bonus.*| Bonus.*/i';
@@ -233,11 +231,11 @@ function searchSessionForDuplicateFiles($duplicateTitlesArray)
 
                 $fileName = $file["fileName"];
 
-                $destination = $path . "\\duplicates\\";
+                $destination = $path . "/duplicates/";
 
-                if ($duplicateTitlesArray[$i]["isLarger"] == true) {
+                if ($duplicateTitlesArray[$i]['isLarger']) {
 
-                    $destination = $path . "\\duplicates\\larger\\";
+                    $destination = $path . "/duplicates/larger/";
                 }
                 moveDuplicateFiles($path, $destination, $fileName);
             }
@@ -246,12 +244,15 @@ function searchSessionForDuplicateFiles($duplicateTitlesArray)
 }
 function moveDuplicateFiles($path, $destination, $fileName)
 {
+    $path = $path . "/";
+
     if (!is_dir($destination)) {
         mkdir($destination, 0777, true);
     }
 
-    if (!is_file($$path . "\\" . $fileName)) {
-        $file_to_rename = $path . "\\" . $fileName;
+    if (is_file($path . $fileName)) {
+
+        $file_to_rename = $path . $fileName;
         $rename_file = $destination . $fileName;
 
         str_replace("'", "\'", $rename_file);
@@ -259,29 +260,29 @@ function moveDuplicateFiles($path, $destination, $fileName)
     }
 }
 
-function moveRecordedFile($directory, $title, $filesArray)
-{
-    $pattern1 = '/to move\//i';
-    $pattern2 = '/names fixed\//i';
-    $replaceWith = 'recorded/';
+// function moveRecordedFile($directory, $title, $filesArray)
+// {
+//     $pattern1 = '/to move\/i';
+//     $pattern2 = '/fixed\//i';
+//     $replaceWith = 'recorded/';
 
-    $destination = $directory;
-    $destination = preg_replace(array($pattern1, $pattern2), $replaceWith, $destination);
+//     $destination = $directory;
+//     $destination = preg_replace(array($pattern1, $pattern2), $replaceWith, $destination);
 
-    if (!is_dir($destination)) {
-        mkdir($destination, 0777, true);
-    }
-    foreach ($filesArray as $file) {
-        if (!is_file($file['Path'])) {
-            continue;
-        }
-        if ($file['title'] == stripslashes($title)) {
-            $rename_file = $destination . $file['baseName'];
-            str_replace("'", "\'", $rename_file);
-            rename($file['Path'], $rename_file);
-        }
-    }
-}
+//     if (!is_dir($destination)) {
+//         mkdir($destination, 0777, true);
+//     }
+//     foreach ($filesArray as $file) {
+//         if (!is_file($file['Path'])) {
+//             continue;
+//         }
+//         if ($file['title'] == stripslashes($title)) {
+//             $rename_file = $destination . $file['baseName'];
+//             str_replace("'", "\'", $rename_file);
+//             rename($file['Path'], $rename_file);
+//         }
+//     }
+// }
 
 function updateSize($title, $size, $db, $table)
 {

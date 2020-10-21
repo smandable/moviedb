@@ -6,9 +6,8 @@ function processFilesForDB(directory) {
         data: {
             directory: directory,
         },
-    }).always(function(response) {
+    }).done(function(response) {
         handleProcessFilesForDBResult(response);
-        //$("#loading-spinner").css("display", "none");
     });
 }
 

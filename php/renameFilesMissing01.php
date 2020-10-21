@@ -2,8 +2,8 @@
 
 function renameFilesMissing01($titlesMissing01Array)
 {
-    session_id("files");
-    session_start();
+    // session_id("files");
+    // session_start();
 
     for ($i = 0; $i < count($titlesMissing01Array); $i++) {
 
