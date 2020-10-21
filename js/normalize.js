@@ -162,21 +162,21 @@ function handleProcessFilesResult(response) {
         '<tr><td>{{path}}</td><td>{{originalFileName}}</td><td class="{{conflictsClass}} {{fileAlreadyExistsClass}}"><a>{{fileNameDisplayed}}</a></span></td><td>{{size}}</td><td>{{dimensions}}</td><td>{{durationNoMS}}</td></tr>';
 
     for (i = 0; i < response.length; i++) {
-        var path = response[i]["Path"];
-        var fileNameAndPath = response[i]["fileNameAndPath"];
-        var originalFileName = response[i]["originalFileName"];
-        var fileWillBeRenamed = response[i]["fileWillBeRenamed"];
-        var newFileName = response[i]["newFileName"];
-        var size = response[i]["Size"];
-        var dimensions = response[i]["Dimensions"];
-        var duration = response[i]["Duration"];
+        var path = response[i].Path;
+        var fileNameAndPath = response[i].fileNameAndPath;
+        var originalFileName = response[i].originalFileName;
+        var fileWillBeRenamed = response[i].fileWillBeRenamed;
+        var newFileName = response[i].newFileName;
+        var size = response[i].Size;
+        var dimensions = response[i].Dimensions;
+        var duration = response[i].Duration;
         var durationNoMS = duration.split(".")[0];
-        var fileRenameConflict = response[i]["fileRenameConflict"];
-        var fileAlreadyExists = response[i]["fileAlreadyExists"];
+        var fileRenameConflict = response[i].fileRenameConflict;
+        var fileAlreadyExists = response[i].fileAlreadyExists;
         var fileNameDisplayed = "";
 
         if (fileAlreadyExists == true) {
-            var fileAlreadyExistsClass = "file-already-exists";
+            fileAlreadyExistsClass = "file-already-exists";
         } else if (fileAlreadyExists == false) {
             fileAlreadyExistsClass = "file-does-not-exist";
         }

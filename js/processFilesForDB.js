@@ -25,19 +25,19 @@ function handleProcessFilesForDBResult(response) {
     totalSizeDuplicates = 0;
 
     for (i = 0; i < response.length; i++) {
-        var title = response[i]["title"];
-        var titleDimensions = response[i]["titleDimensions"];
-        var dimensionsInDB = response[i]["dimensionsInDB"];
-        var titleSize = response[i]["titleSize"];
+        var title = response[i].title;
+        var titleDimensions = response[i].titleDimensions;
+        var dimensionsInDB = response[i].dimensionsInDB;
+        var titleSize = response[i].titleSize;
         titleSize = parseFloat(titleSize);
-        var titleDuration = response[i]["titleDuration"];
-        var durationInDB = response[i]["durationInDB"];
-        var isLarger = response[i]["isLarger"];
-        var sizeInDB = parseFloat(response[i]["sizeInDB"]);
+        var titleDuration = response[i].titleDuration;
+        var durationInDB = response[i].durationInDB;
+        var isLarger = response[i].isLarger;
+        var sizeInDB = parseFloat(response[i].sizeInDB);
         sizeInDB = parseFloat(sizeInDB);
-        var dateCreatedInDB = response[i]["dateCreatedInDB"];
-        var path = response[i]["titlePath"];
-        var id = response[i]["id"];
+        var dateCreatedInDB = response[i].dateCreatedInDB;
+        var path = response[i].titlePath;
+        var id = response[i].id;
 
         if (title.length > 80) {
             title = title.substring(0, 80);
@@ -45,14 +45,14 @@ function handleProcessFilesForDBResult(response) {
 
         var markup = "";
 
-        if (response[i]["duplicate"]) {
+        if (response[i].duplicate) {
             ++numduplicates;
             totalSizeDuplicates += titleSize;
             toolTipSizeHTML = "";
             toolTipDimensionsHTML = "";
             toolTipDurationHTML = "";
             updateBtn = "";
-            if (response[i]["isLarger"]) {
+            if (response[i].isLarger) {
                 toolTipSizeHTML =
                     '<a href="#" data-toggle="tooltip" data-placement="top" title="' +
                     formatSize(sizeInDB) +

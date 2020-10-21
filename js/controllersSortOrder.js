@@ -6,7 +6,7 @@ app.controller('HeaderCtrl', function($scope, $location, $http) {
 
 app.controller('Home', ['$scope', function($scope) {
 	$scope.home = "Home";
-}])
+}]);
 
 app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$q', '$interval', '$httpParamSerializer',
 	function($scope, $http, $timeout, uiGridConstants, $q, $interval, $httpParamSerializer) {
@@ -101,7 +101,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 					});
 				}
 			});
-		};
+		}
 
 		$scope.deleteButtonClickHandler = {
 			onClick: function(value) {
@@ -122,4 +122,4 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
 			getAllMovies(sortOrder);
 		};
 	}
-])
+]);

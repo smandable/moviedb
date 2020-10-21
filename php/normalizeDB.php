@@ -151,7 +151,7 @@ function checkDatabaseForMovie(&$filesArrayReducedSizesSummed)
             $filesArrayReducedSizesSummed['isLarger'] = compareFileSizeToDB($filesArrayReducedSizesSummed['Size'], $filesArrayReducedSizesSummed['SizeInDB']);
 
             if ($options[0] == "true") {
-              //  moveDuplicateFile($title, $filesArray);
+                //  moveDuplicateFile($title, $filesArray);
             }
             if ($options[1] == "true") {
                 updateDimensions($title, $dimensions, $db, $table, $directory);

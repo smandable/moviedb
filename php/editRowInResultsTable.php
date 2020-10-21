@@ -23,4 +23,3 @@ if ($columnToUpdate == 'title') {
 }
 
 $db->close();
-

@@ -45,7 +45,7 @@ $('#chkbox-options input[type=checkbox]').one("change", function(event) {
     event.preventDefault();
     var key = $(this).attr('value');
     if ($(this).prop("checked")) {
-        var state = "true;";
+        state = "true;";
     } else {
         state = "false;";
     }
@@ -82,37 +82,37 @@ function handleProcessFilesForDBResult(response) {
 
 
     for (i = 0; i < response.data.length; i++) {
-        var name = response.data[i]['Title'];
-        var dimensions = response.data[i]['Dimensions'];
-        var size = response.data[i]['Size'];
-        var duration = response.data[i]['Duration'];
+        var name = response.data[i].Title;
+        var dimensions = response.data[i].Dimensions;
+        var size = response.data[i].Size;
+        var duration = response.data[i].Duration;
         //var durationNoMS = duration.split(".")[0];
-        var durationInDB = response.data[i]['DurationInDB'];
+        var durationInDB = response.data[i].DurationInDB;
         //var durationInDBNoMS = durationInDB.split(".")[0];
-        var isDuplicate = response.data[i]['Duplicate'];
-        var isLarger = response.data[i]['isLarger'];
-        var sizeInDB = response.data[i]['SizeInDB'];
-        var dateCreated = response.data[i]['DateCreatedInDB'];
-        var path = response.data[i]['Path'];
-        // var newID = response.data[i]['NewID'];
-        var id = response.data[i]['ID'];
+        var isDuplicate = response.data[i].Duplicate;
+        var isLarger = response.data[i].isLarger;
+        var sizeInDB = response.data[i].SizeInDB;
+        var dateCreated = response.data[i].DateCreatedInDB;
+        var path = response.data[i].Path;
+        // var newID = response.data[i].NewID;
+        var id = response.data[i].ID;
         //console.info("response.data: ", response.data);
 
         if (name.length > 80) {
             name = name.substring(0, 80);
         }
         var markup = '';
-        if (response.data[i]['Duplicate'] == false) {
+        if (response.data[i].Duplicate == false) {
             ++newMovies;
             totalSizeNew += size;
 
             markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) +
                 '</td><td></td><td class="new-not-dup">New</td></tr>';
-        } else if (response.data[i]['Duplicate'] == true) {
+        } else if (response.data[i].Duplicate == true) {
             ++numDuplicates;
             totalSizeDuplicates += size;
 
-            if (response.data[i]['isLarger'] == true) {
+            if (response.data[i].isLarger == true) {
                 markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
                     '"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td></tr>';
             } else {
@@ -283,29 +283,29 @@ function handleCheckDBForDuplicatesResult(response) {
 
 
     for (i = 0; i < response.data.length; i++) {
-        var name = response.data[i]['title'];
-        var dimensions = response.data[i]['dimensions'];
-        var size = response.data[i]['size'];
-        var duration = response.data[i]['duration'];
-        var path = response.data[i]['path'];
-        var id = response.data[i]['id'];
+        var name = response.data[i].title;
+        var dimensions = response.data[i].dimensions;
+        var size = response.data[i].size;
+        var duration = response.data[i].duration;
+        var path = response.data[i].path;
+        var id = response.data[i].id;
         console.info("response.data: ", response.data);
         if (name.length > 80) {
             name = name.substring(0, 80);
         }
 
-        // if (response.data[i]['Duplicate'] == false) {
+        // if (response.data[i].Duplicate == false) {
         // 	++newMovies;
         // 	totalSizeNew += size;
 
         var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '<span class="tsize">' + size + '</span></td><td>' + formatDuration(duration) +
             '</td><td></td><td><button class="btn btn-warning btn-copy-values" type="button"><i class="fas fa-copy"></i>Copy</button><button class="btn btn-success btn-paste-values"><i class="fas fa-play"></i>Paste</button>' +
             '<button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button></td></tr>';
-        // } else if (response.data[i]['Duplicate'] == true) {
+        // } else if (response.data[i].Duplicate == true) {
         // 	++numDuplicates;
         // 	totalSizeDuplicates += size;
         //
-        // 	if (response.data[i]['isLarger'] == true) {
+        // 	if (response.data[i].isLarger == true) {
         // 		var markup = '<tr><td>' + id + '</td><td><a href="#">' + name + '</a></td><td>' + dimensions + '</td><td>' + formatSize(size) + '  <a href="#" data-toggle="tooltip" data-placement="top" title="' + formatSize(sizeInDB) +
         // 			'"><i class="fas fa-angle-double-up"></i></a></td><td>' + formatDuration(duration) + '</td><td>' + dateCreated + '</td><td class="dup-not-new">Duplicate</td><td><button class="btn btn-warning btn-update-with-result" type="button">' +
         // 			'<i class="fas fa-copy"></i>Update DB</i></button><!-- button class="btn btn-default btn-delete"><i class="fa fa-trash"></i>Del</button>--><button class="btn btn-success btn-play"><i class="fas fa-play"></i>Play</button></td></tr>';

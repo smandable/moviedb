@@ -6,20 +6,20 @@ app.controller('HeaderCtrl', function($scope, $location, $http) {
 
 app.controller('Home', ['$scope', function($scope) {
     $scope.home = "Home";
-}])
+}]);
 app.controller('UtilitiesCtrl', ['$scope', function($scope) {
     $scope.config = "Utilities";
-}])
+}]);
 
 app.controller('ConfigCtrl', ['$scope', function($scope) {
     $scope.config = "Config";
-}])
+}]);
 
 app.controller('NormalizeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$httpParamSerializer', '$location',
     function($scope, $http, $timeout, $q, $interval, $httpParamSerializer, $location) {
         $scope.normalize = "Normalize";
     }
-])
+]);
 
 app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', '$q', '$interval', '$httpParamSerializer', '$location',
     function($scope, $http, $timeout, uiGridConstants, $q, $interval, $httpParamSerializer, $location) {
@@ -209,7 +209,7 @@ app.controller('MoviesCtrl', ['$scope', '$http', '$timeout', 'uiGridConstants', 
         };
 
     }
-])
+]);
 
 // app.controller('ModalCtrl', ['$scope', 'createDialog', function($scope, createDialogService) {
 //
@@ -302,4 +302,4 @@ app.controller('ModeCtrl', ['$scope', '$http', '$timeout', '$q', '$interval', '$
                 return formatTitleDuration(value);
             }
         };
-    })
+    });

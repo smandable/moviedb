@@ -10,7 +10,7 @@ function checkFileNamesToNormalize() {
         data: {
             directory: directory,
         },
-    }).always(function(response) {
+    }).always(function (response) {
         checkFileNamesToNormalizeResult(response);
         console.info(response);
     });
@@ -21,14 +21,14 @@ function checkFileNamesToNormalizeResult(response) {
     var tbody = $("#file-results table").children("tbody:nth-of-type(2)");
 
     for (i = 0; i < response.length; i++) {
-        var path = response[i]["path"];
-        var fileNameAndPath = response[i]["fileNameAndPath"];
-        var fileName = response[i]["fileName"];
+        var path = response[i].path;
+        var fileNameAndPath = response[i].fileNameAndPath;
+        var fileName = response[i].fileName;
 
         newFileName = "";
 
-        if (response[i]["newFileName"]) {
-            newFileName = response[i]["newFileName"];
+        if (response[i].newFileName) {
+            newFileName = response[i].newFileName;
         }
 
         var row =
@@ -47,13 +47,13 @@ function checkFileNamesToNormalizeResult(response) {
     // if (!$('#normalizeModal').hasClass('in')) {
     $("#normalizeModal").modal("show");
 }
-$("#normalizeModal").one("hidden.bs.modal", function() {
+$("#normalizeModal").one("hidden.bs.modal", function () {
     dbOpsBtnWrapper.addClass("inline-flex").outerWidth();
-    dbOpsBtnWrapper.addClass("fade-in").one(transitionEnd, function() {});
+    dbOpsBtnWrapper.addClass("fade-in").one(transitionEnd, function () {});
 });
 
-$(document).ready(function() {
-    $("#file-results table").one("change", ":checkbox", function() {
+$(document).ready(function () {
+    $("#file-results table").one("change", ":checkbox", function () {
         var originalFileName = $(this)
             .closest("tr")
             .find("td:nth-of-type(2)")
@@ -70,7 +70,7 @@ $(document).ready(function() {
     });
 });
 
-$("#modal-rename-files-btn").one("click", function() {
+$("#modal-rename-files-btn").one("click", function () {
     renameTheFilesToNormalize();
 });
 
@@ -82,7 +82,7 @@ function renameTheFilesToNormalize() {
         data: {
             dontRenameThese: dontRenameThese,
         },
-    }).always(function(response) {
+    }).always(function (response) {
         handleRenameTheFilesToNormalizeResult(response);
     });
 }
@@ -95,18 +95,18 @@ function handleRenameTheFilesToNormalizeResult(response) {
     var tbody = $("#file-results table").children("tbody:nth-of-type(2)");
 
     for (i = 0; i < response.length; i++) {
-        var path = response[i]["path"];
-        var fileNameAndPath = response[i]["fileNameAndPath"];
-        var fileName = response[i]["fileName"];
-        var newFileName = response[i]["newFileName"];
+        var path = response[i].path;
+        var fileNameAndPath = response[i].fileNameAndPath;
+        var fileName = response[i].fileName;
+        var newFileName = response[i].newFileName;
 
         newFileName = "";
         fileExists = "";
 
-        if (response[i]["newFileName"]) {
-            newFileName = response[i]["newFileName"];
+        if (response[i].newFileName) {
+            newFileName = response[i].newFileName;
         }
-        if (response[i]["fileExists"]) {
+        if (response[i].fileExists) {
             newFileName = '<span style="color:red;">' + newFileName + "<span>";
         }
 
@@ -124,7 +124,7 @@ function handleRenameTheFilesToNormalizeResult(response) {
     }
 }
 
-$("#file-results table").one("change", ":checkbox", function() {
+$("#file-results table").one("change", ":checkbox", function () {
     if ($(this).is(":checked")) {
         dontRenameThese.push(
             $(this).parents("tr").find("td:nth-of-type(3)").text()

@@ -19,7 +19,8 @@ function getFiles($directory)
     $iterator = new \RecursiveIteratorIterator($directory);
 
     foreach ($iterator as $file) {
-        if ($file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
+        if (
+            $file->getBasename() === '.' || $file->getBasename() === '..' || $file->getBasename() === '.DS_Store'
             || $file->getBasename() === 'Thumbs.db' || $file->getBasename() === '.AppleDouble'
         ) {
             continue;
