@@ -49,11 +49,11 @@ function checkFileNamesToNormalizeResult(response) {
 }
 $("#normalizeModal").one("hidden.bs.modal", function () {
     dbOpsBtnWrapper.addClass("inline-flex").outerWidth();
-    dbOpsBtnWrapper.addClass("fade-in").one(transitionEnd, function () {});
+    dbOpsBtnWrapper.addClass("fade-in").on(transitionEnd, function () {});
 });
 
-$(document).ready(function () {
-    $("#file-results table").one("change", ":checkbox", function () {
+$(function () {
+    $("#file-results table").on("change", ":checkbox", function () {
         var originalFileName = $(this)
             .closest("tr")
             .find("td:nth-of-type(2)")
@@ -124,7 +124,7 @@ function handleRenameTheFilesToNormalizeResult(response) {
     }
 }
 
-$("#file-results table").one("change", ":checkbox", function () {
+$("#file-results table").on("change", ":checkbox", function () {
     if ($(this).is(":checked")) {
         dontRenameThese.push(
             $(this).parents("tr").find("td:nth-of-type(3)").text()

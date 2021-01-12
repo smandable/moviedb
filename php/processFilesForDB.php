@@ -206,9 +206,12 @@ function addToDB($title, $titleSize, $titleDimensions, $titleDuration, $titlePat
 }
 function compareFileSizeToDB($size, $sizeInDB)
 {
-    $isLarger = false;
+    $isLarger = "";
+
     if (($sizeInDB > 0) && ($sizeInDB < $size)) {
-        $isLarger = true;
+        $isLarger = "isLarger";
+    } elseif (($sizeInDB == 0) && ($sizeInDB < $size)) {
+        $isLarger = "isLargerZeroDBSize";
     }
 
     return $isLarger;
@@ -233,7 +236,7 @@ function searchSessionForDuplicateFiles($duplicateTitlesArray)
 
                 $destination = $path . "/duplicates/";
 
-                if ($duplicateTitlesArray[$i]['isLarger']) {
+                if ($duplicateTitlesArray[$i]['isLarger'] == "isLarger") {
 
                     $destination = $path . "/duplicates/larger/";
                 }
@@ -246,7 +249,7 @@ function moveDuplicateFiles($path, $destination, $fileName)
 {
     $path = $path . "/";
 
-    if (!is_dir($destination)) {
+    if (file_exists($destination) == false) {
         mkdir($destination, 0777, true);
     }
 
@@ -313,6 +316,6 @@ function returnHTML($titlesArray)
 {
     $titlesArray = array_values($titlesArray);
 
-    include "safe_json_encode.php";
+    require "safe_json_encode.php";
     echo safe_json_encode($titlesArray);
 }

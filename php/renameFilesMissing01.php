@@ -9,8 +9,7 @@ function renameFilesMissing01($titlesMissing01Array)
 
         foreach ($_SESSION["files"] as $file) {
 
-            $path = $file['path'] . "\\";
-
+            $path = $file['path'] . "/";
             $tmpFileName = array('', '');
             $pattern = '';
             $digit = '';

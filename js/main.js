@@ -64,7 +64,7 @@ function handleGetFileNamesAndSizesResult(response) {
     checkFileNamesToNormalize();
 }
 
-$(document).ready(function () {
+$(function () {
     var intervalID;
     function copy_search_term(e) {
         var tst = $.trim(
@@ -180,7 +180,7 @@ function handleUpdateExistingRecordResponse() {
     angular.element($("#movie-controller")).scope().refreshData();
 }
 
-$(document).ready(function () {
+$(function () {
     $("#movie-controller").one(
         "click",
         ".cell-size .ui-grid-cell-contents",
@@ -193,7 +193,7 @@ $(document).ready(function () {
     );
 });
 
-$(document).ready(function () {
+$(function () {
     $('[data-toggle="tooltip"]').tooltip();
 
     $.fn.editable.defaults.mode = "inline";
@@ -280,7 +280,7 @@ $("#duplicates").one("click", ".btn-find-file", function (event) {
 var dbOpsBtnWrapper = $(".db-ops-btn-wrapper");
 var transitionEnd = "webkitTransitionEnd msTransitionEnd transitionend";
 
-$(document).ready(function () {
+$(function () {
     $.fn.editable.defaults.mode = "inline";
 
     $("#file-results table").one("click", "a", function (e) {

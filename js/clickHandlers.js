@@ -33,36 +33,4 @@ $(".btn-process-dir-database-ops").one("click", function (event) {
     setTimeout(function run() {
         processFilesForDB(directory);
     }, interval);
-    //processFilesForDB(directory);
-    // if ($("#information").text() === "Please wait...") {
-    //     processFilesForDB(directory);
-    // }
 });
-
-// document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
-
-// $(document).ready(function() {
-
-// if ($("#information").text() === "Please wait...") {
-//     processFilesForDB(directory);
-// }
-
-//console.log("process completed length: ", $('#information div:contains("Process completed")').length);
-// if ($('#information div:contains("Process completed")').length > 0) {
-//     //processFilesForDB(directory);
-//     console.log("process completed");
-// }
-// });
-
-// function updateSessionWithDimensionAndDuration() {
-//     //  $("#progressbar").css("display", "block");
-//     $.ajax({
-//         type: "POST",
-//         url: "php/updateSessionWithDimensionAndDuration.php",
-//         dataType: "json",
-//         async :false,
-//     }).done(function () {
-//         document.getElementById('loadarea').src = 'php/updateSessionWithDimensionAndDuration.php';
-//       processFilesForDB(directory);
-//     });
-// }

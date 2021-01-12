@@ -9,7 +9,7 @@ function renameDuplicateFilesMissing01($duplicateTitlesMissing01Array)
 
         foreach ($_SESSION["files"] as $file) {
 
-            $path = $file['path'] . "\\";
+            $path = $file['path'] . "/";
 
             $tmpFileName = array('', '');
             $pattern = '';
@@ -22,10 +22,10 @@ function renameDuplicateFilesMissing01($duplicateTitlesMissing01Array)
 
                 rename($file['fileNameAndPath'], $newFileNameAndPath);
 
-                $destination = $path . "\\duplicates\\";
+                $destination = $path . "duplicates/";
 
                 if ($duplicateTitlesMissing01Array[$i]["isLarger"] == true) {
-                    $destination = $path . "\\duplicates\\larger\\";
+                    $destination = $path . "duplicates/larger/";
                 }
 
                 moveDuplicateFilesMissing01($path, $destination, $newFileName);
@@ -44,10 +44,10 @@ function renameDuplicateFilesMissing01($duplicateTitlesMissing01Array)
 
                     rename($file['fileNameAndPath'], $newFileNameAndPath);
 
-                    $destination = $path . "\\duplicates\\";
+                    $destination = $path . "duplicates/";
 
                     if ($duplicateTitlesMissing01Array[$i]["isLarger"] == true) {
-                        $destination = $path . "\\duplicates\\larger\\";
+                        $destination = $path . "duplicates/larger/";
                     }
 
                     moveDuplicateFilesMissing01($path, $destination, $newFileName);
@@ -64,10 +64,10 @@ function renameDuplicateFilesMissing01($duplicateTitlesMissing01Array)
 
                     rename($file['fileNameAndPath'], $newFileNameAndPath);
 
-                    $destination = $path . "\\duplicates\\";
+                    $destination = $path . "duplicates/";
 
                     if ($duplicateTitlesMissing01Array[$i]["isLarger"] == true) {
-                        $destination = $path . "\\duplicates\\larger\\";
+                        $destination = $path . "duplicates/larger/";
                     }
 
                     moveDuplicateFilesMissing01($path, $destination, $newFileName);
@@ -83,8 +83,8 @@ function moveDuplicateFilesMissing01($path, $destination, $newFileName)
         mkdir($destination, 0777, true);
     }
 
-    if (!is_file($destination . "\\" . $newFileName)) {
-        $file_to_rename = $path . "\\" . $newFileName;
+    if (!is_file($destination . $newFileName)) {
+        $file_to_rename = $path . $newFileName;
         $rename_file = $destination . $newFileName;
 
         str_replace("'", "\'", $rename_file);

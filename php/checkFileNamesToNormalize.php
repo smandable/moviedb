@@ -37,6 +37,9 @@ function checkFiles()
 function basicFunctions($fileNameNoExtension)
 {
     $fileNameNoExtension = preg_replace('/\./', ' ', trim($fileNameNoExtension)); // periods to spaces
+    $fileNameNoExtension = preg_replace('/\[/', ' ', trim($fileNameNoExtension)); // [ to space
+    $fileNameNoExtension = preg_replace('/\]/', ' ', trim($fileNameNoExtension)); // ] to space
+    
     $fileNameNoExtension = preg_replace('/_/', ' ', trim($fileNameNoExtension)); // underscores to spaces
     $fileNameNoExtension = preg_replace('/-/', ' ', trim($fileNameNoExtension)); // dash to space
     $fileNameNoExtension = preg_replace('/\s{3}/', ' - ', trim($fileNameNoExtension)); // 3 spaces to ' - '
@@ -50,7 +53,7 @@ function basicFunctions($fileNameNoExtension)
 function titleCase($fileNameNoExtension)
 {
     $delimiters = array(" ");
-    $exceptions = array("the", "a", "an", "as", "at", "be", "but", "by", "for", "in", "of", "off", "on", "per", "to", "up", "via", "and", "nor", "or", "so", "yet", "with", "vs", "BBC", "OMG", "CD", "POV", "MILF", "XXX");
+    $exceptions = array("the", "a", "an", "and", "as", "at", "be", "but", "by", "for", "in", "it", "is", "of", "off", "on", "or", "per", "to", "up", "via", "and", "nor", "or", "so", "yet", "with", "vs", "BBC", "BFF", "OMG", "CD", "POV", "MILF", "MILFs", "XXX");
     /*
      * Exceptions in lower case are words you don't want converted
      * Exceptions all in upper case are any words you don't want converted to title case
@@ -72,9 +75,12 @@ function titleCase($fileNameNoExtension)
                 // convert to uppercase (non-utf8 only)
                 $word = ucfirst($word);
             }
+            //$word = ucfirst($word);
+
             array_push($newwords, $word);
         }
         $fileNameNoExtension = join($delimiter, $newwords);
+        $fileNameNoExtension = ucfirst($fileNameNoExtension);
     }
 
     $fileNameNoExtension = preg_replace('/^(the)\s/', 'The ', trim($fileNameNoExtension)); // if 'the ' is at the beginning of the string, replace with "The "
@@ -88,7 +94,8 @@ function cleanupFunctions($fileNameNoExtension)
 {
     $fileNameNoExtension = preg_replace('/1080p/i', '', $fileNameNoExtension); // Look for '1080p', replace with nothing
     $fileNameNoExtension = preg_replace('/720p/i', '', trim($fileNameNoExtension)); // Look for '720p', replace with nothing
-    $fileNameNoExtension = preg_replace('/DVDRip/i', '', trim($fileNameNoExtension)); // Look for 'DVDRip', replace with nothingcheckFileNamesToNormalize
+    $fileNameNoExtension = preg_replace('/360p/i', '', trim($fileNameNoExtension)); // Look for '360p', replace with nothing
+    $fileNameNoExtension = preg_replace('/DVDRip/i', '', trim($fileNameNoExtension)); // Look for 'DVDRip', replace with nothing
     $fileNameNoExtension = preg_replace('/x264/i', '', trim($fileNameNoExtension)); // Look for 'x264', replace with nothing
     $fileNameNoExtension = preg_replace('/XCITE/i', '', trim($fileNameNoExtension)); // Look for 'XCITE', replace with nothing
     $fileNameNoExtension = preg_replace('/KTR/i', '', trim($fileNameNoExtension)); // Look for 'KTR', replace with nothing
@@ -96,8 +103,11 @@ function cleanupFunctions($fileNameNoExtension)
     $fileNameNoExtension = preg_replace('/WEBRip/i', '', trim($fileNameNoExtension)); // Look for 'WEBRip', replace with nothing
     $fileNameNoExtension = preg_replace('/VSEX/i', '', trim($fileNameNoExtension)); // Look for 'VSEX', replace with nothing
     $fileNameNoExtension = preg_replace('/XXX/i', '', trim($fileNameNoExtension)); // Look for 'XXX', replace with nothing
+    $fileNameNoExtension = preg_replace('/ipt/i', '', trim($fileNameNoExtension)); // Look for 'ipt.', replace with nothing
     $fileNameNoExtension = preg_replace('/MP4/i', '', trim($fileNameNoExtension)); // Look for 'MP4', replace with nothing
-    $fileNameNoExtension = preg_replace('/^gush\./i', '', trim($fileNameNoExtension)); // Look for 'gush.', replace with nothing
+    $fileNameNoExtension = preg_replace('/gush/i', '', trim($fileNameNoExtension)); // Look for 'gush.', replace with nothing
+    $fileNameNoExtension = preg_replace('/xvid/i', '', trim($fileNameNoExtension)); // Look for 'xvid.', replace with nothing
+    $fileNameNoExtension = preg_replace('/team/i', '', trim($fileNameNoExtension)); // Look for 'team.', replace with nothing
     $fileNameNoExtension = preg_replace('/(\s+)vs(\s+)/i', ' vs. ', trim($fileNameNoExtension)); // ' vs ' to 'vs.'
     $fileNameNoExtension = preg_replace('/(Vol\s|Vol\.|\.Vol)/i', ' ', trim($fileNameNoExtension)); // 'Vol ' or 'Vol.' or '.Vol' to ' '
     $fileNameNoExtension = preg_replace('/all star/i', 'All-Star', trim($fileNameNoExtension)); // 'all star' to All-Star
