@@ -14,7 +14,7 @@ const baseUrl = scheme + host + port + path;
 export const environment = {
   production      : true,
   version         : packageInfo.version,
-  appName         : 'EasyAngular',
+  appName         : 'MovieDB',
   envName         : EnvName.PROD,
   defaultLanguage : 'en',
   apiBaseUrl      : baseUrl,

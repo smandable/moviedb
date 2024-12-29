@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "EasyAngular": {
+    "MovieDB": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -72,10 +72,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "EasyAngular:build:production"
+              "buildTarget": "MovieDB:build:production"
             },
             "development": {
-              "buildTarget": "EasyAngular:build:development"
+              "buildTarget": "MovieDB:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -83,7 +83,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "buildTarget": "EasyAngular:build"
+            "buildTarget": "MovieDB:build"
           }
         },
         "test": {

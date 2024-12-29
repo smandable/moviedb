@@ -1,6 +1,6 @@
 {
-  "name": "EasyAngular",
-  "short_name": "EasyAngular",
+  "name": "MovieDB",
+  "short_name": "MovieDB",
   "theme_color": "#2b46c7",
   "background_color": "#2b46c7",
   "display": "standalone",
