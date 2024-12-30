@@ -24,7 +24,7 @@ import {
           style="margin-left: 4px; cursor: pointer; background: none; border: none;"
           title="Clear Filter"
         >
-          ❌
+        <i class="fas fa-times clear-button fa-2x" style="color: red;"></i>
         </button>
       </div>
     `,

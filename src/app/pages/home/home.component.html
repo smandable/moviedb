@@ -16,6 +16,9 @@
         [columnDefs]="columnDefs"
         [defaultColDef]="{ sortable: true, filter: true, resizable: true, flex: 1 }"
       ></ag-grid-angular>
+      <div class="total-items-container">
+        Total Items: {{ totalItems }}
+      </div>
       </div>
     </ng-container>
   </div>

@@ -55,6 +55,9 @@ const myTheme = themeQuartz.withParams({
   imports: [PageLayoutComponent, NgIf, ProgressBarComponent, AgGridAngular],
 })
 export class HomeComponent implements OnInit {
+
+  public totalItems: number = 0; // Holds the total count
+
   private gridApi: GridReadyEvent['api'] | undefined;
 
   public gridOptions: GridOptions = {
@@ -146,6 +149,7 @@ export class HomeComponent implements OnInit {
     this.movieService.getAllMovies().subscribe((movies: Movie[]) => {
       // Provide the data to AG Grid
       this.gridOptions.rowData = movies;
+      this.totalItems = movies.length;
       // console.log('Movies:', movies);
 
       // Loading indicator logic
