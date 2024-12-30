@@ -1,0 +1,13 @@
+// @import "~ag-grid-community/styles/ag-grid.css";
+//@import '~ag-grid-community/styles/ag-theme-alpine.css';
+
+// .ag-cell {
+//     border: 1px solid #ccc; /* Light gray border */
+//   }
+  
+//   .ag-header-cell {
+//     border: 1px solid #ccc; /* Same border for header cells */
+//   }
+  .ag-header-cell:last-child {
+    border-right: none; /* Remove the right border */
+  }
