@@ -30,6 +30,7 @@
       "@forms/*": ["src/app/shared/components/forms/*"],
       "@layouts/*": ["src/app/shared/components/layouts/*"],
       "@modals/*": ["src/app/shared/components/modals/*"],
+      "@components/*": ["src/app/shared/components/*"],
       "@enums/*": ["src/app/shared/enums/*"],
       "@directives/*": ["src/app/shared/directives/*"],
       "@pipes/*": ["src/app/shared/pipes/*"],

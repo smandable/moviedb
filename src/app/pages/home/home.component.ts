@@ -11,6 +11,8 @@ import { MovieService, Movie } from '@services/movie.service';
 import { ProgressBarComponent } from '@blocks/progress-bar/progress-bar.component';
 import { PageLayoutComponent } from '@layouts/page-layout/page-layout.component';
 import { AgGridAngular } from 'ag-grid-angular';
+import { CustomFloatingFilterComponent } from '@components/grid/custom-floating-filter/custom-floating-filter.component';
+
 
 import {
   AllCommunityModule,
@@ -21,8 +23,6 @@ import {
   ColDef,
   themeQuartz,
 } from 'ag-grid-community';
-
-
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -54,19 +54,19 @@ const myTheme = themeQuartz.withParams({
   standalone: true,
   imports: [PageLayoutComponent, NgIf, ProgressBarComponent, AgGridAngular],
 })
-
 export class HomeComponent implements OnInit {
   private gridApi: GridReadyEvent['api'] | undefined;
 
   public gridOptions: GridOptions = {
     theme: myTheme,
     rowSelection: 'single',
-    
+
     defaultColDef: {
       width: 155, // Set default column width
       sortable: true,
       filter: true,
       resizable: true, // Allow resizing of columns
+      floatingFilter: true, // Enable floating filters
     },
     onGridReady: (params: GridReadyEvent) => {
       console.log('Grid is ready!');
@@ -74,24 +74,54 @@ export class HomeComponent implements OnInit {
       params.api.sizeColumnsToFit();
     },
     onCellValueChanged: (event) => this.onCellValueChanged(event), // Handle cell edits
-
   };
   columnDefs: ColDef[] = [
-    { field: 'title', headerName: 'Title', width: 600, editable: true },
-    { field: 'dimensions', headerName: 'Dimensions', width: 150, editable: true },
-    { field: 'filesize', headerName: 'File Size', width: 150, valueFormatter: fileSizeFormatter, editable: true },
-    { field: 'duration', headerName: 'Duration', width: 150, valueFormatter: durationFormatter, editable: true},
+    {
+      field: 'title',
+      headerName: 'Title',
+      width: 600,
+      editable: true,
+      filter: 'agTextColumnFilter', // Use a text filter
+      floatingFilter: true,
+      floatingFilterComponent: CustomFloatingFilterComponent,
+      filterParams: {
+        filterOptions: ['startsWith', 'contains', 'endsWith'], 
+        debounceMs: 300,         
+        caseSensitive: false,      
+        defaultOption: 'startsWith', // Default filter option in the menu
+      },
+    },
+    {
+      field: 'dimensions',
+      headerName: 'Dimensions',
+      width: 150,
+      editable: true,
+    },
+    {
+      field: 'filesize',
+      headerName: 'File Size',
+      width: 150,
+      valueFormatter: fileSizeFormatter,
+      editable: true,
+    },
+    {
+      field: 'duration',
+      headerName: 'Duration',
+      width: 150,
+      valueFormatter: durationFormatter,
+      editable: true,
+    },
     { field: 'date_created', headerName: 'Date Created', width: 150 },
     {
-      headerName: '',        // No heading
-      width: 100,             // Narrow column
+      headerName: '', // No heading
+      width: 100, // Narrow column
       filter: false, // Disable filter
-    sortable: false, // Disable sorting
+      sortable: false, // Disable sorting
 
       cellRenderer: (params: ICellRendererParams) => {
         // Create an HTML element for the trash icon
         const icon = document.createElement('span');
-        icon.innerHTML = '🗑️';           // or use <i class="fa fa-trash"></i>, etc.
+        icon.innerHTML = '🗑️'; // or use <i class="fa fa-trash"></i>, etc.
         icon.style.cursor = 'pointer';
         icon.title = 'Delete this row';
 
@@ -106,7 +136,10 @@ export class HomeComponent implements OnInit {
     },
   ];
 
-  constructor(public storeService : StoreService, private movieService: MovieService) {}
+  constructor(
+    public storeService: StoreService,
+    private movieService: MovieService
+  ) {}
 
   ngOnInit(): void {
     // Fetch data from the PHP endpoint
@@ -114,12 +147,12 @@ export class HomeComponent implements OnInit {
       // Provide the data to AG Grid
       this.gridOptions.rowData = movies;
       // console.log('Movies:', movies);
-  
+
       // Loading indicator logic
       setTimeout(() => {
         this.storeService.isLoading.set(false);
       }, 500);
-    }); 
+    });
   }
   deleteRow(movie: Movie) {
     if (!confirm(`Are you sure you want to delete "${movie.title}"?`)) {
@@ -141,17 +174,17 @@ export class HomeComponent implements OnInit {
   }
   onCellValueChanged(event: any): void {
     const { data, colDef, newValue } = event;
-  
+
     // Prevent unnecessary requests if the value hasn't changed
     if (newValue === event.oldValue) {
       return;
     }
-  
+
     // Extract the necessary fields for the request
     const id = data.id; // Ensure `id` is part of your row data
     const columnToUpdate = colDef.field; // This maps to the column field
     const valueToUpdate = newValue;
-  
+
     // Send the update request to the PHP backend
     this.movieService.updateRow(id, columnToUpdate, valueToUpdate).subscribe({
       next: (response) => {
@@ -166,7 +199,6 @@ export class HomeComponent implements OnInit {
       },
     });
   }
-  
 }
 // Utility function to format file sizes with a space between the number and the units
 function fileSizeFormatter(params: { value: number }): string {
@@ -180,9 +212,9 @@ function fileSizeFormatter(params: { value: number }): string {
     units.length - 1
   );
   const size = params.value / Math.pow(1024, exponent);
-  
+
   const output = `${size.toFixed(2)}\u00A0${units[exponent]}`;
-  // console.log('Formatted file size:', `[${output}]`); 
+  // console.log('Formatted file size:', `[${output}]`);
   return output;
 }
 // Utility function to format durations
@@ -201,6 +233,3 @@ function durationFormatter(params: { value: number }): string {
     ? `${hours}:${pad(minutes)}:${pad(seconds)}` // No leading zero for hours
     : `${pad(minutes)}:${pad(seconds)}`; // Skip hours if zero
 }
-
-
-

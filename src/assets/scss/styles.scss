@@ -83,3 +83,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
 // @import '~ag-grid-community/styles/ag-grid.css';
 // @import '~ag-grid-community/styles/ag-theme-alpine.css';
+
+.ag-floating-filter-body {
+    width: 100% !important; /* Match the width of the column */
+    display: flex;
+    align-items: center;
+    overflow: visible;
+  }
+  
+  .ag-floating-filter-body input {
+    flex: 1; /* Make the input fill available space */
+    width: 100% !important;
+  }
