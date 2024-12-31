@@ -1,6 +1,5 @@
 <?php
 
-require 'safe_json_encode.php';
 require 'db_connect.php';
 
 try {
@@ -34,11 +33,11 @@ try {
     header('Content-Type: application/json');
 
     // Output the result as a flat array
-    echo safe_json_encode($data);
+    echo json_encode($data);
 } catch (Exception $e) {
     // Handle exceptions and return an error message
     http_response_code(500);
-    echo safe_json_encode(['error' => true, 'message' => $e->getMessage()]);
+    echo json_encode(['error' => true, 'message' => $e->getMessage()]);
 } finally {
     // Ensure the database connection is closed
     $db->close();

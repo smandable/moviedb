@@ -1,0 +1,43 @@
+<app-page-layout>
+    <div class="container my-3">
+      <!-- AG Grid -->
+      <div class="content" style="display: flex; flex-direction: column; height: 75vh;">
+        <ag-grid-angular
+          #agGrid
+          class="ag-theme-alpine"
+          style="flex: 1 1 auto; width: 100%;"
+          [gridOptions]="gridOptions"
+          [rowData]="[]"
+          [columnDefs]="gridOptions.columnDefs"
+          [defaultColDef]="gridOptions.defaultColDef"
+        ></ag-grid-angular>
+      </div>
+  
+      <!-- Display total items -->
+      <div class="total-items-container">
+        <strong>Total Items:</strong> {{ totalItems }}
+      </div>
+            <!-- Directory Field -->
+            <div class="mb-4 directory-field">
+                <label for="directory-input" class="form-label">Directory to process</label>
+                <div class="input-group">
+                  <input
+                    id="directory-input"
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="directory"
+                    placeholder="Enter directory path"
+                  />
+                  <button
+                    class="btn btn-warning"
+                    type="button"
+                    (click)="processDirectory()"
+                    title="Process Directory"
+                  >
+                    <i class="fas fa-cogs me-2"></i> Process
+                  </button>
+                </div>
+              </div>
+    </div>
+  </app-page-layout>
+  

@@ -1,0 +1,30 @@
+<div class="modal-header">
+    <h5 class="modal-title">Files to Normalize</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body">
+    <ng-container *ngIf="files.length > 0; else noFiles">
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <th>Original Filename</th>
+            <th>New Filename</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let file of files">
+            <td>{{ file.originalFileName }}</td>
+            <td>{{ file.newFileName }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </ng-container>
+    <ng-template #noFiles>
+      <p>No files require normalization.</p>
+    </ng-template>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-success" (click)="activeModal.close('rename')" [disabled]="files.length === 0">Rename Files</button>
+    <button type="button" class="btn btn-secondary" (click)="activeModal.dismiss('cancel')">Close</button>
+  </div>
+  

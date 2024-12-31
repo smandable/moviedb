@@ -1,25 +1,21 @@
 <app-page-layout>
-  <div class="container my-3" data-bs-theme="dark">
-    <!-- <app-progress-bar *ngIf="storeService.isLoading()"></app-progress-bar> -->
-
-    <ng-container *ngIf="!storeService.isLoading()">
-      <!-- <div class="text-center">Let's start the project!</div> -->
-      <!-- The AG Grid component -->
-      <div
-      class="content"
-      style="display: flex; flex-direction: column; height: 85vh; overflow: auto;"
-    >
+  <div class="container my-3">
+    <!-- AG Grid -->
+    <div class="content" style="display: flex; flex-direction: column; height: 75vh;">
       <ag-grid-angular
+        #agGrid
         class="ag-theme-alpine"
         style="flex: 1 1 auto; width: 100%;"
         [gridOptions]="gridOptions"
         [columnDefs]="columnDefs"
-        [defaultColDef]="{ sortable: true, filter: true, resizable: true, flex: 1 }"
+        [rowData]="rowData"
+        [defaultColDef]="gridOptions.defaultColDef"
       ></ag-grid-angular>
-      <div class="total-items-container">
-        Total Items: {{ totalItems }}
-      </div>
-      </div>
-    </ng-container>
+    </div>
+
+    <!-- Display total items -->
+    <div class="total-items-container">
+      <strong>Total Items:</strong> {{ totalItems }}
+    </div>
   </div>
 </app-page-layout>
