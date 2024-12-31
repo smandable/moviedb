@@ -45,23 +45,28 @@ foreach ($files as $file) {
 
     // Apply transformations
     $originalFileName = $fileNameNoExtension; // Keep original for comparison
-    $fileNameNoExtension = basicFunctions($fileNameNoExtension);
-    $fileNameNoExtension = titleCase($fileNameNoExtension);
-    $fileNameNoExtension = cleanupFunctions($fileNameNoExtension);
-    $fileNameNoExtension = finalCleanup($fileNameNoExtension);
+    $normalizedFileNameNoExtension = basicFunctions($fileNameNoExtension);
+    $normalizedFileNameNoExtension = titleCase($normalizedFileNameNoExtension);
+    $normalizedFileNameNoExtension = cleanupFunctions($normalizedFileNameNoExtension);
+    $normalizedFileNameNoExtension = finalCleanup($normalizedFileNameNoExtension);
 
-    $newFileName = $fileNameNoExtension . ($fileExtension ? '.' . $fileExtension : '');
+    $newFileName = $normalizedFileNameNoExtension . ($fileExtension ? '.' . $fileExtension : '');
+
+    // Determine if normalization is needed
+    $needsNormalization = ($originalFileName !== $normalizedFileNameNoExtension);
 
     // Log original and new filenames for debugging
-    error_log("Original: $originalFileName, New: $fileNameNoExtension");
+    error_log("Original: $originalFileName, New: $normalizedFileNameNoExtension");
 
-    // Include all files for debugging
+    // Prepare file data
     $normalizedFiles[] = [
         'path' => $path,
         'originalFileName' => $fileName,
-        'newFileName' => $newFileName,
+        'newFileName' => $needsNormalization ? $newFileName : '', // Empty if no normalization
         'fileExtension' => $fileExtension,
-        'fileNameNoExtension' => $fileNameNoExtension,
+        'fileNameNoExtension' => $normalizedFileNameNoExtension,
+        'needsNormalization' => $needsNormalization,
+        'status' => $needsNormalization ? 'Needs Renaming' : 'Name ok',
     ];
 }
 

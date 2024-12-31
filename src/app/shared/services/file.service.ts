@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 export interface NormalizedFile {
+  needsNormalization: string;
   path: string;
   originalFileName: string;
   newFileName: string;

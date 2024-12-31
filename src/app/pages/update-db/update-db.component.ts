@@ -3,11 +3,12 @@ import { AgGridAngular } from 'ag-grid-angular';
 import { PageLayoutComponent } from '@layouts/page-layout/page-layout.component';
 import { FileService, NormalizedFile, RenameResult } from '@services/file.service';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { fileSizeFormatter, durationFormatter } from '@helpers/formatters';
 import { myTheme } from '@helpers/grid-theme';
 import { AllCommunityModule, ModuleRegistry, ClientSideRowModelModule, GridOptions, GridApi, ColDef, ICellRendererParams } from 'ag-grid-community';
 import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { FileNormalizationModalComponent } from '@modals/file-normalization-modal/file-normalization-modal.component'; 
+import { FileNormalizationModalComponent } from '@modals/file-normalization-modal/file-normalization-modal.component'; // Adjust the path as necessary
 
 ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
 
@@ -16,13 +17,13 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
   templateUrl: './update-db.component.html',
   styleUrls: ['./update-db.component.scss'],
   standalone: true,
-  imports: [PageLayoutComponent, AgGridAngular, FormsModule, NgbModule, FileNormalizationModalComponent],
+  imports: [CommonModule, PageLayoutComponent, AgGridAngular, FormsModule, NgbModule, FileNormalizationModalComponent],
 })
 export class UpdateDbComponent implements OnInit {
   public directory: string = '/Volumes/Recorded 3/fixed/'; // Default value
   public totalItems: number = 0;
 
-  public rowData: NormalizedFile[] = []; // For displaying normalized files
+  public rowData: NormalizedFile[] = []; // For displaying normalized files if needed in the future
   public gridOptions: GridOptions = {
     theme: myTheme,
     rowSelection: 'single',
@@ -60,7 +61,6 @@ export class UpdateDbComponent implements OnInit {
           });
           return button;
         },
-        
       },
     ],
 
@@ -72,6 +72,9 @@ export class UpdateDbComponent implements OnInit {
 
   private gridApi: GridApi<NormalizedFile> | undefined;
 
+  isLoading: boolean = false;
+  public showDatabaseOperationsButton: boolean = false;
+
   constructor(
     private fileService: FileService,
     private cdr: ChangeDetectorRef,
@@ -80,34 +83,35 @@ export class UpdateDbComponent implements OnInit {
 
   ngOnInit(): void {}
 
-/**
- * Handles the Process button click.
- * Calls the backend to check and normalize filenames.
- */
-processDirectory(): void {
-  if (!this.directory.trim()) {
-    alert('Please enter a valid directory path.');
-    return;
+  /**
+   * Handles the Process button click.
+   * Calls the backend to check and normalize filenames.
+   */
+  processDirectory(): void {
+    if (!this.directory.trim()) {
+      alert('Please enter a valid directory path.');
+      return;
+    }
+
+    this.isLoading = true;
+
+    this.fileService.checkFileNamesToNormalize(this.directory).subscribe({
+      next: (response) => {
+        this.isLoading = false;
+        const files = response.files;
+        this.totalItems = files.length;
+        this.cdr.detectChanges();
+
+        // Open the modal to display files
+        this.openFilesModal(files);
+      },
+      error: (error) => {
+        console.error('Error processing directory:', error);
+        alert('Failed to process the directory. See console for details.');
+        this.isLoading = false;
+      },
+    });
   }
-
-  this.fileService.checkFileNamesToNormalize(this.directory).subscribe({
-    next: (response) => {
-      // this.rowData = response.files; // Removed to keep the grid blank
-      const files = response.files;
-      this.totalItems = files.length;
-      this.cdr.detectChanges();
-
-      // Open the modal to display files
-      this.openFilesModal(files);
-    },
-    error: (error) => {
-      console.error('Error processing directory:', error);
-      alert('Failed to process the directory. See console for details.');
-    },
-  });
-}
-
-
 
   /**
    * Opens a modal to display original and new filenames.
@@ -122,9 +126,12 @@ processDirectory(): void {
       if (result === 'rename') {
         this.renameFiles(files);
       }
+      // Set the button visibility after modal closes successfully
+      this.showDatabaseOperationsButton = true;
       // Handle other modal results if needed
     }, (reason) => {
       // Handle dismissal if needed
+      this.showDatabaseOperationsButton = true;
     });
   }
 
@@ -143,21 +150,49 @@ processDirectory(): void {
    * Calls the backend to perform renaming.
    */
   renameFiles(files: NormalizedFile[]): void {
-    this.fileService.renameTheFilesToNormalize(files).subscribe({
+    // Filter out files that don't need normalization
+    const filesToRename = files.filter(file => file.needsNormalization);
+    if (filesToRename.length === 0) {
+      alert('No files require renaming.');
+      return;
+    }
+
+    this.isLoading = true;
+
+    this.fileService.renameTheFilesToNormalize(filesToRename).subscribe({
       next: (response) => {
+        this.isLoading = false;
         console.log('Rename Results:', response.results);
         alert('Files have been renamed successfully.');
-        // Optionally, refresh the data
-        this.processDirectory(); // Reload the files
+        // Close the modal
+        this.modalService.dismissAll();
+        // Show the new button
+        this.showDatabaseOperationsButton = true;
       },
       error: (error) => {
+        this.isLoading = false;
         console.error('Error renaming files:', error);
         alert('Failed to rename files. See console for details.');
       },
     });
   }
 
+  /**
+   * Performs database operations.
+   */
+  performDatabaseOperations(): void {
+    // Implement your database operations here
+    alert('Performing database operations...');
+    // Example: Call a service method to perform operations
+    // this.fileService.performDatabaseOperations().subscribe({
+    //   next: (response) => { ... },
+    //   error: (error) => { ... },
+    // });
+  }
 }
+
+
+
 
 /**
  * Component for the modal content.
