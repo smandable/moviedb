@@ -53,10 +53,11 @@ foreach ($files as $file) {
     $newFileName = $normalizedFileNameNoExtension . ($fileExtension ? '.' . $fileExtension : '');
 
     // Determine if normalization is needed
-    $needsNormalization = ($originalFileName !== $normalizedFileNameNoExtension);
+    $needsNormalization = $originalFileName !== $normalizedFileNameNoExtension;
+    // error_log("Status for {$originalFileName}: " . ($needsNormalization ? 'Needs Renaming' : 'Name ok'));
 
     // Log original and new filenames for debugging
-    error_log("Original: $originalFileName, New: $normalizedFileNameNoExtension");
+    // error_log("Original: $originalFileName, New: $normalizedFileNameNoExtension");
 
     // Prepare file data
     $normalizedFiles[] = [
@@ -66,7 +67,7 @@ foreach ($files as $file) {
         'fileExtension' => $fileExtension,
         'fileNameNoExtension' => $normalizedFileNameNoExtension,
         'needsNormalization' => $needsNormalization,
-        'status' => $needsNormalization ? 'Needs Renaming' : 'Name ok',
+        'status' => $needsNormalization ? 'Needs Renaming' : '',
     ];
 }
 
@@ -85,14 +86,14 @@ ob_end_flush();
 function basicFunctions($fileName)
 {
     $replacements = [
-        '/\./' => ' ',     // Periods to spaces
-        '/\[|\]/' => ' ',  // Brackets to spaces
-        '/_/' => ' ',      // Underscores to spaces
-        '/-/' => ' ',      // Dashes to spaces
-        '/\s{3}/' => ' - ',// Triple spaces to ' - '
-        '/\s+/' => ' ',    // Multiple spaces to a single space
-        '/\.+/' => '.',    // Multiple periods to a single period
-        '/^\.+/' => '',    // Leading periods removed
+        '/\./' => ' ',      // Periods to spaces
+        '/\[|\]/' => ' ',   // Brackets to spaces
+        '/(?<!Scene)_/' => ' ', // Replace underscores unless part of "Scene_"
+        '/-/' => ' ',       // Dashes to spaces
+        '/\s{3}/' => ' - ', // Triple spaces to ' - '
+        '/\s+/' => ' ',     // Multiple spaces to a single space
+        '/\.+/' => '.',     // Multiple periods to a single period
+        '/^\.+/' => '',     // Leading periods removed
     ];
     return preg_replace(array_keys($replacements), array_values($replacements), trim($fileName));
 }
@@ -127,25 +128,55 @@ function titleCase($fileName)
 
 function cleanupFunctions($fileName)
 {
+    // Initial replacements for common patterns
     $patterns = [
         '/1080p/i', '/720p/i', '/360p/i', '/DVDRip/i', '/x264/i',
         '/WEBRip/i', '/XXX/i', '/ipt/i', '/MP4/i', '/xvid/i',
         '/team/i', '/(\s+)vs(\s+)/i', '/(Vol\s|Vol\.|\.Vol)/i',
         '/all star/i', '/disc/i', '/disk(\s*)/i', '/cd/i',
-        '/\b(\s|\.)cd/i', '/\b(?!Scene_)(Scene\s|scene\.|\.scene|scene)/i',
-        '/\b(?<!\s\-\sScene)(\sscene)/i', '/(\s*)\#(\s*)/i',
+        '/\b(\s|\.)cd/i',
     ];
 
     $replacements = [
         '', '', '', '', '', '', '', '', '', '', '', ' vs. ',
-        ' ', 'All-Star', 'CD', 'CD', 'CD', ' - CD', 'Scene_',
-        ' - Scene', ' # ',
+        ' ', 'All-Star', 'CD', 'CD', 'CD', ' - CD',
     ];
 
-    // Custom patterns for numeric formatting
+    // Apply basic replacements
     $fileName = preg_replace($patterns, $replacements, trim($fileName));
-    $fileName = preg_replace('/(?<!^)(?<!CD)(?<!\_)(?<!\d)([1-9])(?!\d)/i', '0$1', $fileName);
-    $fileName = preg_replace('/(?<!^)(?<!CD)(?<!\#\s)(?<!\_)(?<!\d)([0-9]{1,3}(?!\d))/i', '# $1', $fileName);
+
+    // Handle numbers after "Scene_"
+    $fileName = preg_replace_callback(
+        '/(?<=Scene_)(\d+)/', // Match numbers after "Scene_"
+        function ($matches) {
+            $number = $matches[1];
+            return strlen($number) === 1 ? $number : $number; // Keep single digits as-is
+        },
+        $fileName
+    );
+
+    // Handle numbers preceding " - Scene_"
+    $fileName = preg_replace_callback(
+        '/(?<!# )(\b\d+)(?=\s-\sScene_)/', // Match standalone numbers before " - Scene_"
+        function ($matches) {
+            $number = $matches[1];
+            return "# " . ((strlen($number) === 1) ? "0$number" : $number);
+        },
+        $fileName
+    );
+
+    // Handle trailing numbers
+    $fileName = preg_replace_callback(
+        '/(?<!# )(\b\d+)\b$/', // Match trailing standalone numbers
+        function ($matches) {
+            $number = $matches[1];
+            return "# " . ((strlen($number) === 1) ? "0$number" : $number);
+        },
+        $fileName
+    );
+
+    // Ensure no redundant "# #"
+    $fileName = preg_replace('/#\s+#/', '# ', $fileName);
 
     return $fileName;
 }
@@ -162,4 +193,4 @@ function finalCleanup($fileName)
 
     return $fileName;
 }
-?>
+

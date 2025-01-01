@@ -1,61 +1,61 @@
 <app-page-layout>
-    <div class="container my-3">
-      <!-- AG Grid -->
-      <div
-        class="content"
-        style="display: flex; flex-direction: column; height: 75vh"
+  <div class="container my-3">
+    <!-- AG Grid -->
+    <div
+      class="content"
+      style="display: flex; flex-direction: column; height: 75vh"
+    >
+      <ag-grid-angular
+        #agGrid
+        class="ag-theme-alpine"
+        style="flex: 1 1 auto; width: 100%"
+        [gridOptions]="gridOptions"
+        [rowData]="rowData"
+      ></ag-grid-angular>
+    </div>
+
+    <!-- Display totals only after processing -->
+    <div *ngIf="processingComplete" class="total-items-container mt-1 text-end">
+        <strong>Total Items Processed:</strong> {{ totalItems }} |
+        <strong>New Items:</strong> {{ newItemsCount }} ({{ formatFileSize(newItemsSize) }}) |
+        <strong>Duplicate Items:</strong> {{ duplicateItemsCount }} ({{ formatFileSize(duplicateItemsSize) }})
+      </div>
+
+    <!-- Directory Field and Buttons -->
+    <div class="my-3 directory-field">
+      <label for="directory-input" class="form-label"
+        >Directory to process</label
       >
-        <ag-grid-angular
-          #agGrid
-          class="ag-theme-alpine"
-          style="flex: 1 1 auto; width: 100%"
-          [gridOptions]="gridOptions"
-          [rowData]="[]"
-          [columnDefs]="gridOptions.columnDefs"
-          [defaultColDef]="gridOptions.defaultColDef"
-        ></ag-grid-angular>
-      </div>
-  
-      <!-- Display total items -->
-      <div class="total-items-container">
-        <strong>Total Items:</strong> {{ totalItems }}
-      </div>
-  
-      <!-- Loading Spinner -->
-      <div *ngIf="isLoading" class="mt-3">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-      </div>
-  
-      <!-- Directory Field and Buttons -->
-      <div class="mb-4 directory-field">
-        <label for="directory-input" class="form-label">Directory to process</label>
-        <div class="d-flex align-items-center">
-          <input
-            id="directory-input"
-            type="text"
-            class="form-control me-2"
-            [(ngModel)]="directory"
-            placeholder="Enter directory path"
-          />
-          <button
-            class="btn btn-warning"
-            type="button"
-            (click)="processDirectory()"
-            title="Process Directory"
-          >
-            <i class="fas fa-cogs me-2"></i> Process
-          </button>
-          <button
-            *ngIf="showDatabaseOperationsButton"
-            class="btn btn-secondary ms-2"
-            (click)="performDatabaseOperations()"
-          >
-            Perform Database Operations
-          </button>
-        </div>
+      <div class="d-flex align-items-center">
+        <input
+          id="directory-input"
+          type="text"
+          class="form-control me-2"
+          [(ngModel)]="directory"
+          placeholder="/Volumes/Recorded 3/fixed/"
+        />
+        <button
+          class="btn btn-warning"
+          type="button"
+          (click)="processDirectory()"
+          title="Process Directory"
+        >
+          <i class="fas fa-cogs me-2"></i> Process
+        </button>
+        <button
+          *ngIf="showDatabaseOperationsButton"
+          class="btn btn-secondary ms-2 d-flex align-items-center"
+          (click)="performDatabaseOperations()"
+          [disabled]="isLoading"
+        >
+          <div
+            *ngIf="isLoading"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+          ></div>
+          {{ isLoading ? "Loading..." : "Perform Database Operations" }}
+        </button>
       </div>
     </div>
-  </app-page-layout>
-  
+  </div>
+</app-page-layout>

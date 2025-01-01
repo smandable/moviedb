@@ -1,90 +1,68 @@
 <?php
-
 require 'db_connect.php';
 
 try {
-    // 1. Validate basic inputs
-    if (empty($_POST['id']) || empty(trim($_POST['id']))) {
-        throw new Exception('ID is required.', 400);
+    $input = json_decode(file_get_contents('php://input'), true);
+    $id = $input['id'] ?? null;
+
+    // Check for "field" and "value" (cell editing)
+    if (isset($input['field']) && isset($input['value'])) {
+        $field = $input['field'];
+        $value = $input['value'];
+
+        if (!$id || !$field || !isset($value)) {
+            throw new Exception('Invalid input for cell editing.');
+        }
+
+        $query = "UPDATE `$table` SET `$field` = ? WHERE id = ?";
+        $stmt = $db->prepare($query);
+
+        if (!$stmt) {
+            throw new Exception('Failed to prepare statement: ' . $db->error);
+        }
+
+        $stmt->bind_param('si', $value, $id);
+
+        if (!$stmt->execute()) {
+            throw new Exception('Failed to execute statement: ' . $stmt->error);
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Cell updated successfully.']);
+        exit();
     }
 
-    if (empty($_POST['columnToUpdate']) || empty(trim($_POST['columnToUpdate']))) {
-        throw new Exception('Column to update is required.', 400);
+    // Check for "updateFields" (Update DB button)
+    $updateFields = $input['updateFields'] ?? null;
+
+    if ($id && $updateFields && is_array($updateFields)) {
+        $updates = [];
+        $values = [];
+        foreach ($updateFields as $field => $value) {
+            $updates[] = "`$field` = ?";
+            $values[] = $value;
+        }
+        $values[] = $id; // Add ID for the WHERE clause
+
+        $query = "UPDATE `$table` SET " . implode(', ', $updates) . " WHERE id = ?";
+        $stmt = $db->prepare($query);
+
+        if (!$stmt) {
+            throw new Exception('Failed to prepare statement: ' . $db->error);
+        }
+
+        $types = str_repeat('s', count($updateFields)) . 'i'; // 's' for strings, 'i' for ID
+        $stmt->bind_param($types, ...$values);
+
+        if (!$stmt->execute()) {
+            throw new Exception('Failed to execute statement: ' . $stmt->error);
+        }
+
+        echo json_encode(['success' => true, 'message' => 'Row updated successfully.']);
+        exit();
     }
 
-    if (!isset($_POST['valueToUpdate'])) {
-        throw new Exception('Value to update is required.', 400);
-    }
-
-    // 2. Extract and sanitize inputs
-    $id = trim($_POST['id']);
-    $columnToUpdate = trim($_POST['columnToUpdate']);
-    // error_log("Received columnToUpdate: $columnToUpdate");
-    $valueToUpdate = trim($_POST['valueToUpdate']);
-
-    // 3. Map user-friendly column names to actual DB columns
-    //    Adjust as needed if your DB column names differ.
-    $columnMap = [
-        'title'      => 'title',
-        'dimensions' => 'dimensions',
-        'filesize'  => 'filesize',
-        'duration'   => 'duration',
-    ];
-
-    if (!array_key_exists($columnToUpdate, $columnMap)) {
-        throw new Exception('Invalid column to update.', 400);
-    }
-
-    $dbColumn = $columnMap[$columnToUpdate];
-
-    // Optional: If the column is "filesize", remove commas or apply custom formatting
-    if ($dbColumn === 'filesize') {
-        // Example: remove commas to keep numeric values consistent
-        $valueToUpdate = preg_replace('/,/', '', $valueToUpdate);
-    }
-
-    // 4. Validate record existence
-    $stmt = $db->prepare("SELECT id FROM `" . $table . "` WHERE id = ?");
-    if (!$stmt) {
-        throw new Exception('Failed to prepare statement: ' . $db->error, 500);
-    }
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if (!$result || $result->num_rows === 0) {
-        throw new Exception('Record not found.', 404);
-    }
-
-    // 5. Prepare and execute the UPDATE query using a prepared statement
-    $updateStmt = $db->prepare("UPDATE `" . $table . "` SET $dbColumn = ? WHERE id = ?");
-    if (!$updateStmt) {
-        throw new Exception('Failed to prepare update statement: ' . $db->error, 500);
-    }
-    $updateStmt->bind_param("si", $valueToUpdate, $id);
-    $queryResult = $updateStmt->execute();
-
-    if (!$queryResult) {
-        throw new Exception('Failed to update record: ' . $db->error, 500);
-    }
-
-    // 6. Success response
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => true,
-        'message' => 'Record updated successfully.'
-    ]);
-
+    throw new Exception('Invalid input format.');
 } catch (Exception $e) {
-    // 7. Error handling with appropriate HTTP status codes
-    $statusCode = $e->getCode() ?: 500;
-    http_response_code($statusCode);
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'error'   => $e->getMessage()
-    ]);
-} finally {
-    // 8. Close the database connection
-    $db->close();
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }

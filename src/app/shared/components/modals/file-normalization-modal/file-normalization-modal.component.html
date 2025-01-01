@@ -1,23 +1,40 @@
 <div class="modal-header">
   <h5 class="modal-title">Files to Normalize</h5>
-  <button type="button" class="btn-close" aria-label="Close" (click)="activeModal.dismiss('Cross click')"></button>
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    (click)="activeModal.dismiss('Cross click')"
+  ></button>
 </div>
 <div class="modal-body">
   <ng-container *ngIf="files.length > 0; else noFiles">
     <table class="table table-bordered table-striped">
       <thead>
         <tr>
+          <th>
+            <input
+              type="checkbox"
+              [(ngModel)]="allSelected"
+              (change)="toggleAllCheckboxes()"
+              title="Select/Deselect All"
+            />
+          </th>
           <th>Original Filename</th>
           <th>New Filename</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let file of files">
-          <td>{{ file.originalFileName }}</td>
+        <tr *ngFor="let file of files; let i = index">
           <td>
-            <span *ngIf="file.needsNormalization">{{ file.newFileName }}</span>
-            <span *ngIf="!file.needsNormalization">{{ file.status }}</span>
+            <input
+              type="checkbox"
+              [(ngModel)]="files[i].exclude"
+              title="Exclude this file from renaming"
+            />
           </td>
+          <td>{{ file.originalFileName }}</td>
+          <td>{{ file.newFileName }}</td>
         </tr>
       </tbody>
     </table>
@@ -30,10 +47,16 @@
   <button
     type="button"
     class="btn btn-success"
-    (click)="activeModal.close('rename')"
-    [disabled]="!hasFilesToRename"
+    (click)="renameFiles()"
+    [disabled]="files.length === 0"
   >
     Rename Files
   </button>
-  <button type="button" class="btn btn-secondary" (click)="activeModal.dismiss('cancel')">Close</button>
+  <button
+    type="button"
+    class="btn btn-secondary"
+    (click)="activeModal.dismiss('cancel')"
+  >
+    Close
+  </button>
 </div>

@@ -3,32 +3,118 @@
 ini_set('max_execution_time', 0);
 
 require 'formatSize.php';
-require 'renameFilesMissing01.php';
-require 'renameDuplicateFilesMissing01.php';
-require 'safe_json_encode.php';
-require 'db_connect.php'; // Must define $db and $table or handle otherwise
-
-session_id('files');
-session_start();
-
-// Ensure $table is defined here if not in db_connect.php
-// $table = 'your_table_name'; 
+require 'db_connect.php';
 
 // Validate Input
-$directory = isset($_POST['directory']) ? trim($_POST['directory']) : '';
+$input = json_decode(file_get_contents('php://input'), true);
+$directory = isset($input['directory']) ? trim($input['directory']) : '';
+
 if (empty($directory)) {
-    echo 'Directory is required.';
+    http_response_code(400); // Bad Request
+    echo json_encode(['error' => 'Directory is required.']);
     exit();
 }
 
-// Retrieve files from session
-if (!isset($_SESSION['files']) || !is_array($_SESSION['files'])) {
-    echo "No files in session.";
+// Check if the directory exists
+if (!is_dir($directory)) {
+    http_response_code(400); // Bad Request
+    echo json_encode(['error' => 'Invalid directory path.']);
     exit();
+}
+
+// Retrieve all files from the directory, excluding hidden files
+$files = array_diff(scandir($directory), ['..', '.']);
+
+$sessionFiles = [];
+
+foreach ($files as $file) {
+    // Skip hidden files
+    if (substr($file, 0, 1) === '.') continue;
+
+    $filePath = rtrim($directory, '/') . '/' . $file;
+
+    if (is_file($filePath)) {
+        $fileInfo = pathinfo($filePath);
+        $fileNameNoExtension = $fileInfo['filename'];
+        $fileExtension = isset($fileInfo['extension']) ? strtolower($fileInfo['extension']) : '';
+
+        // Initialize metadata
+        $fileSize = filesize($filePath);
+        $fileDimensions = '';
+        $fileDuration = 0; // Default to 0 seconds
+
+        // Extract dimensions and duration based on file type
+        if (in_array($fileExtension, ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'mpg', 'm4v'])) {
+            // For videos, use FFmpeg to get dimensions and duration
+            $ffmpegOutput = [];
+            $ffprobeCmd = "ffprobe -v error -print_format json -show_entries format=duration -show_entries stream=width,height \"$filePath\"";
+            $ffprobeOutput = shell_exec($ffprobeCmd);
+            // error_log("FFprobe raw output for $filePath: " . print_r($ffprobeOutput, true));
+
+            // Check if ffprobe executed successfully
+            if ($ffprobeOutput === null) {
+                error_log("FFprobe command failed for file: $filePath");
+                continue; // Skip processing this file
+            }
+
+            // Decode JSON output
+            $ffprobeData = json_decode($ffprobeOutput, true);
+
+            // Check if JSON decoding was successful
+            if ($ffprobeData === null) {
+                error_log("Failed to decode FFprobe JSON output for file: $filePath");
+                continue; // Skip processing this file
+            }
+
+            // Extract duration from format
+            if (isset($ffprobeData['format']['duration'])) {
+                $duration = floatval($ffprobeData['format']['duration']);
+                if ($duration > 0) {
+                    $fileDuration = (int)$duration; // Store as integer seconds
+                } else {
+                    error_log("FFprobe returned non-positive duration for file: $filePath");
+                }
+            } else {
+                error_log("Duration not found in FFprobe output for file: $filePath");
+            }
+
+            // Extract dimensions from the first video stream
+            if (isset($ffprobeData['streams']) && is_array($ffprobeData['streams'])) {
+                foreach ($ffprobeData['streams'] as $streamIndex => $stream) {
+                    // error_log("Processing stream $streamIndex: " . print_r($stream, true));
+
+                    if (isset($stream['width'], $stream['height'])) {
+                        $width = $stream['width'] ?? 0;
+                        $height = $stream['height'] ?? 0;
+
+                        if ($width > 0 && $height > 0) {
+                            $fileDimensions = $width . 'x' . $height;
+                            // error_log("File dimensions set to: $fileDimensions");
+                        } else {
+                            error_log("Invalid dimensions found in stream $streamIndex");
+                        }
+
+                        break; // Exit after processing the first stream with dimensions
+                    } else {
+                        error_log("Stream $streamIndex is not a video stream in this file: $filePath");
+                    }
+                }
+            }
+        }
+
+        // Add to sessionFiles array
+        $sessionFiles[] = [
+            'fileNameNoExtension' => $fileNameNoExtension,
+            'fileSize' => $fileSize,
+            'fileDimensions' => $fileDimensions,
+            'fileDuration' => $fileDuration, // Now integer
+            'fileNameAndPath' => $filePath
+        ];
+    }
 }
 
 // Process titles
-$titlesArray = populateTitlesArray($_SESSION['files']);
+$titlesArray = populateTitlesArray($sessionFiles);
 
 // Arrays to hold different types of duplicates and missing entries
 $duplicateTitlesArray = [];
@@ -36,23 +122,25 @@ $duplicateTitlesMissing01Array = [];
 $titlesMissing01Array = [];
 
 foreach ($titlesArray as &$titleItem) {
+    // error_log("Main Script - Processing titleItem: " . print_r($titleItem, true));
+
     $titleItem = checkDatabaseForTitle(
-        $titleItem, 
-        $duplicateTitlesArray, 
-        $duplicateTitlesMissing01Array, 
-        $titlesMissing01Array, 
-        $db, 
+        $titleItem,
+        $duplicateTitlesArray,
+        $duplicateTitlesMissing01Array,
+        $titlesMissing01Array,
+        $db,
         $table
     );
 }
 unset($titleItem); // break reference
 
 // Perform rename operations after database checks
-renameFilesMissing01($titlesMissing01Array);
-renameDuplicateFilesMissing01($duplicateTitlesMissing01Array);
+// renameFilesMissing01($titlesMissing01Array);
+// renameDuplicateFilesMissing01($duplicateTitlesMissing01Array);
 
 // Search session for duplicate files and move them accordingly
-searchSessionForDuplicateFiles($duplicateTitlesArray, $_SESSION['files']);
+searchSessionForDuplicateFiles($duplicateTitlesArray, $sessionFiles);
 
 // Return final results as JSON
 returnHTML($titlesArray);
@@ -64,30 +152,27 @@ function populateTitlesArray(array $sessionFiles)
     $titlesArray = [];
 
     foreach ($sessionFiles as $file) {
+        // error_log("populateTitlesArray - Processing file: " . print_r($file, true));
+
         // Validate expected keys
         if (!isset($file['fileNameNoExtension'], $file['fileSize'], $file['fileDimensions'], $file['fileDuration'], $file['fileNameAndPath'])) {
             continue; // Skip invalid file entries
         }
 
-        $title = $file['fileNameNoExtension'];
-        $patterns = [
-            '/ - Scene.*/i',
-            '/ - CD.*/i',
-            '/ - Bonus.*| Bonus.*/i'
-        ];
-        $title = preg_replace($patterns, '', $title);
+        // Clean up the title
+        $title = preg_replace(['/ - Scene.*/i', '/ - CD.*/i', '/ - Bonus.*| Bonus.*/i'], '', $file['fileNameNoExtension']);
 
         $titlesArray[] = [
-            'title' => $title,
+            'title' => $title, // Correctly map the title key
             'titleSize' => $file['fileSize'],
-            'titleDimensions' => $file['fileDimensions'],
-            'titleDuration' => $file['fileDuration'],
+            'fileDimensions' => $file['fileDimensions'] ?? '', // Ensure this key exists
+            'titleDuration' => $file['fileDuration'] ?? 0, // Ensure this key exists
             'titlePath' => $file['fileNameAndPath']
         ];
     }
 
-    // Combine duplicates by title, summing sizes and durations
-    $reduced = array_reduce(
+    // Combine files by title, summing sizes and durations
+    return array_values(array_reduce(
         $titlesArray,
         function ($carry, $item) {
             $t = $item['title'];
@@ -100,22 +185,31 @@ function populateTitlesArray(array $sessionFiles)
             return $carry;
         },
         []
-    );
-
-    // logFile("populateTitlesArray");
-    return $reduced;
+    ));
 }
 
+
 function checkDatabaseForTitle(
-    array $titleItem, 
+    array $titleItem,
     array &$duplicateTitlesArray,
     array &$duplicateTitlesMissing01Array,
     array &$titlesMissing01Array,
     $db,
     $table
 ) {
+    // error_log("checkDatabaseForTitle - Initial titleItem: " . print_r($titleItem, true));
+
+    if (!isset($titleItem['fileDimensions']) || !isset($titleItem['titleDuration'])) {
+        error_log("Undefined index encountered - titleItem: " . print_r($titleItem, true));
+    }
+
+    // Ensure required keys exist
+    $titleItem['fileDimensions'] = $titleItem['fileDimensions'] ?? '';
+    $titleItem['titleDuration'] = $titleItem['titleDuration'] ?? 0;
     $title = $titleItem['title'];
     $titleSize = $titleItem['titleSize'];
+    $fileDimensions = $titleItem['fileDimensions']; // Use default if missing
+    $fileDuration = $titleItem['titleDuration']; // Use default if missing
 
     // Process numbered or missing-numbered titles
     $title = handleNumberedTitle($title, $db, $table);
@@ -135,8 +229,7 @@ function checkDatabaseForTitle(
                 $titleItem['dimensionsInDB'] = $row['dimensions'];
                 $titleItem['sizeInDB'] = $row['filesize'];
                 $titleItem['durationInDB'] = $row['duration'];
-                $titleItem['pathInDB'] = $row['filepath'];
-                
+
                 $isLarger = $titleItem['isLarger'] = compareFileSizeToDB($titleSize, $row['filesize']);
                 $duplicateTitlesArray[] = ['title' => $title, 'isLarger' => $isLarger];
             } else {
@@ -152,7 +245,6 @@ function checkDatabaseForTitle(
         error_log("Error preparing statement in checkDatabaseForTitle: " . $db->error);
     }
 
-    // logFile("checkDatabaseForTitle");
     return $titleItem;
 }
 
@@ -160,7 +252,7 @@ function handleNumberedTitle($title, $db, $table)
 {
     if (preg_match('/# [0-9]+$/', $title)) {
         $titleN = preg_split('/ # [0-9]+/', $title)[0];
-        if ($stmt = $db->prepare("SELECT id, filepath FROM `$table` WHERE title = ?")) {
+        if ($stmt = $db->prepare("SELECT id FROM `$table` WHERE title = ?")) {
             $stmt->bind_param('s', $titleN);
             if ($stmt->execute()) {
                 $result = $stmt->get_result();
@@ -173,17 +265,6 @@ function handleNumberedTitle($title, $db, $table)
                         $updateStmt->bind_param('ss', $title1, $titleN);
                         $updateStmt->execute();
                         $updateStmt->close();
-                    }
-
-                    // Update filepath
-                    $pathInDB = $row['filepath'];
-                    if (!empty($pathInDB)) {
-                        $pathInDB = str_replace($titleN, $title1, $pathInDB);
-                        if ($pathStmt = $db->prepare("UPDATE `$table` SET filepath=? WHERE id=?")) {
-                            $pathStmt->bind_param('si', $pathInDB, $row['id']);
-                            $pathStmt->execute();
-                            $pathStmt->close();
-                        }
                     }
                 }
             }
@@ -233,26 +314,28 @@ function handleMissingNumberedTitle($title, array $titleItem, array &$duplicateT
 
 function addToDB(array $titleItem, $db, $table)
 {
-    // logFile("addToDB");
+    // error_log("addToDB - titleItem to be inserted: " . print_r($titleItem, true));
+
+    if (!isset($titleItem['fileDimensions']) || !isset($titleItem['titleDuration'])) {
+        error_log("Undefined index encountered - titleItem: " . print_r($titleItem, true));
+    }
 
     $title = $titleItem['title'];
-    $titleSize = $titleItem['titleSize'];
-    $titleDimensions = $titleItem['titleDimensions'];
-    $titleDuration = $titleItem['titleDuration'];
-    $titlePath = $titleItem['titlePath'];
+    $titleSize = (string) $titleItem['titleSize']; // Cast to string
+    $titleDimensions = $titleItem['fileDimensions'] ?? ''; // Default to an empty string
+    $titleDuration = (string) $titleItem['titleDuration']; // Cast to string for consistency
 
-    $patterns = ['/to move\//i', '/fixed\//i'];
-    $replaceWith = 'recorded/';
-    $titlePath = preg_replace($patterns, $replaceWith, $titlePath);
+    // error_log("Preparing to insert: title=$title, dimensions=$titleDimensions, size=$titleSize, duration=$titleDuration");
 
-    if ($stmt = $db->prepare("INSERT IGNORE INTO `$table` (title, dimensions, filesize, duration, filepath, date_created) VALUES (?, ?, ?, ?, ?, NOW())")) {
-        $stmt->bind_param('ssdds', $title, $titleDimensions, $titleSize, $titleDuration, $titlePath);
-        if ($stmt->execute()) {
+    if ($stmt = $db->prepare("INSERT IGNORE INTO `$table` (title, dimensions, filesize, duration, date_created) VALUES (?, ?, ?, ?, NOW())")) {
+        $stmt->bind_param('ssss', $title, $titleDimensions, $titleSize, $titleDuration);
+        if (!$stmt->execute()) {
+            error_log("Database insertion failed: " . $stmt->error);
+        } else {
             $insertedId = $db->insert_id;
+            // error_log("Inserted record ID: " . $insertedId);
             $stmt->close();
             return $insertedId;
-        } else {
-            error_log("Error inserting record in addToDB: " . $stmt->error);
         }
         $stmt->close();
     } else {
@@ -262,9 +345,9 @@ function addToDB(array $titleItem, $db, $table)
     return null;
 }
 
+
 function compareFileSizeToDB($size, $sizeInDB)
 {
-    // logFile("compareFileSizeToDB");
     if ($sizeInDB > 0 && $sizeInDB < $size) {
         return 'isLarger';
     } elseif ($sizeInDB == 0 && $sizeInDB < $size) {
@@ -275,8 +358,6 @@ function compareFileSizeToDB($size, $sizeInDB)
 
 function searchSessionForDuplicateFiles(array $duplicateTitlesArray, array $sessionFiles)
 {
-    // logFile("searchSessionForDuplicateFiles");
-
     $patterns = [
         '/ - Scene.*/i',
         '/ - CD.*/i',
@@ -286,24 +367,31 @@ function searchSessionForDuplicateFiles(array $duplicateTitlesArray, array $sess
     foreach ($duplicateTitlesArray as $dup) {
         $dupTitle = $dup['title'];
         foreach ($sessionFiles as $file) {
-            if (!isset($file['path'], $file['fileNameNoExtension'], $file['fileName'])) {
+            if (!isset($file['fileNameAndPath'], $file['fileNameNoExtension'])) {
                 continue;
             }
 
-            $path = $file['path'];
             $fileNameNoExtension = preg_replace($patterns, '', $file['fileNameNoExtension']);
 
+            // Check if the duplicate title matches
             if (stripos($dupTitle, $fileNameNoExtension) === 0) {
-                $fileName = $file['fileName'];
-                $destination = rtrim($path, '/') . '/duplicates/';
+                $fileName = basename($file['fileNameAndPath']);
+                $destination = dirname($file['fileNameAndPath']) . '/duplicates/';
+                // error_log("Matched duplicate: $fileName under $dupTitle");
+
+                // Check if it's larger
                 if ($dup['isLarger'] === 'isLarger') {
                     $destination .= 'larger/';
                 }
-                moveDuplicateFiles($path, $destination, $fileName);
+
+                moveDuplicateFiles(dirname($file['fileNameAndPath']), $destination, $fileName);
+            } else {
+                // error_log("No match for dupTitle=$dupTitle and fileNameNoExtension=$fileNameNoExtension");
             }
         }
     }
 }
+
 
 function moveDuplicateFiles($path, $destination, $fileName)
 {
@@ -320,35 +408,17 @@ function moveDuplicateFiles($path, $destination, $fileName)
     $renameFile = $destination . $fileName;
 
     if (is_file($source)) {
+        // error_log("Moving file from $source to $renameFile");
         if (!rename($source, $renameFile)) {
             error_log("Failed to rename $source to $renameFile");
         }
     }
-
-    // logFile("moveDuplicateFiles");
 }
 
 function returnHTML($titlesArray)
 {
-    // logFile("returnHTML");
-    $titlesArray = array_values($titlesArray);
-
-    $directory = getcwd();
-    // Save results for debugging or further use
-    file_put_contents("$directory/tmp.txt", '<?php return ' . var_export($titlesArray, true) . ';');
-
-    echo safe_json_encode("processFilesForDB is complete");
-}
-
-function logFile($currentFunction)
-{
-    $directory = getcwd();
-    $logPath = "$directory/logFile.txt";
-
-    if ($fh = fopen($logPath, "a")) {
-        fwrite($fh, "$currentFunction\n");
-        fclose($fh);
-    } else {
-        error_log("Unable to open log file: $logPath");
-    }
+    echo json_encode([
+        'message' => "processFilesForDB is complete",
+        'titles' => $titlesArray
+    ]);
 }

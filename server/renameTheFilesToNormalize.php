@@ -71,4 +71,3 @@ foreach ($files as $file) {
 }
 
 echo json_encode(['results' => $results]);
-?>

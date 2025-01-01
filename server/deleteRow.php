@@ -1,13 +1,16 @@
 <?php
 require 'db_connect.php';
 
-if (!isset($_POST['id']) || empty(trim($_POST['id']))) {
+// Decode JSON input
+$input = json_decode(file_get_contents('php://input'), true);
+
+if (!isset($input['id']) || empty(trim($input['id']))) {
     http_response_code(400); // Bad Request
     echo json_encode(['error' => 'Id is required.']);
     exit;
 }
 
-$id = $db->real_escape_string(trim($_POST['id']));
+$id = $db->real_escape_string(trim($input['id']));
 
 // Check if the ID exists in the database
 $idCheckQuery = "SELECT id FROM `" . $table . "` WHERE id='$id'";
@@ -29,3 +32,4 @@ if ($db->query($deleteQuery)) {
 }
 
 $db->close();
+

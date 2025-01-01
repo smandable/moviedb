@@ -19,12 +19,9 @@
     "moduleResolution": "node",
     "importHelpers": true,
     "target": "ES2022",
+    "types": ["ag-grid-community"],
     "module": "es2020",
-    "lib": [
-      "es2020",
-      "dom",
-      "ES2021.String"
-    ],
+    "lib": ["es2020", "dom", "ES2021.String"],
     "paths": {
       "@blocks/*": ["src/app/shared/components/blocks/*"],
       "@forms/*": ["src/app/shared/components/forms/*"],

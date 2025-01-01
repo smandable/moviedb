@@ -56,7 +56,7 @@ export class HomeComponent implements OnInit {
     rowSelection: 'single',
 
     // Ensure each row has a unique ID
-    getRowId: (params) => params.data.id,
+    getRowId: (params) => params.data.id.toString(),
 
     defaultColDef: {
       width: 155, // Set default column width
@@ -165,7 +165,17 @@ export class HomeComponent implements OnInit {
     this.movieService.getAllMovies().subscribe({
       next: (movies: Movie[]) => {
         // console.log('Movies loaded:', movies);
-        this.rowData = movies; // Update the bound rowData
+        this.rowData = movies.map((movie) => ({
+          ...movie,
+          titleSize:
+            typeof movie.filesize === 'string'
+              ? parseInt(movie.filesize, 10)
+              : movie.filesize,
+          duration:
+            typeof movie.duration === 'string'
+              ? Math.round(parseFloat(movie.duration))
+              : movie.duration,
+        }));
         this.totalItems = movies.length;
 
         // Trigger change detection to update the view

@@ -1,14 +1,26 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { PageLayoutComponent } from '@layouts/page-layout/page-layout.component';
-import { FileService, NormalizedFile, RenameResult } from '@services/file.service';
+import {
+  FileService,
+  NormalizedFile,
+  ProcessFilesResponse,
+} from '@services/file.service';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { fileSizeFormatter, durationFormatter } from '@helpers/formatters';
 import { myTheme } from '@helpers/grid-theme';
-import { AllCommunityModule, ModuleRegistry, ClientSideRowModelModule, GridOptions, GridApi, ColDef, ICellRendererParams } from 'ag-grid-community';
+import {
+  AllCommunityModule,
+  ModuleRegistry,
+  ClientSideRowModelModule,
+  GridOptions,
+  GridApi,
+  ColDef,
+  ICellRendererParams,
+} from 'ag-grid-community';
 import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { FileNormalizationModalComponent } from '@modals/file-normalization-modal/file-normalization-modal.component'; // Adjust the path as necessary
+import { FileNormalizationModalComponent } from '@modals/file-normalization-modal/file-normalization-modal.component';
+import { CommonModule } from '@angular/common';
 
 ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
 
@@ -17,51 +29,100 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
   templateUrl: './update-db.component.html',
   styleUrls: ['./update-db.component.scss'],
   standalone: true,
-  imports: [CommonModule, PageLayoutComponent, AgGridAngular, FormsModule, NgbModule, FileNormalizationModalComponent],
+  imports: [
+    CommonModule, // Ensure CommonModule is imported
+    PageLayoutComponent,
+    AgGridAngular,
+    FormsModule,
+    NgbModule,
+    FileNormalizationModalComponent,
+  ],
 })
 export class UpdateDbComponent implements OnInit {
   public directory: string = '/Volumes/Recorded 3/fixed/'; // Default value
   public totalItems: number = 0;
+  public newItemsCount: number = 0;
+  public duplicateItemsCount: number = 0;
+  public newItemsSize: number = 0;
+  public duplicateItemsSize: number = 0;
 
-  public rowData: NormalizedFile[] = []; // For displaying normalized files if needed in the future
+  public rowData: any[] = []; // Updated to accommodate processing results
   public gridOptions: GridOptions = {
     theme: myTheme,
     rowSelection: 'single',
-
-    getRowId: (params) => `${params.data.path}/${params.data.originalFileName}`,
+    context: { componentParent: this },
+    getRowId: (params) => `${params.data.title}`,
+    rowHeight: 35,
 
     defaultColDef: {
       width: 155,
       sortable: true,
-      filter: false,
+      filter: false, // Enable filtering if desired
       resizable: true,
     },
 
     columnDefs: [
-      { field: 'originalFileName', headerName: 'Title', width: 300, editable: true },
-      { field: 'dimensions', headerName: 'Dimensions', width: 150, editable: true },
-      { field: 'duration', headerName: 'Duration', width: 150, valueFormatter: durationFormatter, editable: true },
-      { field: 'fileSize', headerName: 'File Size', width: 150, valueFormatter: fileSizeFormatter, editable: true },
-      { field: 'dateCreated', headerName: 'Date Created', width: 150 },
-      { field: 'newFileName', headerName: 'New', width: 200, editable: true },
+      { field: 'title', headerName: 'Title', width: 300 },
       {
-        headerName: '',
-        width: 100,
-        cellRenderer: (params: ICellRendererParams<NormalizedFile>) => {
-          const button = document.createElement('button');
-          button.innerHTML = 'Update';
-          button.className = 'btn btn-primary btn-sm';
-          button.style.cursor = 'pointer';
-          button.addEventListener('click', () => {
-            if (params.data) { // Check if params.data is defined
-              this.openUpdateModal(params.data);
-            } else {
-              console.error('No data available for this row.');
-            }
-          });
-          return button;
+        field: 'titleSize',
+        headerName: 'File Size',
+        width: 150,
+        valueFormatter: fileSizeFormatter,
+      },
+      { field: 'titleDimensions', headerName: 'Dimensions', width: 150 },
+      {
+        field: 'titleDuration',
+        headerName: 'Duration',
+        width: 150,
+        valueFormatter: durationFormatter,
+      },
+      {
+        field: 'duplicate',
+        headerName: 'Duplicate',
+        width: 150,
+        sortable: true,
+        valueGetter: (params) => (params.data.duplicate ? 'Yes' : 'No'), // Return 'Yes' for duplicate, 'No' otherwise
+        cellRenderer: (params: { value: string }) => {
+          const container = document.createElement('div');
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.gap = '5px';
+
+          const text = document.createElement('span');
+          text.innerText = params.value; // Add "Yes" or "No"
+          container.appendChild(text);
+
+          const icon = document.createElement('span');
+          icon.innerHTML =
+            params.value === 'Yes'
+              ? '<i class="fas fa-copy"></i>' // Icon for duplicate
+              : '<i class="fas fa-file"></i>'; // Icon for non-duplicate
+          container.appendChild(icon);
+
+          return container;
         },
       },
+      {
+        field: 'isLarger',
+        headerName: 'Larger',
+        cellRenderer: (params: ICellRendererParams) => {
+          if (params.value === 'isLarger') {
+            const button = document.createElement('button');
+            button.innerText = 'Update DB';
+            button.classList.add('btn', 'btn-primary', 'btn-sm');
+            button.addEventListener('click', () => {
+              params.context.componentParent.updateDB(params.data);
+            });
+            return button;
+          }
+          return '';
+        },
+        sortable: true,
+        filter: false,
+        width: 150,
+      },
+
+      // Add more columns as needed
     ],
 
     onGridReady: (params) => {
@@ -70,7 +131,7 @@ export class UpdateDbComponent implements OnInit {
     },
   };
 
-  private gridApi: GridApi<NormalizedFile> | undefined;
+  private gridApi: GridApi<any> | undefined;
 
   isLoading: boolean = false;
   public showDatabaseOperationsButton: boolean = false;
@@ -112,37 +173,68 @@ export class UpdateDbComponent implements OnInit {
       },
     });
   }
-
+  /**
+   * Handles the "Update DB" button click.
+   * Updates the database for a file marked as larger.
+   * @param data The row data associated with the file.
+   */
+  updateDB(data: any): void {
+    // if (confirm(`Are you sure you want to update the database for "${data.title}"?`)) {
+    this.fileService
+      .updateRow(data.id, {
+        dimensions: data.fileDimensions,
+        filesize: data.titleSize,
+        duration: data.titleDuration,
+      })
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            // alert(`Database updated successfully for "${data.title}".`);
+            data.isLarger = null; // Clear the "Larger" flag
+            this.gridApi?.refreshCells({ force: true }); // Refresh the grid
+          } else {
+            alert(`Failed to update database: ${response.message}`);
+          }
+        },
+        error: (err) => {
+          console.error('Update DB error:', err);
+          alert('An error occurred while updating the database.');
+        },
+      });
+    // }
+  }
   /**
    * Opens a modal to display original and new filenames.
    * @param files The list of files to display.
    */
   openFilesModal(files: NormalizedFile[]): void {
-    const modalRef: NgbModalRef = this.modalService.open(FileNormalizationModalComponent, { size: 'lg' });
+    const modalRef: NgbModalRef = this.modalService.open(
+      FileNormalizationModalComponent,
+      { size: 'xl' }
+    );
     modalRef.componentInstance.files = files;
     modalRef.componentInstance.directory = this.directory;
 
-    modalRef.result.then((result) => {
-      if (result === 'rename') {
-        this.renameFiles(files);
+    modalRef.componentInstance.renameFilesEvent.subscribe(
+      (filesToRename: NormalizedFile[]) => {
+        this.renameFiles(filesToRename); // Call renameFiles with the filtered files
       }
-      // Set the button visibility after modal closes successfully
-      this.showDatabaseOperationsButton = true;
-      // Handle other modal results if needed
-    }, (reason) => {
-      // Handle dismissal if needed
-      this.showDatabaseOperationsButton = true;
-    });
-  }
+    );
 
-  /**
-   * Opens a modal to update a single file's name.
-   * @param file The file to update.
-   */
-  openUpdateModal(file: NormalizedFile): void {
-    // Implement if you want to update individual files
-    // For now, it's handled by the Process and Rename buttons
-    console.log('Update clicked for:', file);
+    modalRef.result.then(
+      (result) => {
+        if (result === 'rename') {
+          console.log('Rename operation completed.');
+        }
+        // Set the button visibility after modal closes successfully
+        this.showDatabaseOperationsButton = true;
+        // Handle other modal results if needed
+      },
+      (reason) => {
+        // Handle dismissal if needed
+        this.showDatabaseOperationsButton = true;
+      }
+    );
   }
 
   /**
@@ -150,10 +242,13 @@ export class UpdateDbComponent implements OnInit {
    * Calls the backend to perform renaming.
    */
   renameFiles(files: NormalizedFile[]): void {
-    // Filter out files that don't need normalization
-    const filesToRename = files.filter(file => file.needsNormalization);
+    // Filter out files that should be renamed (not excluded and needing normalization)
+    const filesToRename = files.filter(
+      (file) => !file.exclude && file.needsNormalization
+    );
+
     if (filesToRename.length === 0) {
-      alert('No files require renaming.');
+      console.log('No files selected for renaming.');
       return;
     }
 
@@ -163,7 +258,7 @@ export class UpdateDbComponent implements OnInit {
       next: (response) => {
         this.isLoading = false;
         console.log('Rename Results:', response.results);
-        alert('Files have been renamed successfully.');
+        console.log('Files have been renamed successfully.');
         // Close the modal
         this.modalService.dismissAll();
         // Show the new button
@@ -177,22 +272,104 @@ export class UpdateDbComponent implements OnInit {
     });
   }
 
+  public processingComplete: boolean = false;
+
   /**
-   * Performs database operations.
+   * Handles the "Perform Database Operations" button click.
+   * Sends a request to process files for database operations.
    */
   performDatabaseOperations(): void {
-    // Implement your database operations here
-    alert('Performing database operations...');
-    // Example: Call a service method to perform operations
-    // this.fileService.performDatabaseOperations().subscribe({
-    //   next: (response) => { ... },
-    //   error: (error) => { ... },
-    // });
+    if (!this.directory.trim()) {
+      alert('Please enter a valid directory path.');
+      return;
+    }
+
+    this.isLoading = true;
+    this.processingComplete = false; // Hide totals during processing
+
+    this.fileService.processFilesForDB(this.directory).subscribe({
+      next: (response: ProcessFilesResponse) => {
+        this.isLoading = false;
+        // console.log('Process Files For DB Response:', response);
+
+        if (response.error) {
+          alert(`Error: ${response.error}`);
+          return;
+        }
+        // Reset counts
+        this.totalItems = 0;
+        this.newItemsCount = 0;
+        this.duplicateItemsCount = 0;
+        this.newItemsSize = 0;
+        this.duplicateItemsSize = 0;
+
+        // Calculate counts and sizes
+        response.titles.forEach((title) => {
+          this.totalItems++;
+          if (title.duplicate) {
+            this.duplicateItemsCount++;
+            this.duplicateItemsSize += title.titleSize || 0;
+          } else {
+            this.newItemsCount++;
+            this.newItemsSize += title.titleSize || 0;
+          }
+        });
+
+        // Update grid data
+        this.rowData = response.titles.map((title) => ({
+          ...title,
+          titleSize:
+            typeof title.titleSize === 'string'
+              ? parseInt(title.titleSize, 10)
+              : title.titleSize,
+          titleDuration:
+            typeof title.titleDuration === 'string'
+              ? parseInt(title.titleDuration, 10)
+              : title.titleDuration,
+          titleDimensions: title.fileDimensions || '',
+        }));
+
+        this.cdr.detectChanges();
+        // console.log('Row Data:', this.rowData); // Verify the data structure and values
+
+        if (this.gridApi) {
+          // Remove all existing rows
+          const allRowData: any[] = [];
+          this.gridApi.forEachNode((node) => allRowData.push(node.data));
+          this.gridApi.applyTransaction({ remove: allRowData });
+
+          // Add new data
+          this.gridApi.applyTransaction({ add: this.rowData });
+          this.gridApi.forEachNode((node) =>
+            console.log('Grid Node Data:', node.data)
+          );
+        }
+
+        this.processingComplete = true; // Show totals
+        console.log('Process Complete');
+        console.log(response.message);
+      },
+      error: (error) => {
+        this.isLoading = false;
+        console.error('Error performing database operations:', error);
+        console.log(
+          'Failed to perform database operations. See console for details.'
+        );
+      },
+    });
+  }
+  formatFileSize(sizeInBytes: number): string {
+    if (sizeInBytes >= 1e9) {
+      return (sizeInBytes / 1e9).toFixed(2) + ' GB';
+    } else if (sizeInBytes >= 1e6) {
+      return (sizeInBytes / 1e6).toFixed(2) + ' MB';
+    } else if (sizeInBytes >= 1e3) {
+      return (sizeInBytes / 1e3).toFixed(2) + ' KB';
+    } else {
+      return sizeInBytes + ' bytes';
+    }
   }
 }
-
-
-
 
 /**
  * Component for the modal content.
@@ -203,7 +380,12 @@ export class UpdateDbComponent implements OnInit {
   template: `
     <div class="modal-header">
       <h5 class="modal-title">Files to Normalize</h5>
-      <button type="button" class="btn-close" aria-label="Close" (click)="cancel()"></button>
+      <button
+        type="button"
+        class="btn-close"
+        aria-label="Close"
+        (click)="cancel()"
+      ></button>
     </div>
     <div class="modal-body">
       <table class="table table-bordered table-striped">
@@ -222,8 +404,12 @@ export class UpdateDbComponent implements OnInit {
       </table>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-success" (click)="rename()">Rename Files</button>
-      <button type="button" class="btn btn-secondary" (click)="cancel()">Cancel</button>
+      <button type="button" class="btn btn-success" (click)="rename()">
+        Rename Files
+      </button>
+      <button type="button" class="btn btn-secondary" (click)="cancel()">
+        Cancel
+      </button>
     </div>
   `,
 })

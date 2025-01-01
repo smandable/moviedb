@@ -16,11 +16,15 @@ try {
 
     // Process the query result
     while ($row = $result->fetch_assoc()) {
+        // Convert duration to float, then to integer (total seconds)
+        $durationFloat = isset($row['duration']) ? floatval($row['duration']) : 0;
+        $duration = $durationFloat > 0 ? intval(round($durationFloat)) : 0;
+
         $data[] = [
             'id' => $row['id'],
             'title' => $row['title'],
             'dimensions' => $row['dimensions'],
-            'duration' => $row['duration'],
+            'duration' => $duration, // Renamed and converted field
             'filesize' => $row['filesize'],
             'filepath' => $row['filepath'],
             'date_created' => $row['date_created'],

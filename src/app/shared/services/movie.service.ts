@@ -1,42 +1,57 @@
-// movie.service.ts
-
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-
 export interface Movie {
-  id: string;
+  id: number;
   title: string;
   dimensions: string;
-  filesize: string;
-  duration: string;
+  duration: number; // Updated field name and type
+  filesize: number;
+  filepath: string;
   date_created: string;
+  duplicate: boolean;
+  isLarger: string;
 }
 
-@Injectable({ providedIn: 'root' })
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root',
+})
 export class MovieService {
-  private apiUrl = 'http://localhost/moviedbnew/server/getAllMovies.php';
-  private deleteUrl = 'http://localhost/moviedbnew/server/deleteRow.php';
+  private getAllMoviesUrl = 'http://localhost/moviedbnew/server/getAllMovies.php';
+  private updateMovieUrl = 'http://localhost/moviedbnew/server/editCurrentRow.php';
+  private deleteMovieUrl = 'http://localhost/moviedbnew/server/deleteRow.php';
 
   constructor(private http: HttpClient) {}
 
+  /**
+   * Fetches all movies from the backend.
+   * @returns An Observable of Movie array.
+   */
   getAllMovies(): Observable<Movie[]> {
-    return this.http.get<Movie[]>(this.apiUrl);
+    return this.http.get<Movie[]>(this.getAllMoviesUrl);
   }
 
-  deleteRow(id: string): Observable<any> {
-    const formData = new FormData();
-    formData.append('id', id);
-    return this.http.post<any>(this.deleteUrl, formData);
+  /**
+   * Updates a specific field of a movie.
+   * @param id The ID of the movie to update.
+   * @param field The field to update.
+   * @param value The new value for the field.
+   * @returns An Observable of the update response.
+   */
+  updateRow(id: number, field: string, value: any): Observable<any> {
+    const body = { id, field, value };
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post<any>(this.updateMovieUrl, body, { headers });
   }
-  updateRow(id: string, columnToUpdate: string, valueToUpdate: any): Observable<any> {
-    const payload = new FormData();
-    payload.append('id', id);
-    payload.append('columnToUpdate', columnToUpdate);
-    payload.append('valueToUpdate', valueToUpdate);
-  
-    const url = 'http://localhost/moviedbnew/server/editCurrentRow.php';
-    return this.http.post<any>(url, payload);
+
+  /**
+   * Deletes a movie by ID.
+   * @param id The ID of the movie to delete.
+   * @returns An Observable of the delete response.
+   */
+  deleteRow(id: number): Observable<any> {
+    return this.http.post(this.deleteMovieUrl, { id });
   }
   
 }
