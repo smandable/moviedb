@@ -4,6 +4,10 @@ ini_set('max_execution_time', 0);
 
 require 'formatSize.php';
 require 'db_connect.php';
+$config = require 'config.php'; // Load configuration
+
+// Retrieve the flag from config
+$updateMissingDataOnly = isset($config->updateMissingDataOnly) ? (bool)$config->updateMissingDataOnly : false;
 
 // Validate Input
 $input = json_decode(file_get_contents('php://input'), true);
@@ -44,7 +48,7 @@ foreach ($files as $file) {
         $fileDuration = 0; // Default to 0 seconds
 
         // Extract dimensions and duration based on file type
-        if (in_array($fileExtension, ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'mpg', 'm4v'])) {
+        if (in_array($fileExtension, ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'mpg', 'm4v', 'divx'])) {
             // For videos, use FFmpeg to get dimensions and duration
             $ffmpegOutput = [];
             $ffprobeCmd = "ffprobe -v error -print_format json -show_entries format=duration -show_entries stream=width,height \"$filePath\"";
@@ -88,7 +92,7 @@ foreach ($files as $file) {
                         $height = $stream['height'] ?? 0;
 
                         if ($width > 0 && $height > 0) {
-                            $fileDimensions = $width . 'x' . $height;
+                            $fileDimensions = $width . ' x ' . $height;
                             // error_log("File dimensions set to: $fileDimensions");
                         } else {
                             error_log("Invalid dimensions found in stream $streamIndex");
@@ -107,7 +111,7 @@ foreach ($files as $file) {
             'fileNameNoExtension' => $fileNameNoExtension,
             'fileSize' => $fileSize,
             'fileDimensions' => $fileDimensions,
-            'fileDuration' => $fileDuration, // Now integer
+            'fileDuration' => $fileDuration,
             'fileNameAndPath' => $filePath
         ];
     }
@@ -130,7 +134,8 @@ foreach ($titlesArray as &$titleItem) {
         $duplicateTitlesMissing01Array,
         $titlesMissing01Array,
         $db,
-        $table
+        $config->table,
+        $updateMissingDataOnly
     );
 }
 unset($titleItem); // break reference
@@ -139,8 +144,15 @@ unset($titleItem); // break reference
 // renameFilesMissing01($titlesMissing01Array);
 // renameDuplicateFilesMissing01($duplicateTitlesMissing01Array);
 
-// Search session for duplicate files and move them accordingly
-searchSessionForDuplicateFiles($duplicateTitlesArray, $sessionFiles);
+// Conditionally perform renaming or updating based on the flag
+if (!$updateMissingDataOnly) {
+    // Search session for duplicate files and move them accordingly only if not updating missing data
+    searchSessionForDuplicateFiles($duplicateTitlesArray, $sessionFiles);
+} else {
+    // If updating missing data, skip moving duplicates
+    // Optionally, log that duplicates are being handled via updates
+    error_log("Flag 'updateMissingDataOnly' is set. Skipping moving duplicate files.");
+}
 
 // Return final results as JSON
 returnHTML($titlesArray);
@@ -195,13 +207,14 @@ function checkDatabaseForTitle(
     array &$duplicateTitlesMissing01Array,
     array &$titlesMissing01Array,
     $db,
-    $table
+    $table,
+    $updateMissingDataOnly = false
 ) {
     // error_log("checkDatabaseForTitle - Initial titleItem: " . print_r($titleItem, true));
 
-    if (!isset($titleItem['fileDimensions']) || !isset($titleItem['titleDuration'])) {
-        error_log("Undefined index encountered - titleItem: " . print_r($titleItem, true));
-    }
+    // if (!isset($titleItem['fileDimensions']) || !isset($titleItem['titleDuration'])) {
+    //     error_log("Undefined index encountered - titleItem: " . print_r($titleItem, true));
+    // }
 
     // Ensure required keys exist
     $titleItem['fileDimensions'] = $titleItem['fileDimensions'] ?? '';
@@ -232,17 +245,100 @@ function checkDatabaseForTitle(
 
                 $isLarger = $titleItem['isLarger'] = compareFileSizeToDB($titleSize, $row['filesize']);
                 $duplicateTitlesArray[] = ['title' => $title, 'isLarger' => $isLarger];
+
+                // **New Logic: Update Missing Data if Flag is Set**
+                if ($updateMissingDataOnly) {
+                    $needsUpdate = false;
+                    $newDimensions = $row['dimensions']; // Initialize with existing value
+                    $newDuration = $row['duration']; // Initialize with existing value
+
+                    // Check if dimensions are blank or zero
+                    if (empty($row['dimensions']) || strtolower($row['dimensions']) === '0 x 0') {
+                        if (!empty($fileDimensions)) { // Ensure new dimensions are available
+                            $needsUpdate = true;
+                            $newDimensions = $fileDimensions;
+                        }
+                    }
+
+                    // Check if duration is zero
+                    if (empty($row['duration']) || $row['duration'] == 0) {
+                        if ($fileDuration > 0) { // Ensure new duration is valid
+                            $needsUpdate = true;
+                            $newDuration = $fileDuration;
+                        }
+                    }
+
+                    if ($needsUpdate) {
+                        // Prepare dynamic update query
+                        $fieldsToUpdate = [];
+                        $params = [];
+                        $types = '';
+
+                        $updatedFields = [];
+
+                        if ($newDimensions !== $row['dimensions']) {
+                            $fieldsToUpdate[] = 'dimensions = ?';
+                            $params[] = $newDimensions;
+                            $types .= 's';
+                            $updatedFields[] = "dimensions to '{$newDimensions}'";
+                        }
+
+                        if ($newDuration !== $row['duration']) {
+                            $fieldsToUpdate[] = 'duration = ?';
+                            $params[] = $newDuration;
+                            $types .= 'i';
+                            $updatedFields[] = "duration to '{$newDuration}'";
+                        }
+
+                        // If there are fields to update, proceed
+                        if (!empty($fieldsToUpdate)) {
+                            $updateQuery = "UPDATE `$table` SET " . implode(', ', $fieldsToUpdate) . " WHERE id = ?";
+                            $params[] = $row['id'];
+                            $types .= 'i';
+
+                            if ($stmtUpdate = $db->prepare($updateQuery)) {
+                                $stmtUpdate->bind_param($types, ...$params);
+                                if ($stmtUpdate->execute()) {
+                                    // **Modified Log Messages to Include Title and Specific Fields Updated**
+                                    if (!empty($updatedFields)) {
+                                        $updatedFieldsStr = implode(' and ', $updatedFields);
+                                        error_log("Updated '{$title}' with {$updatedFieldsStr}.");
+                                    } else {
+                                        error_log("No fields needed to be updated for '{$title}'.");
+                                    }
+
+                                    $titleItem['status'] = 'Updated missing data';
+                                } else {
+                                    error_log("Failed to update '{$title}': " . $stmtUpdate->error);
+                                    $titleItem['status'] = 'Failed to update missing data';
+                                }
+                                $stmtUpdate->close();
+                            } else {
+                                error_log("Error preparing update statement for '{$title}': " . $db->error);
+                                $titleItem['status'] = 'Failed to prepare update statement';
+                            }
+                        } else {
+                            // No actual changes needed
+                            error_log("No valid fields to update for '{$title}'.");
+                            $titleItem['status'] = 'No updates required';
+                        }
+                    } else {
+                        // No missing data to update
+                        error_log("No missing data to update for '{$title}'.");
+                        $titleItem['status'] = 'No updates required';
+                    }
+                }
             } else {
                 // Insert new record
                 $insertedId = addToDB($titleItem, $db, $table);
                 $titleItem['id'] = $insertedId;
             }
         } else {
-            error_log("Error executing query in checkDatabaseForTitle: " . $stmt->error);
+            error_log("Error executing query in checkDatabaseForTitle for '{$title}': " . $stmt->error);
         }
         $stmt->close();
     } else {
-        error_log("Error preparing statement in checkDatabaseForTitle: " . $db->error);
+        error_log("Error preparing statement in checkDatabaseForTitle for '{$title}': " . $db->error);
     }
 
     return $titleItem;
@@ -330,7 +426,7 @@ function addToDB(array $titleItem, $db, $table)
     if ($stmt = $db->prepare("INSERT IGNORE INTO `$table` (title, dimensions, filesize, duration, date_created) VALUES (?, ?, ?, ?, NOW())")) {
         $stmt->bind_param('ssss', $title, $titleDimensions, $titleSize, $titleDuration);
         if (!$stmt->execute()) {
-            error_log("Database insertion failed: " . $stmt->error);
+            error_log("Database insertion failed for '{$title}': " . $stmt->error);
         } else {
             $insertedId = $db->insert_id;
             // error_log("Inserted record ID: " . $insertedId);

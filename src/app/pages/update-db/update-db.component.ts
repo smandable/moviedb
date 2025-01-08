@@ -63,18 +63,18 @@ export class UpdateDbComponent implements OnInit {
 
     columnDefs: [
       { field: 'title', headerName: 'Title', width: 300 },
-      {
-        field: 'titleSize',
-        headerName: 'File Size',
-        width: 150,
-        valueFormatter: fileSizeFormatter,
-      },
       { field: 'titleDimensions', headerName: 'Dimensions', width: 150 },
       {
         field: 'titleDuration',
         headerName: 'Duration',
         width: 150,
         valueFormatter: durationFormatter,
+      },
+      {
+        field: 'titleSize',
+        headerName: 'File Size',
+        width: 150,
+        valueFormatter: fileSizeFormatter,
       },
       {
         field: 'duplicate',

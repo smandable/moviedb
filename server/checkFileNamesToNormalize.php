@@ -48,6 +48,7 @@ foreach ($files as $file) {
     $normalizedFileNameNoExtension = basicFunctions($fileNameNoExtension);
     $normalizedFileNameNoExtension = titleCase($normalizedFileNameNoExtension);
     $normalizedFileNameNoExtension = cleanupFunctions($normalizedFileNameNoExtension);
+    $normalizedFileNameNoExtension = sceneNormalization($normalizedFileNameNoExtension);
     $normalizedFileNameNoExtension = finalCleanup($normalizedFileNameNoExtension);
 
     $newFileName = $normalizedFileNameNoExtension . ($fileExtension ? '.' . $fileExtension : '');
@@ -82,7 +83,7 @@ echo json_encode(['files' => $normalizedFiles]);
 // End output buffering and send output
 ob_end_flush();
 
-// Helper Functions (Same as your existing functions)
+// Helper Functions
 function basicFunctions($fileName)
 {
     $replacements = [
@@ -145,17 +146,17 @@ function cleanupFunctions($fileName)
     // Apply basic replacements
     $fileName = preg_replace($patterns, $replacements, trim($fileName));
 
-    // Handle numbers after "Scene_"
-    $fileName = preg_replace_callback(
-        '/(?<=Scene_)(\d+)/', // Match numbers after "Scene_"
-        function ($matches) {
-            $number = $matches[1];
-            return strlen($number) === 1 ? $number : $number; // Keep single digits as-is
-        },
-        $fileName
-    );
+        // Handle numbers after "Scene_"
+        $fileName = preg_replace_callback(
+            '/(?<=Scene_)(\d+)/', // Match numbers after "Scene_"
+            function ($matches) {
+                $number = $matches[1];
+                return strlen($number) === 1 ? $number : $number; // Keep single digits as-is
+            },
+            $fileName
+        );
 
-    // Handle numbers preceding " - Scene_"
+          // Handle numbers preceding " - Scene_"
     $fileName = preg_replace_callback(
         '/(?<!# )(\b\d+)(?=\s-\sScene_)/', // Match standalone numbers before " - Scene_"
         function ($matches) {
@@ -164,6 +165,8 @@ function cleanupFunctions($fileName)
         },
         $fileName
     );
+
+
 
     // Handle trailing numbers
     $fileName = preg_replace_callback(
@@ -193,4 +196,29 @@ function finalCleanup($fileName)
 
     return $fileName;
 }
+
+/**
+ * New Function: sceneNormalization
+ * 
+ * This function applies regex-based normalization to filenames matching the pattern
+ * "Scene_<digits> <letters>" by replacing the space after the digits with " - ".
+ * It ensures that filenames already containing " - " are not altered.
+ * 
+ * @param string $fileName The filename without extension to normalize
+ * @return string The normalized filename
+ */
+function sceneNormalization($fileName)
+{
+    // Define the regex pattern with negative lookahead to avoid duplicating " - "
+    $pattern = '/([Ss]cene_\d+)\s(?!- )([A-Za-z\-]+)/';
+
+    // Define the replacement pattern
+    $replacement = '$1 - $2';
+
+    // Apply the regex replacement
+    $normalizedFileName = preg_replace($pattern, $replacement, $fileName);
+
+    return $normalizedFileName;
+}
+?>
 
