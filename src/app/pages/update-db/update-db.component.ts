@@ -106,7 +106,19 @@ export class UpdateDbComponent implements OnInit {
         field: 'isLarger',
         headerName: 'Larger',
         cellRenderer: (params: ICellRendererParams) => {
-          if (params.value === 'isLarger') {
+          const isLargerFlag = params.data.isLarger === 'isLarger';
+          const needsUpdateFileSizeFlag =
+            params.data.needsUpdateFilesize === true;
+          const needsUpdateMissingMetaFlag =
+            params.data.needsUpdateMissingMeta === true;
+
+          // If isLarger or needsUpdateFilesize or needsUpdateMissingMeta is true, show the button
+          const needsUpdate =
+            isLargerFlag ||
+            needsUpdateFileSizeFlag ||
+            needsUpdateMissingMetaFlag;
+
+          if (needsUpdate) {
             const button = document.createElement('button');
             button.innerText = 'Update DB';
             button.classList.add('btn', 'btn-primary', 'btn-sm');
@@ -191,6 +203,7 @@ export class UpdateDbComponent implements OnInit {
           if (response.success) {
             // alert(`Database updated successfully for "${data.title}".`);
             data.isLarger = null; // Clear the "Larger" flag
+            data.needsUpdateMissingMeta = false;  // Clears the missing metadata flag
             this.gridApi?.refreshCells({ force: true }); // Refresh the grid
           } else {
             alert(`Failed to update database: ${response.message}`);

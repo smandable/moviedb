@@ -212,10 +212,6 @@ function checkDatabaseForTitle(
 ) {
     // error_log("checkDatabaseForTitle - Initial titleItem: " . print_r($titleItem, true));
 
-    // if (!isset($titleItem['fileDimensions']) || !isset($titleItem['titleDuration'])) {
-    //     error_log("Undefined index encountered - titleItem: " . print_r($titleItem, true));
-    // }
-
     // Ensure required keys exist
     $titleItem['fileDimensions'] = $titleItem['fileDimensions'] ?? '';
     $titleItem['titleDuration'] = $titleItem['titleDuration'] ?? 0;
@@ -246,17 +242,34 @@ function checkDatabaseForTitle(
                 $isLarger = $titleItem['isLarger'] = compareFileSizeToDB($titleSize, $row['filesize']);
                 $duplicateTitlesArray[] = ['title' => $title, 'isLarger' => $isLarger];
 
+                // If existing file in DB has missing metadata, set an additional flag:
+                $hasMissingMeta = false;
+                if ((empty($row['dimensions']) || strtolower($row['dimensions']) === '0 x 0')
+                    || (empty($row['duration']) || $row['duration'] == 0)
+                    || (empty($row['filesize']) || $row['filesize'] == 0) 
+                ) {
+                    $hasMissingMeta = true;
+                }
+
+                // Pass that to the front-end:
+                $titleItem['needsUpdateMissingMeta'] = $hasMissingMeta;
+
                 // **New Logic: Update Missing Data if Flag is Set**
                 if ($updateMissingDataOnly) {
                     $needsUpdate = false;
                     $newDimensions = $row['dimensions']; // Initialize with existing value
                     $newDuration = $row['duration']; // Initialize with existing value
+                    $newFilesize = $row['filesize']; // Initialize with existing value
+
+                    // Track which fields are updated
+                    $updatedFields = [];
 
                     // Check if dimensions are blank or zero
                     if (empty($row['dimensions']) || strtolower($row['dimensions']) === '0 x 0') {
                         if (!empty($fileDimensions)) { // Ensure new dimensions are available
                             $needsUpdate = true;
                             $newDimensions = $fileDimensions;
+                            $updatedFields[] = "dimensions to '{$newDimensions}'";
                         }
                     }
 
@@ -265,6 +278,16 @@ function checkDatabaseForTitle(
                         if ($fileDuration > 0) { // Ensure new duration is valid
                             $needsUpdate = true;
                             $newDuration = $fileDuration;
+                            $updatedFields[] = "duration to '{$newDuration}'";
+                        }
+                    }
+
+                    // **Add Logic to Update filesize if it's zero**
+                    if ($row['filesize'] == 0) {
+                        if ($titleSize > 0) { // Ensure new filesize is valid
+                            $needsUpdate = true;
+                            $newFilesize = $titleSize;
+                            $updatedFields[] = "filesize to '{$newFilesize}'";
                         }
                     }
 
@@ -274,20 +297,22 @@ function checkDatabaseForTitle(
                         $params = [];
                         $types = '';
 
-                        $updatedFields = [];
-
                         if ($newDimensions !== $row['dimensions']) {
                             $fieldsToUpdate[] = 'dimensions = ?';
                             $params[] = $newDimensions;
                             $types .= 's';
-                            $updatedFields[] = "dimensions to '{$newDimensions}'";
                         }
 
                         if ($newDuration !== $row['duration']) {
                             $fieldsToUpdate[] = 'duration = ?';
                             $params[] = $newDuration;
                             $types .= 'i';
-                            $updatedFields[] = "duration to '{$newDuration}'";
+                        }
+
+                        if ($newFilesize !== $row['filesize']) {
+                            $fieldsToUpdate[] = 'filesize = ?';
+                            $params[] = $newFilesize;
+                            $types .= 'i';
                         }
 
                         // If there are fields to update, proceed
@@ -424,7 +449,7 @@ function addToDB(array $titleItem, $db, $table)
     // error_log("Preparing to insert: title=$title, dimensions=$titleDimensions, size=$titleSize, duration=$titleDuration");
 
     if ($stmt = $db->prepare("INSERT IGNORE INTO `$table` (title, dimensions, filesize, duration, date_created) VALUES (?, ?, ?, ?, NOW())")) {
-        $stmt->bind_param('ssss', $title, $titleDimensions, $titleSize, $titleDuration);
+        $stmt->bind_param('ssis', $title, $titleDimensions, $titleSize, $titleDuration);
         if (!$stmt->execute()) {
             error_log("Database insertion failed for '{$title}': " . $stmt->error);
         } else {
@@ -435,7 +460,7 @@ function addToDB(array $titleItem, $db, $table)
         }
         $stmt->close();
     } else {
-        error_log("Error preparing statement in addToDB: " . $db->error);
+        error_log("Error preparing statement in addToDB for '{$title}': " . $db->error);
     }
 
     return null;
