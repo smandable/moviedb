@@ -16,9 +16,9 @@
 
     <!-- Display totals only after processing -->
     <div *ngIf="processingComplete" class="total-items-container mt-1 text-end">
-        <strong>Total Items Processed:</strong> {{ totalItems }} |
-        <strong>New Items:</strong> {{ newItemsCount }} ({{ formatFileSize(newItemsSize) }}) |
-        <strong>Duplicate Items:</strong> {{ duplicateItemsCount }} ({{ formatFileSize(duplicateItemsSize) }})
+        <strong>Titles Processed:</strong> {{ totalItems }} |
+        <strong>New:</strong> {{ newItemsCount }} ({{ formatFileSize(newItemsSize) }}) |
+        <strong>Duplicate:</strong> {{ duplicateItemsCount }} ({{ formatFileSize(duplicateItemsSize) }})
       </div>
 
     <!-- Directory Field and Buttons -->
