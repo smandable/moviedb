@@ -18,9 +18,9 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class MovieService {
-  private getAllMoviesUrl = 'http://localhost/moviedbnew/server/getAllMovies.php';
-  private updateMovieUrl = 'http://localhost/moviedbnew/server/editCurrentRow.php';
-  private deleteMovieUrl = 'http://localhost/moviedbnew/server/deleteRow.php';
+  private getAllMoviesUrl = 'http://localhost/moviedb/server/getAllMovies.php';
+  private updateMovieUrl = 'http://localhost/moviedb/server/editCurrentRow.php';
+  private deleteMovieUrl = 'http://localhost/moviedb/server/deleteRow.php';
 
   constructor(private http: HttpClient) {}
 

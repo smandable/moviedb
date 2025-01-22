@@ -48,11 +48,11 @@ export interface ProcessFilesResponse {
 })
 export class FileService {
   private checkFilesUrl =
-    'http://localhost/moviedbnew/server/checkFileNamesToNormalize.php';
+    'http://localhost/moviedb/server/checkFileNamesToNormalize.php';
   private renameFilesUrl =
-    'http://localhost/moviedbnew/server/renameTheFilesToNormalize.php';
+    'http://localhost/moviedb/server/renameTheFilesToNormalize.php';
   private processFilesForDBUrl =
-    'http://localhost/moviedbnew/server/processFilesForDB.php';
+    'http://localhost/moviedb/server/processFilesForDB.php';
 
   constructor(private http: HttpClient) {}
 
@@ -139,7 +139,7 @@ export class FileService {
     console.log('Sending to server:', payload); // Add this line to log the payload
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post<any>(
-      'http://localhost/moviedbnew/server/editCurrentRow.php',
+      'http://localhost/moviedb/server/editCurrentRow.php',
       payload,
       { headers }
     );
