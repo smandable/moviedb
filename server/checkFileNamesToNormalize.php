@@ -131,7 +131,7 @@ function cleanupFunctions($fileName)
 {
     // Initial replacements for common patterns
     $patterns = [
-        '/1080p/i', '/720p/i', '/360p/i', '/DVDRip/i', '/x264/i',
+        '/2160p/i', '/1080p/i', '/720p/i', '/360p/i', '/DVDRip/i', '/h264/i', '/x264/i',
         '/WEBRip/i', '/XXX/i', '/ipt/i', '/MP4/i', '/xvid/i',
         '/team/i', '/(\s+)vs(\s+)/i', '/(Vol\s|Vol\.|\.Vol)/i',
         '/all star/i', '/disc/i', '/disk(\s*)/i', '/cd/i',
@@ -139,7 +139,7 @@ function cleanupFunctions($fileName)
     ];
 
     $replacements = [
-        '', '', '', '', '', '', '', '', '', '', '', ' vs. ',
+        '', '', '', '', '', '', '', '', '', '', '', '', '', ' vs. ',
         ' ', 'All-Star', 'CD', 'CD', 'CD', ' - CD',
     ];
 

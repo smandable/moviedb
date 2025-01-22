@@ -62,7 +62,7 @@ export class UpdateDbComponent implements OnInit {
     },
 
     columnDefs: [
-      { field: 'title', headerName: 'Title', width: 300 },
+      { field: 'title', headerName: 'Title', width: 300, editable: true, },
       { field: 'titleDimensions', headerName: 'Dimensions', width: 150 },
       {
         field: 'titleDuration',
