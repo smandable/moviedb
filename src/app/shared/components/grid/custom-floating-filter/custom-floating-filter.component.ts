@@ -58,7 +58,7 @@ import {
     onInputChanged(): void {
         this.params.parentFilterInstance((instance: any) => {
           if (instance.onFloatingFilterChanged) {
-            instance.onFloatingFilterChanged('contains', this.currentValue);
+            instance.onFloatingFilterChanged('startsWith', this.currentValue);
           }
         });
       }
