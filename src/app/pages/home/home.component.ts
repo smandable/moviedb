@@ -51,7 +51,7 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   standalone: true,
-  imports: [PageLayoutComponent, NgIf, ProgressBarComponent, AgGridAngular],
+  imports: [PageLayoutComponent, AgGridAngular],
 })
 export class HomeComponent implements OnInit {
   // Bind this property to the grid's rowData
