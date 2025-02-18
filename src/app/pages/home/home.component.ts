@@ -224,7 +224,7 @@ export class HomeComponent implements OnInit {
       valueFormatter: fileSizeFormatter,
       editable: true,
     },
-    { field: 'date_created', colId: 'date_created', headerName: 'Date Created', width: 150 },
+    { field: 'date_created', colId: 'date_created', headerName: 'Date Created', width: 175 },
     {
       headerName: '', // No heading
       colId: 'delete', // Optional: set a colId for clarity
