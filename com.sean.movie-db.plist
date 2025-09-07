@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.sean.movie-db</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <!-- absolute paths, because PATH is nearly empty under launchd -->
+      <string>/opt/homebrew/bin/npx</string>
+      <string>serve</string>
+      <string>-s</string>
+      <string>/Users/sean/Sites/movie-db/dist/movie-db</string>
+      <string>-l</string>
+      <string>4200</string>
+    </array>
+
+    <!-- optional but handy -->
+    <key>WorkingDirectory</key>
+    <string>/Users/sean/Sites/movie-db/dist/movie-db</string>
+
+    <!-- start at login & restart on crash -->
+    <key>RunAtLoad</key><true/>
+    <key>KeepAlive</key><true/>
+
+    <!-- simple log files -->
+    <key>StandardOutPath</key><string>/Users/sean/Library/Logs/movie-db.out</string>
+    <key>StandardErrorPath</key><string>/Users/sean/Library/Logs/movie-db.err</string>
+  </dict>
+</plist>

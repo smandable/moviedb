@@ -85,47 +85,55 @@ export class HomeComponent implements OnInit {
     onFilterOpened: (params) => {
       if (params.column.getId() === 'title') {
         if (this.gridApi.getFilterInstance) {
-          this.gridApi.getFilterInstance('title', (filterInstance: IFilterComp | null) => {
-            if (filterInstance) {
-              let model = filterInstance.getModel() as any;
-              console.log('filterInstance.getModel(): ', model);
-    
-              if (!model) {
-                // No existing model, create one with condition1 and condition2
-                model = {
-                  operator: 'AND',
-                  condition1: { type: 'startsWith', filter: '' },
-                  condition2: { type: 'contains', filter: '' }, // Empty filter
-                };
-              } else {
-                // If condition2 is missing or incorrectly set, update it to 'contains'
-                if (!model.condition2 || model.condition2.type === 'startsWith') {
-                  console.log('model.condition2.type: ', model.condition2?.type);
-                  model.operator = 'AND';
-                  model.condition2 = { type: 'contains', filter: '' }; // Empty filter
+          this.gridApi.getFilterInstance(
+            'title',
+            (filterInstance: IFilterComp | null) => {
+              if (filterInstance) {
+                let model = filterInstance.getModel() as any;
+                console.log('filterInstance.getModel(): ', model);
+
+                if (!model) {
+                  // No existing model, create one with condition1 and condition2
+                  model = {
+                    operator: 'AND',
+                    condition1: { type: 'startsWith', filter: '' },
+                    condition2: { type: 'contains', filter: '' }, // Empty filter
+                  };
+                } else {
+                  // If condition2 is missing or incorrectly set, update it to 'contains'
+                  if (
+                    !model.condition2 ||
+                    model.condition2.type === 'startsWith'
+                  ) {
+                    console.log(
+                      'model.condition2.type: ',
+                      model.condition2?.type
+                    );
+                    model.operator = 'AND';
+                    model.condition2 = { type: 'contains', filter: '' }; // Empty filter
+                  }
                 }
+
+                // Set the updated model
+                filterInstance.setModel(model);
+
+                // Apply the model if the method exists
+                if ((filterInstance as any).applyModel) {
+                  (filterInstance as any).applyModel();
+                }
+
+                // Notify the grid of the filter change
+                this.gridApi.onFilterChanged();
+              } else {
+                console.warn("Filter instance for 'title' is null.");
               }
-    
-              // Set the updated model
-              filterInstance.setModel(model);
-    
-              // Apply the model if the method exists
-              if ((filterInstance as any).applyModel) {
-                (filterInstance as any).applyModel();
-              }
-    
-              // Notify the grid of the filter change
-              this.gridApi.onFilterChanged();
-            } else {
-              console.warn("Filter instance for 'title' is null.");
             }
-          });
+          );
         } else {
-          console.warn("getFilterInstance is not available on gridApi.");
+          console.warn('getFilterInstance is not available on gridApi.');
         }
       }
     },
-    
 
     // Event fired when the grid is ready
     onGridReady: (params: GridReadyEvent<Movie>) => {
@@ -173,13 +181,21 @@ export class HomeComponent implements OnInit {
 
         // Log the new column state
         const columnState = this.gridApi.getColumnState();
-        console.log('Column state after sorting by date_created desc:', columnState);
+        console.log(
+          'Column state after sorting by date_created desc:',
+          columnState
+        );
       }
     },
 
     // Handle cell edits
     onCellValueChanged: (event) => this.onCellValueChanged(event),
   };
+
+  ciCollator = new Intl.Collator(undefined, {
+    sensitivity: 'base', // case-insensitive (and accent-insensitive)
+    numeric: true, // natural sorting for embedded numbers
+  });
 
   // Define the columns for the grid
   columnDefs: ColDef<Movie>[] = [
@@ -191,16 +207,23 @@ export class HomeComponent implements OnInit {
       editable: true,
       filter: 'agTextColumnFilter', // Use a text filter
       floatingFilter: true,
-      floatingFilterComponent: CustomFloatingFilterComponent, 
+      floatingFilterComponent: CustomFloatingFilterComponent,
       filterParams: {
         filterOptions: ['startsWith', 'contains', 'endsWith'],
         alwaysShowBothConditions: true,
         defaultJoinOperator: 'AND',
         debounceMs: 300,
-        caseSensitive: false,
+        caseSensitive: false, // filter ignores case
         defaultOption: 'startsWith', // Default filter option in the menu
       },
+      comparator: (a: string | null, b: string | null) => {
+        const aStr = (a ?? '').toString();
+        const bStr = (b ?? '').toString();
+        // Case-insensitive + natural numeric sort
+        return this.ciCollator.compare(aStr, bStr);
+      },
     },
+
     {
       field: 'dimensions',
       colId: 'dimensions',
@@ -224,7 +247,12 @@ export class HomeComponent implements OnInit {
       valueFormatter: fileSizeFormatter,
       editable: true,
     },
-    { field: 'date_created', colId: 'date_created', headerName: 'Date Created', width: 175 },
+    {
+      field: 'date_created',
+      colId: 'date_created',
+      headerName: 'Date Created',
+      width: 175,
+    },
     {
       headerName: '', // No heading
       colId: 'delete', // Optional: set a colId for clarity

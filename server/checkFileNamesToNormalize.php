@@ -166,8 +166,6 @@ function cleanupFunctions($fileName)
         $fileName
     );
 
-
-
     // Handle trailing numbers
     $fileName = preg_replace_callback(
         '/(?<!# )(\b\d+)\b$/', // Match trailing standalone numbers
