@@ -17,7 +17,7 @@
               type="checkbox"
               [(ngModel)]="allSelected"
               (change)="toggleAllCheckboxes()"
-              title="Select/Deselect All"
+              title="Select/Deselect All to rename"
             />
           </th>
           <th>Original Filename</th>
@@ -27,10 +27,12 @@
       <tbody>
         <tr *ngFor="let file of files; let i = index">
           <td>
+            <!-- Checked = WILL be renamed. We invert exclude via [ngModel]/(ngModelChange). -->
             <input
               type="checkbox"
-              [(ngModel)]="files[i].exclude"
-              title="Exclude this file from renaming"
+              [ngModel]="!files[i].exclude"
+              (ngModelChange)="files[i].exclude = !$event"
+              title="Rename this file"
             />
           </td>
           <td>{{ file.originalFileName }}</td>

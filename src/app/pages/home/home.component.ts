@@ -27,7 +27,21 @@ import {
   GridApi,
   ICellRendererParams,
   ColDef,
+  IFilterComp,
+  IFilterDef,
 } from 'ag-grid-community';
+
+// Extend the standard GridApi with the client-side model
+type ClientSideGridApi<TData> = GridApi<TData> & {
+  setSortModel?(sortModel: { colId: string; sort: 'asc' | 'desc' }[]): void;
+  getSortModel?(): any;
+  isAnyFilterPresent(): boolean;
+  // getFilterInstance now uses a callback and returns void
+  getFilterInstance?(
+    colKey: string,
+    callback: (filter: IFilterComp | null) => void
+  ): void;
+};
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
@@ -37,7 +51,7 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   standalone: true,
-  imports: [PageLayoutComponent, NgIf, ProgressBarComponent, AgGridAngular],
+  imports: [PageLayoutComponent, AgGridAngular],
 })
 export class HomeComponent implements OnInit {
   // Bind this property to the grid's rowData
@@ -45,7 +59,8 @@ export class HomeComponent implements OnInit {
   public totalItems: number = 0; // Holds the total count
 
   // Reference to the AG Grid API
-  private gridApi: GridApi<Movie> | undefined;
+  private gridApi!: ClientSideGridApi<Movie>;
+  private columnApi: any;
 
   // Reference to the AgGridAngular component in the template
   @ViewChild('agGrid') agGrid!: AgGridAngular<Movie>;
@@ -54,6 +69,7 @@ export class HomeComponent implements OnInit {
   public gridOptions: GridOptions<Movie> = {
     theme: myTheme,
     rowSelection: 'single',
+    suppressMultiSort: true,
 
     // Ensure each row has a unique ID
     getRowId: (params) => params.data.id.toString(),
@@ -63,26 +79,129 @@ export class HomeComponent implements OnInit {
       sortable: true,
       filter: false,
       resizable: true, // Allow resizing of columns
-      floatingFilter: false, // Enable floating filters
+      floatingFilter: false, // Disable floating filters by default
+    },
+
+    onFilterOpened: (params) => {
+      if (params.column.getId() === 'title') {
+        if (this.gridApi.getFilterInstance) {
+          this.gridApi.getFilterInstance(
+            'title',
+            (filterInstance: IFilterComp | null) => {
+              if (filterInstance) {
+                let model = filterInstance.getModel() as any;
+                console.log('filterInstance.getModel(): ', model);
+
+                if (!model) {
+                  // No existing model, create one with condition1 and condition2
+                  model = {
+                    operator: 'AND',
+                    condition1: { type: 'startsWith', filter: '' },
+                    condition2: { type: 'contains', filter: '' }, // Empty filter
+                  };
+                } else {
+                  // If condition2 is missing or incorrectly set, update it to 'contains'
+                  if (
+                    !model.condition2 ||
+                    model.condition2.type === 'startsWith'
+                  ) {
+                    console.log(
+                      'model.condition2.type: ',
+                      model.condition2?.type
+                    );
+                    model.operator = 'AND';
+                    model.condition2 = { type: 'contains', filter: '' }; // Empty filter
+                  }
+                }
+
+                // Set the updated model
+                filterInstance.setModel(model);
+
+                // Apply the model if the method exists
+                if ((filterInstance as any).applyModel) {
+                  (filterInstance as any).applyModel();
+                }
+
+                // Notify the grid of the filter change
+                this.gridApi.onFilterChanged();
+              } else {
+                console.warn("Filter instance for 'title' is null.");
+              }
+            }
+          );
+        } else {
+          console.warn('getFilterInstance is not available on gridApi.');
+        }
+      }
     },
 
     // Event fired when the grid is ready
     onGridReady: (params: GridReadyEvent<Movie>) => {
-      console.log('Grid is ready!');
-      this.gridApi = params.api;
+      this.gridApi = params.api as ClientSideGridApi<Movie>;
+
       params.api.sizeColumnsToFit();
 
       this.loadMovies(); // Load data once the grid is ready
+
+      // Apply initial sort by 'date_created' descending using applyColumnState
+      (this.gridApi as any).applyColumnState({
+        state: [{ colId: 'date_created', sort: 'desc', sortIndex: 0 }],
+        defaultState: { sort: null },
+      });
+
+      console.log('Initial sort applied: date_created desc');
+    },
+
+    onFilterChanged: (params) => {
+      const anyFilter = this.gridApi.isAnyFilterPresent();
+      console.log('Filter changed -> isAnyFilterPresent?', anyFilter);
+
+      // Check the entire filter model
+      const currentFilterModel = this.gridApi.getFilterModel?.();
+      console.log('Current filter model:', currentFilterModel);
+
+      if (anyFilter) {
+        console.log('Applying sort: title ascending');
+        // Apply sort by 'title' ascending
+        (this.gridApi as any).applyColumnState({
+          state: [{ colId: 'title', sort: 'asc', sortIndex: 0 }],
+          defaultState: { sort: null },
+        });
+
+        // Log the new column state
+        const columnState = this.gridApi.getColumnState();
+        console.log('Column state after sorting by title asc:', columnState);
+      } else {
+        console.log('Applying sort: date_created descending');
+        // Apply sort by 'date_created' descending
+        (this.gridApi as any).applyColumnState({
+          state: [{ colId: 'date_created', sort: 'desc', sortIndex: 0 }],
+          defaultState: { sort: null },
+        });
+
+        // Log the new column state
+        const columnState = this.gridApi.getColumnState();
+        console.log(
+          'Column state after sorting by date_created desc:',
+          columnState
+        );
+      }
     },
 
     // Handle cell edits
     onCellValueChanged: (event) => this.onCellValueChanged(event),
   };
 
+  ciCollator = new Intl.Collator(undefined, {
+    sensitivity: 'base', // case-insensitive (and accent-insensitive)
+    numeric: true, // natural sorting for embedded numbers
+  });
+
   // Define the columns for the grid
   columnDefs: ColDef<Movie>[] = [
     {
       field: 'title',
+      colId: 'title', // Explicitly set colId to match field
       headerName: 'Title',
       width: 600,
       editable: true,
@@ -91,19 +210,30 @@ export class HomeComponent implements OnInit {
       floatingFilterComponent: CustomFloatingFilterComponent,
       filterParams: {
         filterOptions: ['startsWith', 'contains', 'endsWith'],
+        alwaysShowBothConditions: true,
+        defaultJoinOperator: 'AND',
         debounceMs: 300,
-        caseSensitive: false,
+        caseSensitive: false, // filter ignores case
         defaultOption: 'startsWith', // Default filter option in the menu
       },
+      comparator: (a: string | null, b: string | null) => {
+        const aStr = (a ?? '').toString();
+        const bStr = (b ?? '').toString();
+        // Case-insensitive + natural numeric sort
+        return this.ciCollator.compare(aStr, bStr);
+      },
     },
+
     {
       field: 'dimensions',
+      colId: 'dimensions',
       headerName: 'Dimensions',
       width: 150,
       editable: true,
     },
     {
       field: 'duration',
+      colId: 'duration',
       headerName: 'Duration',
       width: 150,
       valueFormatter: durationFormatter,
@@ -111,14 +241,21 @@ export class HomeComponent implements OnInit {
     },
     {
       field: 'filesize',
+      colId: 'filesize',
       headerName: 'File Size',
       width: 150,
       valueFormatter: fileSizeFormatter,
       editable: true,
     },
-    { field: 'date_created', headerName: 'Date Created', width: 150 },
+    {
+      field: 'date_created',
+      colId: 'date_created',
+      headerName: 'Date Created',
+      width: 175,
+    },
     {
       headerName: '', // No heading
+      colId: 'delete', // Optional: set a colId for clarity
       width: 100, // Narrow column
       filter: false, // Disable filter
       sortable: false, // Disable sorting
@@ -181,10 +318,7 @@ export class HomeComponent implements OnInit {
         // Trigger change detection to update the view
         this.cdr.detectChanges();
 
-        // Loading indicator logic
-        setTimeout(() => {
-          this.storeService.isLoading.set(false);
-        }, 500);
+        // Removed the setSortModel call here
       },
       error: (error) => {
         console.error('Failed to load movies:', error);

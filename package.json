@@ -7,7 +7,9 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "add-page": "ng g m pages/page-name --routing && ng g component pages/page-name --skip-tests"
+    "add-page": "ng g m pages/page-name --routing && ng g component pages/page-name --skip-tests",
+    "build:prod": "ng build --configuration production",
+    "start:prod": "serve -s dist/my-angular-app -l 4200"
   },
   "private": true,
   "dependencies": {

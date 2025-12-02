@@ -26,24 +26,31 @@ export class FileNormalizationModalComponent {
   @Input() directory: string = '';
   @Output() renameFilesEvent = new EventEmitter<NormalizedFile[]>();
 
-  allSelected: boolean = false; // Track the master checkbox state
+  // Start with all checked (i.e., all WILL be renamed)
+  allSelected: boolean = true;
 
   constructor(public activeModal: NgbActiveModal) {}
 
-  /**
-   * Toggles all checkboxes based on the master checkbox state.
-   */
-  toggleAllCheckboxes(): void {
-    this.files.forEach((file) => (file.exclude = this.allSelected));
+  ngOnInit(): void {
+    // Ensure all files default to included (exclude = false)
+    this.files.forEach((f) => (f.exclude = false));
   }
 
   /**
-   * Determines if there are any files that need normalization.
+   * Master toggle: checked means "include/rename all",
+   * so we set exclude to the inverse.
    */
+  toggleAllCheckboxes(): void {
+    const exclude = !this.allSelected;
+    this.files.forEach((file) => (file.exclude = exclude));
+  }
+
   get hasFilesToRename(): boolean {
     return this.files.some((file) => file.needsNormalization);
   }
+
   renameFiles(): void {
+    // Checked rows (include) are where exclude === false
     const filesToRename = this.files.filter((file) => !file.exclude);
     this.renameFilesEvent.emit(filesToRename);
     this.activeModal.close();

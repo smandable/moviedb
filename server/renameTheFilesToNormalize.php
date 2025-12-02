@@ -24,48 +24,51 @@ foreach ($files as $file) {
     if (!isset($file['path'], $file['originalFileName'], $file['newFileName'])) {
         $results[] = [
             'originalFileName' => $file['originalFileName'] ?? 'Unknown',
-            'newFileName' => $file['newFileName'] ?? 'Unknown',
-            'status' => 'Missing data',
+            'newFileName'      => $file['newFileName'] ?? 'Unknown',
+            'status'           => 'Missing data',
         ];
         continue;
     }
 
-    $path = rtrim($file['path'], '/');
+    $path         = rtrim($file['path'], '/');
     $originalPath = $path . "/" . $file['originalFileName'];
-    $newPath = $path . "/" . $file['newFileName'];
+    $newPath      = $path . "/" . $file['newFileName'];
 
     // Check if the original file exists
     if (!file_exists($originalPath)) {
         $results[] = [
             'originalFileName' => $file['originalFileName'],
-            'newFileName' => $file['newFileName'],
-            'status' => 'Original file not found',
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'Original file not found',
         ];
         continue;
     }
 
-    // Check if the new file name already exists
-    if (file_exists($newPath)) {
+    // Detect if this is only a case change (same path ignoring case)
+    $isCaseOnlyChange = strcasecmp($originalPath, $newPath) === 0;
+
+    // Check if the new file name already exists AND is not just a case-only variant
+    if (file_exists($newPath) && !$isCaseOnlyChange) {
         $results[] = [
             'originalFileName' => $file['originalFileName'],
-            'newFileName' => $file['newFileName'],
-            'status' => 'New file name already exists',
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'New file name already exists',
         ];
         continue;
     }
 
-    // Attempt to rename the file
+    // Attempt to rename the file (this will fix the case on macOS)
     if (rename($originalPath, $newPath)) {
         $results[] = [
             'originalFileName' => $file['originalFileName'],
-            'newFileName' => $file['newFileName'],
-            'status' => 'Renamed successfully',
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'Renamed successfully',
         ];
     } else {
         $results[] = [
             'originalFileName' => $file['originalFileName'],
-            'newFileName' => $file['newFileName'],
-            'status' => 'Failed to rename',
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'Failed to rename',
         ];
     }
 }
