@@ -102,61 +102,162 @@ function basicFunctions($fileName)
 function titleCase($fileName)
 {
     $delimiters = [" "];
-    $exceptions = ["the", "a", "an", "and", "as", "at", "be", "but", "by", "for", "in", "it", "is", "of", "off", "on", "or", "per", "to", "up", "via", "with", "vs", "BBC", "CD", "MILF", "XXX"];
 
+    // Words that should be lowercase *unless they are the first word*
+    $lowercaseExceptions = [
+        "the",
+        "a",
+        "an",
+        "and",
+        "as",
+        "at",
+        "be",
+        "but",
+        "by",
+        "for",
+        "in",
+        "it",
+        "is",
+        "of",
+        "off",
+        "on",
+        "or",
+        "per",
+        "to",
+        "up",
+        "via",
+        "with",
+        "vs"
+    ];
+
+    // Words that should always be ALL CAPS
+    $uppercaseExceptions = [
+        "BBC",
+        "CD",
+        "MILF",
+        "XXX",
+        "AJ"
+    ];
+
+    // Words that should have special mixed casing
+    $mixedCaseExceptions = [
+        "labeau" => "LaBeau",
+        "deville" => "DeVille",
+    ];
+
+    // Start with standard title case
     $fileName = mb_convert_case($fileName, MB_CASE_TITLE, "UTF-8");
 
     foreach ($delimiters as $delimiter) {
         $words = explode($delimiter, $fileName);
-        foreach ($words as &$word) {
-            if (in_array(mb_strtolower($word, "UTF-8"), $exceptions)) {
-                $word = mb_strtolower($word, "UTF-8");
-            } elseif (!in_array(mb_strtoupper($word, "UTF-8"), $exceptions)) {
-                $word = ucfirst($word);
+
+        foreach ($words as $index => &$word) {
+            $lower = mb_strtolower($word, "UTF-8");
+            $upper = mb_strtoupper($word, "UTF-8");
+
+            // 1) Mixed-case special words
+            if (isset($mixedCaseExceptions[$lower])) {
+                $word = $mixedCaseExceptions[$lower];
+                continue;
             }
+
+            // 2) Always-uppercase acronyms
+            if (in_array($upper, $uppercaseExceptions, true)) {
+                $word = $upper;
+                continue;
+            }
+
+            // 3) Small words: lowercase ONLY if NOT first word
+            //    AND not immediately after a hyphen token ("-")
+            $prevWord = $words[$index - 1] ?? null;
+            if (
+                $index > 0 &&
+                in_array($lower, $lowercaseExceptions, true) &&
+                $prevWord !== '-'
+            ) {
+                $word = $lower;
+                continue;
+            }
+
+            // 4) Otherwise, normal Title Case
+            $word = mb_convert_case($word, MB_CASE_TITLE, "UTF-8");
         }
+
         $fileName = implode($delimiter, $words);
     }
 
-    // Adjust for specific cases
-    $replacements = [
-        '/^(the)\s/i' => 'The ',
-        '/^(a)\s/i' => 'A ',
-        '/^(so)\s/i' => 'So ',
-    ];
-    return preg_replace(array_keys($replacements), array_values($replacements), $fileName);
+    return $fileName;
 }
+
+
 
 function cleanupFunctions($fileName)
 {
     // Initial replacements for common patterns
     $patterns = [
-        '/2160p/i', '/1080p/i', '/720p/i', '/360p/i', '/DVDRip/i', '/h264/i', '/x264/i',
-        '/WEBRip/i', '/XXX/i', '/ipt/i', '/MP4/i', '/xvid/i',
-        '/team/i', '/(\s+)vs(\s+)/i', '/(Vol\s|Vol\.|\.Vol)/i',
-        '/all star/i', '/disc/i', '/disk(\s*)/i', '/cd/i',
+        '/2160p/i',
+        '/4k/i',
+        '/1080p/i',
+        '/720p/i',
+        '/480p/i',
+        '/360p/i',
+        '/DVDRip/i',
+        '/h264/i',
+        '/x264/i',
+        '/WEBRip/i',
+        '/XXX/i',
+        '/MP4/i',
+        '/xvid/i',
+        '/(\s+)vs(\s+)/i',
+        '/disc/i',
+        '/disk(\s*)/i',
+        '/cd/i',
         '/\b(\s|\.)cd/i',
     ];
 
     $replacements = [
-        '', '', '', '', '', '', '', '', '', '', '', '', '', ' vs. ',
-        ' ', 'All-Star', 'CD', 'CD', 'CD', ' - CD',
+        // 1–13: quality/codec/etc → remove
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        // 14: "X vs Y" normalize spacing
+        ' vs. ',
+        // 15–19: disc / cd variants
+        'CD',        // "disc"  → "CD"
+        'CD',        // "disk"  → "CD"
+        'CD',        // "cd"    → "CD"
+        ' - CD',     // " cd" / ".cd" → " - CD"
     ];
 
     // Apply basic replacements
     $fileName = preg_replace($patterns, $replacements, trim($fileName));
 
-        // Handle numbers after "Scene_"
-        $fileName = preg_replace_callback(
-            '/(?<=Scene_)(\d+)/', // Match numbers after "Scene_"
-            function ($matches) {
-                $number = $matches[1];
-                return strlen($number) === 1 ? $number : $number; // Keep single digits as-is
-            },
-            $fileName
-        );
+    // "#07" or "#   07" → "# 07"
+    $fileName = preg_replace('/#\s*(\d+)/', '# $1', $fileName);
 
-          // Handle numbers preceding " - Scene_"
+    // Handle "Vol" followed by a number:
+    //  - Vol4   / Vol 4  / Vol.4  -> # 04
+    //  - Vol12  / Vol 12 / Vol.12 -> # 12
+    $fileName = preg_replace_callback(
+        '/\bVol\.?\s*(\d+)\b/i',
+        function ($matches) {
+            $number = $matches[1];
+            return '# ' . (strlen($number) === 1 ? '0' . $number : $number);
+        },
+        $fileName
+    );
+
+    // Handle numbers preceding " - Scene_"
     $fileName = preg_replace_callback(
         '/(?<!# )(\b\d+)(?=\s-\sScene_)/', // Match standalone numbers before " - Scene_"
         function ($matches) {
@@ -187,9 +288,11 @@ function finalCleanup($fileName)
     $fileName = preg_replace([
         '/\s+/', // Multiple spaces
         '/\.+/', // Multiple periods
-        '/^\.+/',// Leading periods
+        '/^\.+/', // Leading periods
     ], [
-        ' ', '.', ''
+        ' ',
+        '.',
+        ''
     ], trim($fileName));
 
     return $fileName;
@@ -218,5 +321,3 @@ function sceneNormalization($fileName)
 
     return $normalizedFileName;
 }
-?>
-
