@@ -1,3 +1,8 @@
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from 'src/environments/environment';
+
 export interface Movie {
   id: number;
   title: string;
@@ -10,17 +15,17 @@ export interface Movie {
   isLarger: string;
 }
 
-import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
-
 @Injectable({
   providedIn: 'root',
 })
 export class MovieService {
-  private getAllMoviesUrl = 'http://localhost/moviedb/server/getAllMovies.php';
-  private updateMovieUrl = 'http://localhost/moviedb/server/editCurrentRow.php';
-  private deleteMovieUrl = 'http://localhost/moviedb/server/deleteRow.php';
+  // Base URL comes from environment.ts:
+  // 'http://localhost:8888/moviedb/server/'
+  private readonly baseUrl = environment.apiBaseUrl;
+
+  private readonly getAllMoviesUrl = `${this.baseUrl}getAllMovies.php`;
+  private readonly updateMovieUrl  = `${this.baseUrl}editCurrentRow.php`;
+  private readonly deleteMovieUrl  = `${this.baseUrl}deleteRow.php`;
 
   constructor(private http: HttpClient) {}
 

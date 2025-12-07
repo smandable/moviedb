@@ -6,6 +6,7 @@ import {
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 
 export interface NormalizedFile {
   path: string;
@@ -47,12 +48,15 @@ export interface ProcessFilesResponse {
   providedIn: 'root',
 })
 export class FileService {
-  private checkFilesUrl =
-    'http://localhost/moviedb/server/checkFileNamesToNormalize.php';
-  private renameFilesUrl =
-    'http://localhost/moviedb/server/renameTheFilesToNormalize.php';
-  private processFilesForDBUrl =
-    'http://localhost/moviedb/server/processFilesForDB.php';
+  // Base URL now comes from environment.ts:
+  // 'http://localhost:8888/moviedb/server/'
+  private readonly baseUrl = environment.apiBaseUrl;
+
+  private checkFilesUrl         = `${this.baseUrl}checkFileNamesToNormalize.php`;
+  private renameFilesUrl        = `${this.baseUrl}renameTheFilesToNormalize.php`;
+  private processFilesForDBUrl  = `${this.baseUrl}processFilesForDB.php`;
+  private updateRowUrl          = `${this.baseUrl}editCurrentRow.php`;
+  // private performDbOpsUrl    = `${this.baseUrl}performDatabaseOperations.php`;
 
   constructor(private http: HttpClient) {}
 
@@ -112,7 +116,7 @@ export class FileService {
    * @returns An observable containing the operation results.
    */
   performDatabaseOperations(): Observable<any> {
-    // Implement as needed
+    // Still a placeholder;
     return this.http.post<any>(
       'path/to/performDatabaseOperations.php',
       {},
@@ -136,10 +140,10 @@ export class FileService {
     updateFields: { dimensions: string; filesize: number; duration: number }
   ): Observable<any> {
     const payload = { id, updateFields };
-    console.log('Sending to server:', payload); // Add this line to log the payload
+    console.log('Sending to server:', payload);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post<any>(
-      'http://localhost/moviedb/server/editCurrentRow.php',
+      this.updateRowUrl,
       payload,
       { headers }
     );

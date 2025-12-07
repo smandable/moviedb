@@ -10,8 +10,8 @@ import packageInfo from '../../package.json';
 
 const scheme = 'http://';
 const host   = 'localhost';
-const port   = ':5000';
-const path   = '/api/';
+const port   = ':8888';
+const path   = '/moviedb/server/';
 
 const baseUrl = scheme + host + port + path;
 
