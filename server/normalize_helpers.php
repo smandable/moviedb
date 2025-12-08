@@ -190,9 +190,9 @@ if (!function_exists('cleanupFunctions')) {
         // "#07" or "#   07" → "# 07"
         $name = preg_replace('/#\s*(\d+)/', '# $1', $name);
 
-        // "Vol4", "Vol 4", "Vol.4" → "# 04"
+        // Handle "Vol4", "Vol 4", "Vol.4", "Vol#4", "Vol #4"
         $name = preg_replace_callback(
-            '/\bVol\.?\s*(\d+)\b/i',
+            '/\bVol\.?\s*#?\s*(\d+)\b/i',
             function ($matches) {
                 $number = $matches[1];
                 if (strlen($number) === 1) {

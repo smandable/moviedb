@@ -287,8 +287,8 @@ export class FileNormalizationModalComponent {
     // "#07" or "#   07" → "# 07"
     name = name.replace(/#\s*(\d+)/g, '# $1');
 
-    // "Vol4", "Vol 4", "Vol.4" → "# 04"
-    name = name.replace(/\bVol\.?\s*(\d+)\b/gi, (_m, num: string) => {
+    // Handle "Vol4", "Vol 4", "Vol.4", "Vol#4", "Vol #4"
+    name = name.replace(/\bVol\.?\s*#?\s*(\d+)\b/gi, (_m, num: string) => {
       const padded = num.length === 1 ? '0' + num : num;
       return `# ${padded}`;
     });
