@@ -1,4 +1,7 @@
 <?php
+// Pull in shared normalization helpers
+require_once __DIR__ . '/normalize_helpers.php';
+
 // Start output buffering to prevent premature output
 ob_start();
 
@@ -33,42 +36,38 @@ $normalizedFiles = [];
 
 foreach ($files as $file) {
     // Skip current and parent directories
-    if ($file === '.' || $file === '..') continue;
+    if ($file === '.' || $file === '..') {
+        continue;
+    }
 
-    // **Skip hidden files**
-    if (substr($file, 0, 1) === '.') continue;
+    // Skip hidden files
+    if (substr($file, 0, 1) === '.') {
+        continue;
+    }
 
     $path = $directory;
     $fileName = $file;
-    $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+
+    $fileExtension       = pathinfo($fileName, PATHINFO_EXTENSION);
     $fileNameNoExtension = pathinfo($fileName, PATHINFO_FILENAME);
 
-    // Apply transformations
-    $originalFileName = $fileNameNoExtension; // Keep original for comparison
-    $normalizedFileNameNoExtension = basicFunctions($fileNameNoExtension);
-    $normalizedFileNameNoExtension = titleCase($normalizedFileNameNoExtension);
-    $normalizedFileNameNoExtension = cleanupFunctions($normalizedFileNameNoExtension);
-    $normalizedFileNameNoExtension = sceneNormalization($normalizedFileNameNoExtension);
-    $normalizedFileNameNoExtension = finalCleanup($normalizedFileNameNoExtension);
+    $originalBase   = $fileNameNoExtension;                 // raw base name
+    $normalizedBase = normalizeFileBaseName($originalBase); // shared pipeline
 
-    $newFileName = $normalizedFileNameNoExtension . ($fileExtension ? '.' . $fileExtension : '');
+    $needsNormalization = ($originalBase !== $normalizedBase);
 
-    // Determine if normalization is needed
-    $needsNormalization = $originalFileName !== $normalizedFileNameNoExtension;
-    // error_log("Status for {$originalFileName}: " . ($needsNormalization ? 'Needs Renaming' : 'Name ok'));
-
-    // Log original and new filenames for debugging
-    // error_log("Original: $originalFileName, New: $normalizedFileNameNoExtension");
+    $newFileName = $normalizedBase . ($fileExtension ? '.' . $fileExtension : '');
 
     // Prepare file data
     $normalizedFiles[] = [
-        'path' => $path,
-        'originalFileName' => $fileName,
-        'newFileName' => $needsNormalization ? $newFileName : '', // Empty if no normalization
-        'fileExtension' => $fileExtension,
-        'fileNameNoExtension' => $normalizedFileNameNoExtension,
+        'path'               => $path,
+        'originalFileName'   => $fileName,
+        // Only send newFileName when we actually want to rename
+        'newFileName'        => $needsNormalization ? $newFileName : '',
+        'fileExtension'      => $fileExtension,
+        'fileNameNoExtension' => $normalizedBase,
         'needsNormalization' => $needsNormalization,
-        'status' => $needsNormalization ? 'Needs Renaming' : '',
+        'status'             => $needsNormalization ? 'Needs Renaming' : '',
     ];
 }
 
@@ -82,242 +81,3 @@ echo json_encode(['files' => $normalizedFiles]);
 
 // End output buffering and send output
 ob_end_flush();
-
-// Helper Functions
-function basicFunctions($fileName)
-{
-    $replacements = [
-        '/\./' => ' ',      // Periods to spaces
-        '/\[|\]/' => ' ',   // Brackets to spaces
-        '/(?<!Scene)_/' => ' ', // Replace underscores unless part of "Scene_"
-        '/-/' => ' ',       // Dashes to spaces
-        '/\s{3}/' => ' - ', // Triple spaces to ' - '
-        '/\s+/' => ' ',     // Multiple spaces to a single space
-        '/\.+/' => '.',     // Multiple periods to a single period
-        '/^\.+/' => '',     // Leading periods removed
-    ];
-    return preg_replace(array_keys($replacements), array_values($replacements), trim($fileName));
-}
-
-function titleCase($fileName)
-{
-    $delimiters = [" "];
-
-    // Words that should be lowercase *unless they are the first word*
-    $lowercaseExceptions = [
-        "the",
-        "a",
-        "an",
-        "and",
-        "as",
-        "at",
-        "be",
-        "but",
-        "by",
-        "for",
-        "in",
-        "it",
-        "is",
-        "of",
-        "off",
-        "on",
-        "or",
-        "per",
-        "to",
-        "up",
-        "via",
-        "with",
-        "vs"
-    ];
-
-    // Words that should always be ALL CAPS
-    $uppercaseExceptions = [
-        "BBC",
-        "CD",
-        "MILF",
-        "XXX",
-        "AJ"
-    ];
-
-    // Words that should have special mixed casing
-    $mixedCaseExceptions = [
-        "labeau" => "LaBeau",
-        "deville" => "DeVille",
-    ];
-
-    // Start with standard title case
-    $fileName = mb_convert_case($fileName, MB_CASE_TITLE, "UTF-8");
-
-    foreach ($delimiters as $delimiter) {
-        $words = explode($delimiter, $fileName);
-
-        foreach ($words as $index => &$word) {
-            $lower = mb_strtolower($word, "UTF-8");
-            $upper = mb_strtoupper($word, "UTF-8");
-
-            // 1) Mixed-case special words
-            if (isset($mixedCaseExceptions[$lower])) {
-                $word = $mixedCaseExceptions[$lower];
-                continue;
-            }
-
-            // 2) Always-uppercase acronyms
-            if (in_array($upper, $uppercaseExceptions, true)) {
-                $word = $upper;
-                continue;
-            }
-
-            // 3) Small words: lowercase ONLY if NOT first word
-            //    AND not immediately after a hyphen token ("-")
-            $prevWord = $words[$index - 1] ?? null;
-            if (
-                $index > 0 &&
-                in_array($lower, $lowercaseExceptions, true) &&
-                $prevWord !== '-'
-            ) {
-                $word = $lower;
-                continue;
-            }
-
-            // 4) Otherwise, normal Title Case
-            $word = mb_convert_case($word, MB_CASE_TITLE, "UTF-8");
-        }
-
-        $fileName = implode($delimiter, $words);
-    }
-
-    return $fileName;
-}
-
-
-
-function cleanupFunctions($fileName)
-{
-    // Initial replacements for common patterns
-    $patterns = [
-        '/2160p/i',
-        '/4k/i',
-        '/1080p/i',
-        '/720p/i',
-        '/480p/i',
-        '/360p/i',
-        '/DVDRip/i',
-        '/h264/i',
-        '/x264/i',
-        '/WEBRip/i',
-        '/XXX/i',
-        '/MP4/i',
-        '/xvid/i',
-        '/(\s+)vs(\s+)/i',
-        '/disc/i',
-        '/disk(\s*)/i',
-        '/cd/i',
-        '/\b(\s|\.)cd/i',
-    ];
-
-    $replacements = [
-        // 1–13: quality/codec/etc → remove
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        // 14: "X vs Y" normalize spacing
-        ' vs. ',
-        // 15–19: disc / cd variants
-        'CD',        // "disc"  → "CD"
-        'CD',        // "disk"  → "CD"
-        'CD',        // "cd"    → "CD"
-        ' - CD',     // " cd" / ".cd" → " - CD"
-    ];
-
-    // Apply basic replacements
-    $fileName = preg_replace($patterns, $replacements, trim($fileName));
-
-    // "#07" or "#   07" → "# 07"
-    $fileName = preg_replace('/#\s*(\d+)/', '# $1', $fileName);
-
-    // Handle "Vol" followed by a number:
-    //  - Vol4   / Vol 4  / Vol.4  -> # 04
-    //  - Vol12  / Vol 12 / Vol.12 -> # 12
-    $fileName = preg_replace_callback(
-        '/\bVol\.?\s*(\d+)\b/i',
-        function ($matches) {
-            $number = $matches[1];
-            return '# ' . (strlen($number) === 1 ? '0' . $number : $number);
-        },
-        $fileName
-    );
-
-    // Handle numbers preceding " - Scene_"
-    $fileName = preg_replace_callback(
-        '/(?<!# )(\b\d+)(?=\s-\sScene_)/', // Match standalone numbers before " - Scene_"
-        function ($matches) {
-            $number = $matches[1];
-            return "# " . ((strlen($number) === 1) ? "0$number" : $number);
-        },
-        $fileName
-    );
-
-    // Handle trailing numbers
-    $fileName = preg_replace_callback(
-        '/(?<!# )(\b\d+)\b$/', // Match trailing standalone numbers
-        function ($matches) {
-            $number = $matches[1];
-            return "# " . ((strlen($number) === 1) ? "0$number" : $number);
-        },
-        $fileName
-    );
-
-    // Ensure no redundant "# #"
-    $fileName = preg_replace('/#\s+#/', '# ', $fileName);
-
-    return $fileName;
-}
-
-function finalCleanup($fileName)
-{
-    $fileName = preg_replace([
-        '/\s+/', // Multiple spaces
-        '/\.+/', // Multiple periods
-        '/^\.+/', // Leading periods
-    ], [
-        ' ',
-        '.',
-        ''
-    ], trim($fileName));
-
-    return $fileName;
-}
-
-/**
- * New Function: sceneNormalization
- * 
- * This function applies regex-based normalization to filenames matching the pattern
- * "Scene_<digits> <letters>" by replacing the space after the digits with " - ".
- * It ensures that filenames already containing " - " are not altered.
- * 
- * @param string $fileName The filename without extension to normalize
- * @return string The normalized filename
- */
-function sceneNormalization($fileName)
-{
-    // Define the regex pattern with negative lookahead to avoid duplicating " - "
-    $pattern = '/([Ss]cene_\d+)\s(?!- )([A-Za-z\-]+)/';
-
-    // Define the replacement pattern
-    $replacement = '$1 - $2';
-
-    // Apply the regex replacement
-    $normalizedFileName = preg_replace($pattern, $replacement, $fileName);
-
-    return $normalizedFileName;
-}

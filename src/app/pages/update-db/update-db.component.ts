@@ -35,7 +35,6 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
     AgGridAngular,
     FormsModule,
     NgbModule,
-    FileNormalizationModalComponent,
   ],
 })
 export class UpdateDbComponent implements OnInit {
@@ -49,7 +48,11 @@ export class UpdateDbComponent implements OnInit {
   public rowData: any[] = []; // Updated to accommodate processing results
   public gridOptions: GridOptions = {
     theme: myTheme,
-    rowSelection: 'single',
+    rowSelection: {
+      mode: 'singleRow',
+      checkboxes: false, // ⬅️ no selection column
+      enableClickSelection: true, // ⬅️ still let user select by clicking the row
+    },
     context: { componentParent: this },
     getRowId: (params) => `${params.data.title}`,
     rowHeight: 35,
@@ -62,7 +65,7 @@ export class UpdateDbComponent implements OnInit {
     },
 
     columnDefs: [
-      { field: 'title', headerName: 'Title', width: 300, editable: true, },
+      { field: 'title', headerName: 'Title', width: 300, editable: true },
       { field: 'titleDimensions', headerName: 'Dimensions', width: 150 },
       {
         field: 'titleDuration',
@@ -203,7 +206,7 @@ export class UpdateDbComponent implements OnInit {
           if (response.success) {
             // alert(`Database updated successfully for "${data.title}".`);
             data.isLarger = null; // Clear the "Larger" flag
-            data.needsUpdateMissingMeta = false;  // Clears the missing metadata flag
+            data.needsUpdateMissingMeta = false; // Clears the missing metadata flag
             this.gridApi?.refreshCells({ force: true }); // Refresh the grid
           } else {
             alert(`Failed to update database: ${response.message}`);
@@ -388,61 +391,62 @@ export class UpdateDbComponent implements OnInit {
  * Component for the modal content.
  * Displays original and new filenames, and provides action buttons.
  */
-@Component({
-  selector: 'files-modal-content',
-  template: `
-    <div class="modal-header">
-      <h5 class="modal-title">Files to Normalize</h5>
-      <button
-        type="button"
-        class="btn-close"
-        aria-label="Close"
-        (click)="cancel()"
-      ></button>
-    </div>
-    <div class="modal-body">
-      <table class="table table-bordered table-striped">
-        <thead>
-          <tr>
-            <th>Original Filename</th>
-            <th>New Filename</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let file of files">
-            <td>{{ file.originalFileName }}</td>
-            <td>{{ file.newFileName }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-success" (click)="rename()">
-        Rename Files
-      </button>
-      <button type="button" class="btn btn-secondary" (click)="cancel()">
-        Cancel
-      </button>
-    </div>
-  `,
-})
-export class FilesModalContent {
-  public files: NormalizedFile[] = [];
-  public directory: string = '';
+// @Component({
+//   selector: 'files-modal-content',
+//   template: `
+//     <div class="modal-header">
+//       <h5 class="modal-title">Files to Normalize</h5>
+//       <button
+//         type="button"
+//         class="btn-close"
+//         aria-label="Close"
+//         (click)="cancel()"
+//       ></button>
+//     </div>
+//     <div class="modal-body">
+//       <table class="table table-bordered table-striped">
+//         <thead>
+//           <tr>
+//             <th>Original Filename</th>
+//             <th>New Filename</th>
+//           </tr>
+//         </thead>
+//         <tbody>
+//           <tr *ngFor="let file of files">
+//             <td>{{ file.originalFileName }}</td>
+//             <td>{{ file.newFileName }}</td>
+//           </tr>
+//         </tbody>
+//       </table>
+//     </div>
+//     <div class="modal-footer">
+//       <button type="button" class="btn btn-success" (click)="rename()">
+//         Rename Files
+//       </button>
+//       <button type="button" class="btn btn-secondary" (click)="cancel()">
+//         Cancel
+//       </button>
+//     </div>
+//   `,
+// })
 
-  constructor(private modalRef: NgbModalRef) {}
+// export class FilesModalContent {
+//   public files: NormalizedFile[] = [];
+//   public directory: string = '';
 
-  /**
-   * Handles the Rename button click.
-   */
-  rename(): void {
-    this.modalRef.close('rename');
-  }
+//   constructor(private modalRef: NgbModalRef) {}
 
-  /**
-   * Handles the Cancel button click.
-   */
-  cancel(): void {
-    this.modalRef.dismiss('cancel');
-  }
-}
+//   /**
+//    * Handles the Rename button click.
+//    */
+//   rename(): void {
+//     this.modalRef.close('rename');
+//   }
+
+//   /**
+//    * Handles the Cancel button click.
+//    */
+//   cancel(): void {
+//     this.modalRef.dismiss('cancel');
+//   }
+// }

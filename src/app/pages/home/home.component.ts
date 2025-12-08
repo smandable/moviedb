@@ -68,7 +68,11 @@ export class HomeComponent implements OnInit {
   // AG Grid configuration
   public gridOptions: GridOptions<Movie> = {
     theme: myTheme,
-    rowSelection: 'single',
+    rowSelection: {
+      mode: 'singleRow',
+      checkboxes: false, // ⬅️ no selection column
+      enableClickSelection: true, // ⬅️ still let user select by clicking the row
+    },
     suppressMultiSort: true,
 
     // Ensure each row has a unique ID

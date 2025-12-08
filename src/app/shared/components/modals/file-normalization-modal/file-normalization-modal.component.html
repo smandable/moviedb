@@ -7,9 +7,15 @@
     (click)="activeModal.dismiss('Cross click')"
   ></button>
 </div>
+
 <div class="modal-body">
   <ng-container *ngIf="files.length > 0; else noFiles">
-    <table class="table table-bordered table-striped">
+    <table class="table table-bordered table-striped normalize-table">
+      <colgroup>
+        <col class="col-check" />
+        <col class="col-working" />
+        <col class="col-new" />
+      </colgroup>
       <thead>
         <tr>
           <th>
@@ -20,14 +26,13 @@
               title="Select/Deselect All to rename"
             />
           </th>
-          <th>Original Filename</th>
+          <th>Working Name</th>
           <th>New Filename</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let file of files; let i = index">
-          <td>
-            <!-- Checked = WILL be renamed. We invert exclude via [ngModel]/(ngModelChange). -->
+          <td class="align-middle text-center">
             <input
               type="checkbox"
               [ngModel]="!files[i].exclude"
@@ -35,16 +40,34 @@
               title="Rename this file"
             />
           </td>
-          <td>{{ file.originalFileName }}</td>
-          <td>{{ file.newFileName }}</td>
+
+          <!-- LEFT: working base -->
+          <td class="working-name-cell">
+            <textarea
+              class="form-control form-control-sm working-name-input"
+              rows="1"
+              [(ngModel)]="file.workingBaseName"
+              (ngModelChange)="onWorkingNameChange(file)"
+              (input)="autoResize($event)"
+            ></textarea>
+          </td>
+
+          <!-- RIGHT: only shown when it actually differs -->
+          <td class="align-middle">
+            <ng-container *ngIf="file.needsNormalization">
+              {{ file.newFileName }}
+            </ng-container>
+          </td>
         </tr>
       </tbody>
     </table>
   </ng-container>
+
   <ng-template #noFiles>
     <p>No files require normalization.</p>
   </ng-template>
 </div>
+
 <div class="modal-footer">
   <button
     type="button"

@@ -17,6 +17,8 @@ export interface NormalizedFile {
   needsNormalization: boolean;
   status: string;
   exclude?: boolean;
+  // client-side only
+  workingBaseName?: string;
 }
 
 export interface RenameResult {
@@ -52,10 +54,10 @@ export class FileService {
   // 'http://localhost:8888/moviedb/server/'
   private readonly baseUrl = environment.apiBaseUrl;
 
-  private checkFilesUrl         = `${this.baseUrl}checkFileNamesToNormalize.php`;
-  private renameFilesUrl        = `${this.baseUrl}renameTheFilesToNormalize.php`;
-  private processFilesForDBUrl  = `${this.baseUrl}processFilesForDB.php`;
-  private updateRowUrl          = `${this.baseUrl}editCurrentRow.php`;
+  private checkFilesUrl = `${this.baseUrl}checkFileNamesToNormalize.php`;
+  private renameFilesUrl = `${this.baseUrl}renameTheFilesToNormalize.php`;
+  private processFilesForDBUrl = `${this.baseUrl}processFilesForDB.php`;
+  private updateRowUrl = `${this.baseUrl}editCurrentRow.php`;
   // private performDbOpsUrl    = `${this.baseUrl}performDatabaseOperations.php`;
 
   constructor(private http: HttpClient) {}
@@ -142,10 +144,6 @@ export class FileService {
     const payload = { id, updateFields };
     console.log('Sending to server:', payload);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post<any>(
-      this.updateRowUrl,
-      payload,
-      { headers }
-    );
+    return this.http.post<any>(this.updateRowUrl, payload, { headers });
   }
 }

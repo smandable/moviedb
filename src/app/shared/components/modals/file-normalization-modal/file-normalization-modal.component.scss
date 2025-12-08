@@ -1,0 +1,48 @@
+:host {
+  .normalize-table {
+    width: 100%;
+    table-layout: fixed; // let widths come from col/percentages
+  }
+
+  // Small checkbox column
+  .normalize-table col.col-check {
+    width: 40px;
+  }
+
+  // Split remaining width between Working Name and New Filename
+  .normalize-table col.col-working,
+  .normalize-table col.col-new {
+    width: calc((100% - 40px) / 2);
+  }
+
+  .working-name-cell {
+    padding: 0.25rem 0.5rem;
+    vertical-align: middle;
+  }
+
+  .working-name-input {
+    width: 100%;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    resize: none; // no manual resize handles
+    overflow: hidden; // hide scrollbars
+    line-height: 1.3;
+    font-size: inherit;
+  }
+
+  .working-name-input:focus {
+    outline: 1px solid #0d6efd;
+    border-radius: 2px;
+    background-color: #fff;
+    box-shadow: none;
+  }
+
+  /* checkbox alignment we had before */
+  td.align-middle input[type="checkbox"] {
+    margin: 0;
+    vertical-align: middle;
+  }
+}

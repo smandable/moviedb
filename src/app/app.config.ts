@@ -7,7 +7,7 @@ import { HttpClient }             from '@angular/common/http';
 import { ApplicationConfig }      from '@angular/core';
 import { importProvidersFrom }    from '@angular/core';
 import { BrowserModule }          from '@angular/platform-browser';
-import { provideClientHydration } from '@angular/platform-browser';
+// import { provideClientHydration } from '@angular/platform-browser';
 import { provideAnimations }      from '@angular/platform-browser/animations';
 import { provideRouter }          from '@angular/router';
 import { withInMemoryScrolling }  from '@angular/router';
@@ -79,6 +79,6 @@ export const appConfig : ApplicationConfig = {
 
     provideHttpClient(withFetch(), withInterceptorsFromDi()),
     provideAnimations(),
-    provideClientHydration(),
+    // provideClientHydration(),
   ]
 };

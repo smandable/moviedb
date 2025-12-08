@@ -246,7 +246,7 @@ function checkDatabaseForTitle(
                 $hasMissingMeta = false;
                 if ((empty($row['dimensions']) || strtolower($row['dimensions']) === '0 x 0')
                     || (empty($row['duration']) || $row['duration'] == 0)
-                    || (empty($row['filesize']) || $row['filesize'] == 0) 
+                    || (empty($row['filesize']) || $row['filesize'] == 0)
                 ) {
                     $hasMissingMeta = true;
                 }
