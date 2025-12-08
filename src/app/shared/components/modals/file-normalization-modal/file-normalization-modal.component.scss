@@ -3,7 +3,9 @@
     width: 100%;
     table-layout: fixed; // let widths come from col/percentages
   }
-
+  .modal-header {
+    background-color: silver;
+  }
   // Small checkbox column
   .normalize-table col.col-check {
     width: 40px;
@@ -25,7 +27,7 @@
     background-color: transparent;
     border: none;
     box-shadow: none;
-    padding: .5rem 0 0;
+    padding: 0.5rem 0 0;
     margin: 0;
     resize: none; // no manual resize handles
     overflow: hidden; // hide scrollbars

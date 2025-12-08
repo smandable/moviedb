@@ -1,26 +1,57 @@
 /* Align styles with the home component */
 .ag-theme-alpine {
-    height: 100%;
-    width: 100%;
+  height: 100%;
+  width: 100%;
+}
+
+.input-group input {
+  border-radius: 0.25rem;
+}
+.form-label {
+  color: #fff;
+}
+.directory-field {
+  button {
+    white-space: nowrap;
   }
-  
-  .input-group input {
-    border-radius: 0.25rem;
-  }
-  .form-label {
-    color: #fff;
-  }
-  .directory-field {
-    button {
-        white-space: nowrap;
-    }
-  }
-  .ag-row {
-    font-size: 14px; // Adjust font size if needed
-    line-height: 1.5; // Ensure adequate spacing
-  }
-  .total-items-container {
-    font-size: 1rem;
-    gap: 1rem; /* Space between sections */
-    flex-wrap: wrap; /* Ensures it wraps on smaller screens */
-  }
+}
+.ag-row {
+  font-size: 14px; // Adjust font size if needed
+  line-height: 1.5; // Ensure adequate spacing
+}
+.total-items-container {
+  font-size: 1rem;
+  gap: 1rem; /* Space between sections */
+  flex-wrap: wrap; /* Ensures it wraps on smaller screens */
+}
+
+:host ::ng-deep .ag-cell[col-id="title"] {
+  padding-right: 0.5rem !important; // ≈ 8px
+}
+
+:host ::ng-deep .title-cell-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+:host ::ng-deep .title-cell-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host ::ng-deep .copy-title-icon {
+  flex-shrink: 0;
+  margin-left: 0.5rem; // space between text and icon
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 0.9rem;
+  transition: color 0.15s ease-in-out;
+}
+
+:host ::ng-deep .copy-title-icon.copied {
+  color: #2196f3;
+}

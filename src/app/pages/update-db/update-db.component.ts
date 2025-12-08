@@ -65,7 +65,61 @@ export class UpdateDbComponent implements OnInit {
     },
 
     columnDefs: [
-      { field: 'title', headerName: 'Title', width: 300, editable: true },
+      {
+        field: 'title',
+        headerName: 'Title',
+        width: 300,
+        editable: true,
+        cellRenderer: (params: ICellRendererParams) => {
+          const container = document.createElement('div');
+          container.classList.add('title-cell-container');
+
+          // Text span
+          const textSpan = document.createElement('span');
+          textSpan.classList.add('title-cell-text');
+          textSpan.innerText = params.value ?? '';
+          container.appendChild(textSpan);
+
+          // Copy icon
+          const icon = document.createElement('i');
+          icon.classList.add('fa-regular', 'fa-copy', 'copy-title-icon');
+
+          // If this row was copied before, keep it blue
+          if (params.data?.titleCopied) {
+            icon.classList.add('copied');
+          }
+
+          icon.addEventListener('click', (event) => {
+            event.stopPropagation();
+
+            const rawTitle: string = params.data?.title || '';
+            // Strip trailing " # 07" etc.
+            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?$/);
+            const baseTitle = match ? match[1] : rawTitle;
+
+            if (!navigator.clipboard) {
+              console.warn('Clipboard API not available');
+              return;
+            }
+
+            navigator.clipboard
+              .writeText(baseTitle)
+              .then(() => {
+                // Mark this row as copied so it stays blue
+                params.data.titleCopied = true;
+                icon.classList.add('copied');
+                // IMPORTANT: no setTimeout, no clearing others
+              })
+              .catch((err) => {
+                console.error('Failed to copy title:', err);
+              });
+          });
+
+          container.appendChild(icon);
+
+          return container;
+        },
+      },
       { field: 'titleDimensions', headerName: 'Dimensions', width: 150 },
       {
         field: 'titleDuration',
@@ -386,67 +440,3 @@ export class UpdateDbComponent implements OnInit {
     }
   }
 }
-
-/**
- * Component for the modal content.
- * Displays original and new filenames, and provides action buttons.
- */
-// @Component({
-//   selector: 'files-modal-content',
-//   template: `
-//     <div class="modal-header">
-//       <h5 class="modal-title">Files to Normalize</h5>
-//       <button
-//         type="button"
-//         class="btn-close"
-//         aria-label="Close"
-//         (click)="cancel()"
-//       ></button>
-//     </div>
-//     <div class="modal-body">
-//       <table class="table table-bordered table-striped">
-//         <thead>
-//           <tr>
-//             <th>Original Filename</th>
-//             <th>New Filename</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           <tr *ngFor="let file of files">
-//             <td>{{ file.originalFileName }}</td>
-//             <td>{{ file.newFileName }}</td>
-//           </tr>
-//         </tbody>
-//       </table>
-//     </div>
-//     <div class="modal-footer">
-//       <button type="button" class="btn btn-success" (click)="rename()">
-//         Rename Files
-//       </button>
-//       <button type="button" class="btn btn-secondary" (click)="cancel()">
-//         Cancel
-//       </button>
-//     </div>
-//   `,
-// })
-
-// export class FilesModalContent {
-//   public files: NormalizedFile[] = [];
-//   public directory: string = '';
-
-//   constructor(private modalRef: NgbModalRef) {}
-
-//   /**
-//    * Handles the Rename button click.
-//    */
-//   rename(): void {
-//     this.modalRef.close('rename');
-//   }
-
-//   /**
-//    * Handles the Cancel button click.
-//    */
-//   cancel(): void {
-//     this.modalRef.dismiss('cancel');
-//   }
-// }
