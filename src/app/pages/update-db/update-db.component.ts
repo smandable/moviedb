@@ -55,7 +55,7 @@ export class UpdateDbComponent implements OnInit {
     },
     context: { componentParent: this },
     getRowId: (params) => `${params.data.title}`,
-    rowHeight: 35,
+    rowHeight: 36,
 
     defaultColDef: {
       width: 155,
@@ -160,6 +160,34 @@ export class UpdateDbComponent implements OnInit {
         },
       },
       {
+        headerName: 'Date Created',
+        field: 'dateCreatedInDB',
+        width: 180,
+        valueGetter: (params: any) => {
+          const { duplicate, dateCreatedInDB } = params.data || {};
+          if (!duplicate || !dateCreatedInDB) {
+            return '';
+          }
+          // Guard against weird/empty dates from the DB
+          if (
+            dateCreatedInDB === '0000-00-00 00:00:00' ||
+            dateCreatedInDB === '0000-00-00'
+          ) {
+            return '';
+          }
+
+          // dateCreatedInDB is probably "YYYY-MM-DD HH:MM:SS"
+          const d = new Date(dateCreatedInDB);
+          if (isNaN(d.getTime())) {
+            // If parsing fails, just return the raw string
+            return dateCreatedInDB;
+          }
+
+          // You can tweak this to show time if you want
+          return d.toLocaleDateString();
+        },
+      },
+      {
         field: 'isLarger',
         headerName: 'Larger',
         cellRenderer: (params: ICellRendererParams) => {
@@ -178,7 +206,7 @@ export class UpdateDbComponent implements OnInit {
           if (needsUpdate) {
             const button = document.createElement('button');
             button.innerText = 'Update DB';
-            button.classList.add('btn', 'btn-primary', 'btn-sm');
+            button.classList.add('btn', 'btn-primary', 'btn-sm', 'larger-btn');
             button.addEventListener('click', () => {
               params.context.componentParent.updateDB(params.data);
             });
@@ -222,6 +250,7 @@ export class UpdateDbComponent implements OnInit {
       alert('Please enter a valid directory path.');
       return;
     }
+    this.showDatabaseOperationsButton = false;
 
     this.isLoading = true;
 
@@ -280,7 +309,7 @@ export class UpdateDbComponent implements OnInit {
   openFilesModal(files: NormalizedFile[]): void {
     const modalRef: NgbModalRef = this.modalService.open(
       FileNormalizationModalComponent,
-      { size: 'xl' }
+      { size: 'xl', scrollable: true }
     );
     modalRef.componentInstance.files = files;
     modalRef.componentInstance.directory = this.directory;
@@ -298,7 +327,6 @@ export class UpdateDbComponent implements OnInit {
         }
         // Set the button visibility after modal closes successfully
         this.showDatabaseOperationsButton = true;
-        // Handle other modal results if needed
       },
       (reason) => {
         // Handle dismissal if needed

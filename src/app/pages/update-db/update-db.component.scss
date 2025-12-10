@@ -25,6 +25,9 @@
   flex-wrap: wrap; /* Ensures it wraps on smaller screens */
 }
 
+:host ::ng-deep .ag-cell {
+  line-height: 2rem;
+}
 :host ::ng-deep .ag-cell[col-id="title"] {
   padding-right: 0.5rem !important; // ≈ 8px
 }
@@ -54,4 +57,15 @@
 
 :host ::ng-deep .copy-title-icon.copied {
   color: #2196f3;
+}
+
+// Clamp modal height, just in case
+:host ::ng-deep .modal-dialog-scrollable {
+  max-height: 80vh;
+}
+:host ::ng-deep .larger-btn {
+  line-height: 14px;
+  margin-top: -0.25rem;
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
 }
