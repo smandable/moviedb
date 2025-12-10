@@ -58,7 +58,14 @@ export class HomeComponent implements OnInit {
   public rowData: Movie[] = [];
   public totalItems: number = 0; // Holds the total count
 
-  // Reference to the AG Grid API
+  // Track which row’s title is currently “copied” (for icon highlight)
+  public mainCopiedId: number | null = null;
+
+  private mainCopyResetTimeout: any = null;
+
+  // Track whether the Title filter actually has text
+  public isTitleFilterActive: boolean = false;
+
   private gridApi!: ClientSideGridApi<Movie>;
   private columnApi: any;
 
@@ -94,7 +101,6 @@ export class HomeComponent implements OnInit {
             (filterInstance: IFilterComp | null) => {
               if (filterInstance) {
                 let model = filterInstance.getModel() as any;
-                console.log('filterInstance.getModel(): ', model);
 
                 if (!model) {
                   // No existing model, create one with condition1 and condition2
@@ -109,10 +115,6 @@ export class HomeComponent implements OnInit {
                     !model.condition2 ||
                     model.condition2.type === 'startsWith'
                   ) {
-                    console.log(
-                      'model.condition2.type: ',
-                      model.condition2?.type
-                    );
                     model.operator = 'AND';
                     model.condition2 = { type: 'contains', filter: '' }; // Empty filter
                   }
@@ -152,43 +154,55 @@ export class HomeComponent implements OnInit {
         state: [{ colId: 'date_created', sort: 'desc', sortIndex: 0 }],
         defaultState: { sort: null },
       });
-
-      console.log('Initial sort applied: date_created desc');
     },
 
     onFilterChanged: (params) => {
       const anyFilter = this.gridApi.isAnyFilterPresent();
-      console.log('Filter changed -> isAnyFilterPresent?', anyFilter);
 
       // Check the entire filter model
-      const currentFilterModel = this.gridApi.getFilterModel?.();
-      console.log('Current filter model:', currentFilterModel);
+      const currentFilterModel: any = this.gridApi.getFilterModel?.() || {};
+
+      // Detect if the Title filter actually has text
+      const titleFilter = currentFilterModel['title'];
+      let titleFilterActive = false;
+
+      if (titleFilter) {
+        // Combined model (operator / condition1 / condition2)
+        if (titleFilter.operator) {
+          titleFilterActive =
+            !!titleFilter.condition1?.filter ||
+            !!titleFilter.condition2?.filter;
+        } else {
+          // Simple text filter
+          titleFilterActive = !!titleFilter.filter;
+        }
+      }
+
+      this.isTitleFilterActive = titleFilterActive;
+
+      // If the title filter is cleared, clear the “copied” highlight
+      if (!titleFilterActive) {
+        this.mainCopiedId = null;
+      }
+
+      // Refresh the Title column so icons show/hide / recolor
+      this.gridApi.refreshCells({
+        columns: ['title'],
+        force: true,
+      });
 
       if (anyFilter) {
-        console.log('Applying sort: title ascending');
         // Apply sort by 'title' ascending
         (this.gridApi as any).applyColumnState({
           state: [{ colId: 'title', sort: 'asc', sortIndex: 0 }],
           defaultState: { sort: null },
         });
-
-        // Log the new column state
-        const columnState = this.gridApi.getColumnState();
-        console.log('Column state after sorting by title asc:', columnState);
       } else {
-        console.log('Applying sort: date_created descending');
         // Apply sort by 'date_created' descending
         (this.gridApi as any).applyColumnState({
           state: [{ colId: 'date_created', sort: 'desc', sortIndex: 0 }],
           defaultState: { sort: null },
         });
-
-        // Log the new column state
-        const columnState = this.gridApi.getColumnState();
-        console.log(
-          'Column state after sorting by date_created desc:',
-          columnState
-        );
       }
     },
 
@@ -225,6 +239,72 @@ export class HomeComponent implements OnInit {
         const bStr = (b ?? '').toString();
         // Case-insensitive + natural numeric sort
         return this.ciCollator.compare(aStr, bStr);
+      },
+
+      // ---- NEW: text + copy icon renderer ----
+      cellRenderer: (params: ICellRendererParams<Movie>) => {
+        const container = document.createElement('div');
+        container.classList.add('home-title-cell-container');
+
+        const textSpan = document.createElement('span');
+        textSpan.classList.add('home-title-text');
+        textSpan.innerText = params.value ?? '';
+
+        const icon = document.createElement('i');
+        icon.classList.add('fa-regular', 'fa-copy', 'home-title-copy-icon');
+
+        // Reference back to component
+        const comp = this as HomeComponent;
+
+        // Only show the icon when the Title filter has some text
+        if (!comp.isTitleFilterActive) {
+          icon.style.display = 'none';
+        }
+
+        // Highlight the icon if this row is the “last copied”
+        if (comp.mainCopiedId === params.data?.id) {
+          icon.classList.add('active');
+        }
+
+        icon.addEventListener('click', (event) => {
+          event.stopPropagation();
+
+          const rawTitle: string = params.data?.title || '';
+
+          // Strip trailing " # 07" etc when copying
+          const copyValue = rawTitle.replace(/\s+#\s+\d+$/, '');
+
+          navigator.clipboard
+            .writeText(copyValue)
+            .catch((err) => console.error('Clipboard error:', err));
+
+          // Mark this row as the one with the “blue” icon
+          comp.mainCopiedId = params.data?.id ?? null;
+
+          // Re-render the Title column so icons recolor correctly
+          comp.gridApi.refreshCells({
+            columns: ['title'],
+            force: true,
+          });
+
+          // 🔵 Auto-reset highlight after 3 seconds of no clicks
+          if (comp.mainCopyResetTimeout) {
+            clearTimeout(comp.mainCopyResetTimeout);
+          }
+
+          comp.mainCopyResetTimeout = setTimeout(() => {
+            comp.mainCopiedId = null;
+            comp.gridApi.refreshCells({
+              columns: ['title'],
+              force: true,
+            });
+          }, 3000);
+        });
+
+        container.appendChild(textSpan);
+        container.appendChild(icon);
+
+        return container;
       },
     },
 
@@ -305,7 +385,6 @@ export class HomeComponent implements OnInit {
   loadMovies(): void {
     this.movieService.getAllMovies().subscribe({
       next: (movies: Movie[]) => {
-        // console.log('Movies loaded:', movies);
         this.rowData = movies.map((movie) => ({
           ...movie,
           titleSize:
@@ -321,8 +400,6 @@ export class HomeComponent implements OnInit {
 
         // Trigger change detection to update the view
         this.cdr.detectChanges();
-
-        // Removed the setSortModel call here
       },
       error: (error) => {
         console.error('Failed to load movies:', error);
@@ -341,13 +418,9 @@ export class HomeComponent implements OnInit {
 
     this.movieService.deleteRow(movie.id).subscribe({
       next: (response) => {
-        console.log('Delete success:', response);
-
         // Remove the movie from the rowData array
         this.rowData = this.rowData.filter((m) => m.id !== movie.id);
         this.totalItems--;
-
-        console.log('New totalItems:', this.totalItems);
 
         // Trigger change detection to update the view
         this.cdr.detectChanges();
@@ -379,9 +452,7 @@ export class HomeComponent implements OnInit {
     // Send the update request to the backend
     this.movieService.updateRow(id, columnToUpdate, valueToUpdate).subscribe({
       next: (response) => {
-        if (response.success) {
-          console.log('Update successful:', response.message);
-        } else {
+        if (!response.success) {
           console.error('Update failed:', response.error);
         }
       },

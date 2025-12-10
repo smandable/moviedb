@@ -1,13 +1,32 @@
-// @import "~ag-grid-community/styles/ag-grid.css";
-//@import '~ag-grid-community/styles/ag-theme-alpine.css';
+.ag-header-cell:last-child {
+  border-right: none; /* Remove the right border */
+}
 
-// .ag-cell {
-//     border: 1px solid #ccc; /* Light gray border */
-//   }
-  
-//   .ag-header-cell {
-//     border: 1px solid #ccc; /* Same border for header cells */
-//   }
-  .ag-header-cell:last-child {
-    border-right: none; /* Remove the right border */
-  }
+:host ::ng-deep .home-title-cell-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; // text on left, icon on right
+  gap: 0.5rem;
+}
+
+:host ::ng-deep .home-title-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Base icon: white, clickable */
+:host ::ng-deep .home-title-copy-icon {
+  flex: 0 0 auto;
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: #fff;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+/* Active (just clicked) icon: blue */
+:host ::ng-deep .home-title-copy-icon.active {
+  color: #2196f3;
+}
