@@ -38,7 +38,7 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
   ],
 })
 export class UpdateDbComponent implements OnInit {
-  public directory: string = '/Volumes/Recorded 3/fixed/'; // Default value
+  public directory: string = '/Volumes/Recorded 4/fixed/'; // Default value
   public totalItems: number = 0;
   public newItemsCount: number = 0;
   public duplicateItemsCount: number = 0;
