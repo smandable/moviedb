@@ -57,7 +57,50 @@ foreach ($files as $file) {
         continue;
     }
 
-    // Attempt to rename the file (this will fix the case on macOS)
+    // Attempt to rename the file
+    if ($isCaseOnlyChange && $originalPath !== $newPath) {
+        // Two-step rename to force case change on case-insensitive filesystems (macOS)
+        $tempPath = $originalPath . '.__tmp__' . uniqid('', true);
+
+        // Ensure temp doesn't exist (very unlikely, but safe)
+        while (file_exists($tempPath)) {
+            $tempPath = $originalPath . '.__tmp__' . uniqid('', true);
+        }
+
+        // Step 1: original -> temp
+        if (!rename($originalPath, $tempPath)) {
+            $results[] = [
+                'originalFileName' => $file['originalFileName'],
+                'newFileName'      => $file['newFileName'],
+                'status'           => 'Failed to rename (temp step)',
+            ];
+            continue;
+        }
+
+        clearstatcache(true);
+
+        // Step 2: temp -> new (correct casing)
+        if (!rename($tempPath, $newPath)) {
+            // Best-effort rollback
+            @rename($tempPath, $originalPath);
+
+            $results[] = [
+                'originalFileName' => $file['originalFileName'],
+                'newFileName'      => $file['newFileName'],
+                'status'           => 'Failed to rename (final step)',
+            ];
+            continue;
+        }
+
+        $results[] = [
+            'originalFileName' => $file['originalFileName'],
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'Renamed successfully',
+        ];
+        continue;
+    }
+
+    // Non-case-only renames (or identical path) can use normal rename
     if (rename($originalPath, $newPath)) {
         $results[] = [
             'originalFileName' => $file['originalFileName'],

@@ -73,7 +73,7 @@
     type="button"
     class="btn btn-success"
     (click)="renameFiles()"
-    [disabled]="files.length === 0"
+    [disabled]="files.length === 0 || !hasFilesToRename"
   >
     Rename Files
   </button>

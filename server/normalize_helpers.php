@@ -44,7 +44,7 @@ if (!function_exists('basicFunctions')) {
 }
 
 if (!function_exists('titleCase')) {
-    function titleCase(string $fileName): string
+    function titleCase(string $fileName, bool $respectUserCasing = false): string
     {
         $delimiters = [' '];
 
@@ -107,15 +107,22 @@ if (!function_exists('titleCase')) {
                     continue;
                 }
 
-                // 3) If the word is NOT all-lowercase, assume user chose the case
+                // 3) If the word is NOT all-lowercase and NOT a "small word", assume user chose the case
                 if (!$isAllLower) {
-                    $words[$i] = $original;
-                    continue;
+                    if ($respectUserCasing || !in_array($lower, $lowercaseExceptions, true)) {
+                        $words[$i] = $original;
+                        continue;
+                    }
                 }
 
                 // 4) Small words: lowercase (unless first or after "-")
                 $prevWord = $words[$i - 1] ?? null;
-                if ($i > 0 && in_array($lower, $lowercaseExceptions, true) && $prevWord !== '-') {
+                if (
+                    !$respectUserCasing &&
+                    $i > 0 &&
+                    in_array($lower, $lowercaseExceptions, true) &&
+                    $prevWord !== '-'
+                ) {
                     $words[$i] = $lower;
                     continue;
                 }

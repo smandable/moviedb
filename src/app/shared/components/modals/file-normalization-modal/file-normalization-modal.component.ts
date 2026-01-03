@@ -15,6 +15,7 @@ export interface NormalizedFile {
 
   // client-side only
   workingBaseName?: string;
+  userEdited?: boolean;
 }
 
 @Component({
@@ -36,6 +37,7 @@ export class FileNormalizationModalComponent {
   ngOnInit(): void {
     this.files.forEach((f) => {
       f.exclude = false;
+      f.userEdited = false;
 
       // Show the *actual* on-disk name (without extension) in the left input
       f.workingBaseName = this.stripExtension(f.originalFileName);
@@ -60,22 +62,28 @@ export class FileNormalizationModalComponent {
    */
 
   onWorkingNameChange(file: NormalizedFile): void {
+    file.userEdited = true;
     this.recomputePreview(file);
   }
   private recomputePreview(file: NormalizedFile): void {
-    const base = file.workingBaseName ?? '';
-    const normalizedBase = this.normalizeBaseName(base);
+    const originalBase = this.stripExtension(file.originalFileName);
+    const workingBase = (file.workingBaseName ?? originalBase).trim();
 
-    // If the normalized name is identical to the working name,
-    // then there is nothing to do – hide the right-hand side.
-    if (!base || normalizedBase === base) {
+    // Always compute the TARGET base name from the working text.
+    // If user edited, we respect their casing choices.
+    const targetBase = this.normalizeBaseName(workingBase, !!file.userEdited);
+
+    const targetFull = file.fileExtension
+      ? `${targetBase}.${file.fileExtension}`
+      : targetBase;
+
+    // Only “no work to do” if the TARGET full name equals the ORIGINAL full name
+    if (!targetBase || targetFull === file.originalFileName) {
       file.needsNormalization = false;
       file.newFileName = '';
     } else {
       file.needsNormalization = true;
-      file.newFileName = file.fileExtension
-        ? `${normalizedBase}.${file.fileExtension}`
-        : normalizedBase;
+      file.newFileName = targetFull;
     }
   }
   /**
@@ -118,18 +126,21 @@ export class FileNormalizationModalComponent {
     return lastDot > 0 ? name.slice(0, lastDot) : name;
   }
 
-  private buildNewFileName(file: NormalizedFile): string {
-    const base = file.workingBaseName ?? '';
-    const normalizedBase = this.normalizeBaseName(base);
-    return file.fileExtension
-      ? `${normalizedBase}.${file.fileExtension}`
-      : normalizedBase;
-  }
+ private buildNewFileName(file: NormalizedFile): string {
+  const base = file.workingBaseName ?? '';
+  const normalizedBase = this.normalizeBaseName(base, !!file.userEdited);
+  return file.fileExtension
+    ? `${normalizedBase}.${file.fileExtension}`
+    : normalizedBase;
+}
 
-  private normalizeBaseName(fileName: string): string {
+  private normalizeBaseName(
+    fileName: string,
+    respectUserCasing = false
+  ): string {
     let name = fileName ?? '';
     name = this.basicFunctions(name);
-    name = this.titleCase(name);
+    name = this.titleCase(name, respectUserCasing);
     name = this.cleanupFunctions(name);
     name = this.sceneNormalization(name);
     name = this.finalCleanup(name);
@@ -169,7 +180,7 @@ export class FileNormalizationModalComponent {
     return name.trim();
   }
 
-  private titleCase(fileName: string): string {
+  private titleCase(fileName: string, respectUserCasing = false): string {
     const delimiters = [' '];
 
     const lowercaseExceptions = [
@@ -228,21 +239,30 @@ export class FileNormalizationModalComponent {
           continue;
         }
 
-        // 3) If the word is NOT all-lowercase, assume user chose the case.
-        //    e.g. "POV", "All-Stars", "LaBeau" — leave as-is.
+        // 3) Preserve user casing for non-lower words:
+        //    - If respectUserCasing = true  → keep ANY non-all-lower as typed (including small words)
+        //    - If respectUserCasing = false → keep only non-small words as typed
         if (!isAllLower) {
-          words[i] = original;
-          continue;
+          if (respectUserCasing || !lowercaseExceptions.includes(lower)) {
+            words[i] = original;
+            continue;
+          }
         }
 
-        // 4) Small words: lowercase (unless first or after "-")
+        // 4) Small words: lowercase (unless first or after "-"),
+        //    but only in *auto* mode (not when respecting user casing)
         const prevWord = words[i - 1];
-        if (i > 0 && lowercaseExceptions.includes(lower) && prevWord !== '-') {
+        if (
+          !respectUserCasing &&
+          i > 0 &&
+          lowercaseExceptions.includes(lower) &&
+          prevWord !== '-'
+        ) {
           words[i] = lower;
           continue;
         }
 
-        // 5) Normal Title Case for all-lower words
+        // 5) Otherwise, normal Title Case
         words[i] = lower.charAt(0).toUpperCase() + lower.slice(1);
       }
 
