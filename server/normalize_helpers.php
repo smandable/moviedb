@@ -28,7 +28,7 @@ if (!function_exists('basicFunctions')) {
         $SCENE_MARKER = 'SCENETEMPXXMARKER';
         $name = preg_replace('/scene_/i', $SCENE_MARKER, $name);
         $name = preg_replace('/_/', ' ', $name);
-        $name = preg_replace('/' . $SCENE_MARKER . '/', 'Scene_', $name);
+        $name = str_replace($SCENE_MARKER, 'Scene_', $name);
 
         // Triple spaces → " - "
         $name = preg_replace('/\s{3}/', ' - ', $name);
