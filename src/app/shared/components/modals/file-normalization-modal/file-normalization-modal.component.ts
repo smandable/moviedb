@@ -51,8 +51,8 @@ export class FileNormalizationModalComponent {
       (a.newFileName || a.workingBaseName || '').localeCompare(
         b.newFileName || b.workingBaseName || '',
         undefined,
-        { sensitivity: 'base' }
-      )
+        { sensitivity: 'base' },
+      ),
     );
   }
 
@@ -104,7 +104,7 @@ export class FileNormalizationModalComponent {
       (file) =>
         !file.exclude &&
         !!file.newFileName &&
-        file.newFileName !== file.originalFileName
+        file.newFileName !== file.originalFileName,
     );
 
     this.renameFilesEvent.emit(filesToRename);
@@ -126,17 +126,17 @@ export class FileNormalizationModalComponent {
     return lastDot > 0 ? name.slice(0, lastDot) : name;
   }
 
- private buildNewFileName(file: NormalizedFile): string {
-  const base = file.workingBaseName ?? '';
-  const normalizedBase = this.normalizeBaseName(base, !!file.userEdited);
-  return file.fileExtension
-    ? `${normalizedBase}.${file.fileExtension}`
-    : normalizedBase;
-}
+  private buildNewFileName(file: NormalizedFile): string {
+    const base = file.workingBaseName ?? '';
+    const normalizedBase = this.normalizeBaseName(base, !!file.userEdited);
+    return file.fileExtension
+      ? `${normalizedBase}.${file.fileExtension}`
+      : normalizedBase;
+  }
 
   private normalizeBaseName(
     fileName: string,
-    respectUserCasing = false
+    respectUserCasing = false,
   ): string {
     let name = fileName ?? '';
     name = this.basicFunctions(name);
@@ -154,7 +154,7 @@ export class FileNormalizationModalComponent {
     const SCENE_MARKER = 'SCENETEMPXXMARKER';
 
     // Preserve "Scene_" by marking it first
-    name = name.replace(/Scene_/g, SCENE_MARKER);
+    name = name.replace(/scene_/gi, SCENE_MARKER);
 
     // Periods, brackets, underscores → spaces
     name = name.replace(/\./g, ' ');
@@ -323,7 +323,7 @@ export class FileNormalizationModalComponent {
         }
         const padded = num.length === 1 ? '0' + num : num;
         return `# ${padded}`;
-      }
+      },
     );
 
     // Trailing numbers at the end
@@ -340,7 +340,7 @@ export class FileNormalizationModalComponent {
 
         const padded = num.length === 1 ? '0' + num : num;
         return `# ${padded}`;
-      }
+      },
     );
 
     // Ensure no redundant "# #"

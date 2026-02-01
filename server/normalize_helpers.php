@@ -24,8 +24,11 @@ if (!function_exists('basicFunctions')) {
         $name = preg_replace('/\./', ' ', $name);
         $name = preg_replace('/\[|\]/', ' ', $name);
 
-        // Underscores → spaces, EXCEPT in "Scene_"
-        $name = preg_replace('/(?<!Scene)_/', ' ', $name);
+        // Underscores → spaces, but preserve any case of "scene_"
+        $SCENE_MARKER = 'SCENETEMPXXMARKER';
+        $name = preg_replace('/scene_/i', $SCENE_MARKER, $name);
+        $name = preg_replace('/_/', ' ', $name);
+        $name = preg_replace('/' . $SCENE_MARKER . '/', 'Scene_', $name);
 
         // Triple spaces → " - "
         $name = preg_replace('/\s{3}/', ' - ', $name);
