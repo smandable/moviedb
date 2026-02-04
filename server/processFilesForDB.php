@@ -141,8 +141,21 @@ foreach ($titlesArray as &$titleItem) {
 unset($titleItem); // break reference
 
 // Perform rename operations after database checks
-// renameFilesMissing01($titlesMissing01Array);
-// renameDuplicateFilesMissing01($duplicateTitlesMissing01Array);
+$pathMap = renameSessionFilesAddMissing01(
+    $titlesMissing01Array,
+    $duplicateTitlesMissing01Array,
+    $sessionFiles
+);
+
+// Update the titlePath in titlesArray so the UI points at the renamed file
+if (!empty($pathMap)) {
+    foreach ($titlesArray as &$t) {
+        if (!empty($t['titlePath']) && isset($pathMap[$t['titlePath']])) {
+            $t['titlePath'] = $pathMap[$t['titlePath']];
+        }
+    }
+    unset($t);
+}
 
 // Conditionally perform renaming or updating based on the flag
 if (!$updateMissingDataOnly) {
@@ -215,55 +228,76 @@ function checkDatabaseForTitle(
     // Ensure required keys exist
     $titleItem['fileDimensions'] = $titleItem['fileDimensions'] ?? '';
     $titleItem['titleDuration'] = $titleItem['titleDuration'] ?? 0;
+    $titleItem['titleSize']      = $titleItem['titleSize'] ?? 0;
     $title = $titleItem['title'];
+
+    // These are used later (isLarger + missing-meta updates)
+    $titleSize      = (int)$titleItem['titleSize'];
+    $fileDimensions = (string)$titleItem['fileDimensions'];
+    $fileDuration   = (int)$titleItem['titleDuration'];
 
     // --- UI helper flags: show "external search" icon when DB numbering mismatches this file title ---
     // IMPORTANT: compute these based on the *incoming* file title, before any handleNumberedTitle()/handleMissingNumberedTitle()
     // logic mutates the title or updates DB rows.
+
+
+    // --- UI helper flags (based on incoming filename/title) ---
     $sourceTitle = $titleItem['title'];
+    $titleItem['sourceTitle'] = $sourceTitle;
+
     [$baseTitleStrict, $titleHasNumberStrict] = splitBaseTitleAndHasNumberStrict($sourceTitle);
-    $presence = getDbNumberingPresenceCached($db, $table, $baseTitleStrict);
+
+    // NOTE: non-cached so later rows see DB changes made earlier in the same request
+    $presence = getDbNumberingPresence($db, $table, $baseTitleStrict);
 
     $titleItem['baseTitle'] = $baseTitleStrict;
     $titleItem['titleHasNumber'] = $titleHasNumberStrict;
     $titleItem['dbHasUnnumberedVariant'] = $presence['dbHasUnnumberedVariant'];
     $titleItem['dbHasNumberedVariant'] = $presence['dbHasNumberedVariant'];
 
-    // Show icon when:
-    // 1) this file has NO number but DB has numbered variants, OR
-    // 2) this file HAS a number but DB has an unnumbered variant
-
     $dbHasOtherNumberedVariant = false;
 
     if ($titleHasNumberStrict) {
-        $stmt = $db->prepare("
-    SELECT 1
-    FROM `$table`
-    WHERE title LIKE CONCAT(?, ' # %')
-      AND title <> ?
-    LIMIT 1
-  ");
-        $stmt->bind_param('ss', $baseTitleStrict, $title);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        $dbHasOtherNumberedVariant = ($res && $res->num_rows > 0);
-        $stmt->close();
+        $likePrefix = $baseTitleStrict . ' # ';
+        if ($stmt = $db->prepare("
+        SELECT 1
+        FROM `$table`
+        WHERE title LIKE CONCAT(?, '%')
+          AND title <> ?
+        LIMIT 1
+    ")) {
+            // IMPORTANT: compare against the incoming title (sourceTitle), not $title which may later mutate
+            $stmt->bind_param('ss', $likePrefix, $sourceTitle);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $dbHasOtherNumberedVariant = ($res && $res->num_rows > 0);
+            $stmt->close();
+        }
     }
 
     $titleItem['dbHasOtherNumberedVariant'] = $dbHasOtherNumberedVariant;
+
     $titleItem['needsExternalSearch'] =
         (!$titleHasNumberStrict && $titleItem['dbHasNumberedVariant']) ||
         ($titleHasNumberStrict && $titleItem['dbHasUnnumberedVariant']) ||
         ($titleHasNumberStrict && $titleItem['dbHasOtherNumberedVariant']);
-    // ----------------------------------------------------------------------------------------------
 
-    $titleSize = $titleItem['titleSize'];
-    $fileDimensions = $titleItem['fileDimensions']; // Use default if missing
-    $fileDuration = $titleItem['titleDuration']; // Use default if missing
+    // If you OR'd with duplicate in Angular, keep it there.
+    // If you want it here instead, uncomment the next line:
+    // $titleItem['needsExternalSearch'] = $titleItem['needsExternalSearch'] || !empty($titleItem['duplicate']);
+    // -----------------------------------------------------------
 
-    // Process numbered or missing-numbered titles
-    $title = handleNumberedTitle($title, $db, $table);
-    $title = handleMissingNumberedTitle($title, $titleItem, $duplicateTitlesMissing01Array, $titlesMissing01Array, $db, $table);
+    // --- Normalize title for DB operations ---
+    $dbTitle = $sourceTitle;
+    $dbTitle = handleNumberedTitle($dbTitle, $db, $table);
+    $dbTitle = handleMissingNumberedTitle($dbTitle, $titleItem, $duplicateTitlesMissing01Array, $titlesMissing01Array, $db, $table);
+
+    $titleItem['dbTitle'] = $dbTitle;
+
+    // Preserve existing behavior (downstream code expects $title and titleItem['title'] to be the DB title)
+    $title = $dbTitle;
+    $titleItem['title'] = $title;
+
 
     // Check if title exists in DB
     if ($stmt = $db->prepare("SELECT id, date_created, dimensions, filesize, duration, filepath FROM `$table` WHERE title = ?")) {
@@ -495,17 +529,10 @@ function splitBaseTitleAndHasNumberStrict(string $title): array
  *  - the unnumbered variant: "Base Title"
  *  - any numbered variant:  "Base Title # NN"
  *
- * Uses a static cache so we only query once per baseTitle per request.
+ *  * Non-cached: queries live DB state each time so results reflect changes within the same run.
  */
-function getDbNumberingPresenceCached($db, string $table, string $baseTitle): array
+function getDbNumberingPresence($db, string $table, string $baseTitle): array
 {
-    static $cache = [];
-
-    $key = $table . '|' . $baseTitle;
-    if (isset($cache[$key])) {
-        return $cache[$key];
-    }
-
     $hasUnnumbered = false;
     $hasNumbered = false;
 
@@ -530,12 +557,10 @@ function getDbNumberingPresenceCached($db, string $table, string $baseTitle): ar
         $stmt->close();
     }
 
-    $cache[$key] = [
+    return [
         'dbHasUnnumberedVariant' => $hasUnnumbered,
         'dbHasNumberedVariant' => $hasNumbered,
     ];
-
-    return $cache[$key];
 }
 
 
@@ -641,6 +666,114 @@ function moveDuplicateFiles($path, $destination, $fileName)
         }
     }
 }
+
+/**
+ * Splits filename (no extension) into [baseTitle, suffix] while preserving suffix exactly.
+ * Examples:
+ *  "Title - Scene_1" => ["Title", " - Scene_1"]
+ *  "Title - CD1"     => ["Title", " - CD1"]
+ *  "Title - Bonus X" => ["Title", " - Bonus X"]
+ *  "Title"           => ["Title", ""]
+ */
+function splitBaseAndSuffixPreserve(string $nameNoExt): array
+{
+    $patterns = [
+        '/( - Scene.*)$/i',
+        '/( - CD.*)$/i',
+        '/( - Bonus.*)$/i',
+        '/( Bonus.*)$/i', // handles "Title Bonus..." if that ever exists
+    ];
+
+    foreach ($patterns as $p) {
+        if (preg_match($p, $nameNoExt, $m, PREG_OFFSET_CAPTURE)) {
+            $suffix = $m[1][0];
+            $base = substr($nameNoExt, 0, $m[1][1]);
+            return [trim($base), $suffix];
+        }
+    }
+
+    return [trim($nameNoExt), ''];
+}
+
+/**
+ * Rename files on disk by inserting " # 01" after the base title (before any suffix),
+ * for any base title found in $titlesMissing01Array or $duplicateTitlesMissing01Array.
+ *
+ * Updates $sessionFiles in-place so later duplicate-moving still works.
+ * Returns a map of oldPath => newPath so you can update titlesArray titlePath too.
+ */
+function renameSessionFilesAddMissing01(
+    array $titlesMissing01Array,
+    array $duplicateTitlesMissing01Array,
+    array &$sessionFiles
+): array {
+    // Build a set of base titles that should get " # 01"
+    $bases = [];
+
+    foreach ($titlesMissing01Array as $x) {
+        if (!empty($x['title'])) $bases[mb_strtolower(trim($x['title']))] = true;
+    }
+    foreach ($duplicateTitlesMissing01Array as $x) {
+        if (!empty($x['title'])) $bases[mb_strtolower(trim($x['title']))] = true;
+    }
+
+    if (!$bases) return [];
+
+    $pathMap = [];
+
+    foreach ($sessionFiles as &$file) {
+        if (empty($file['fileNameAndPath'])) continue;
+
+        $oldPath = $file['fileNameAndPath'];
+        $pi = pathinfo($oldPath);
+
+        $dir = $pi['dirname'] ?? '';
+        $ext = isset($pi['extension']) && $pi['extension'] !== '' ? ('.' . $pi['extension']) : '';
+        $nameNoExt = $pi['filename'] ?? '';
+
+        if ($dir === '' || $nameNoExt === '') continue;
+
+        // Preserve suffix and find base
+        [$base, $suffix] = splitBaseAndSuffixPreserve($nameNoExt);
+
+        // Skip already-numbered (strict valid form)
+        if (preg_match('/\s+#\s+\d+$/', $base)) continue;
+
+        // Guard: if someone had invalid "#01" (no space), don’t make it worse—skip + log
+        if (preg_match('/#\d+$/', $base)) {
+            error_log("Skipping rename (invalid # format): {$oldPath}");
+            continue;
+        }
+
+        // Only rename if this base is one of the "missing #01" bases
+        if (!isset($bases[mb_strtolower($base)])) continue;
+
+        $newNameNoExt = $base . ' # 01' . $suffix;
+        $newPath = $dir . '/' . $newNameNoExt . $ext;
+
+        if ($newPath === $oldPath) continue;
+
+        if (file_exists($newPath)) {
+            error_log("Rename skipped (target exists): {$newPath}");
+            continue;
+        }
+
+        if (@rename($oldPath, $newPath)) {
+            $pathMap[$oldPath] = $newPath;
+
+            // Update sessionFiles so downstream duplicate moving works
+            $file['fileNameNoExtension'] = $newNameNoExt;
+            $file['fileNameAndPath'] = $newPath;
+        } else {
+            $err = error_get_last();
+            error_log("Rename failed: {$oldPath} => {$newPath} | " . ($err['message'] ?? 'unknown error'));
+        }
+    }
+    unset($file);
+
+    return $pathMap;
+}
+
 
 function returnHTML($titlesArray)
 {
