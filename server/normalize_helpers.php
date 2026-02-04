@@ -212,7 +212,18 @@ if (!function_exists('cleanupFunctions')) {
             },
             $name
         );
-
+        // Numbers before a parenthetical suffix:
+        $name = preg_replace_callback(
+            '/(?<!# )(?<!Scene_)\b(\d{1,3})\b(?=\s*\()/',
+            function ($matches) {
+                $number = $matches[1];
+                if (strlen($number) === 1) {
+                    $number = '0' . $number;
+                }
+                return '# ' . $number;
+            },
+            $name
+        );
         // Numbers immediately before " - Scene_"
         $name = preg_replace_callback(
             '/\b(\d+)(?=\s-\sScene_)/',

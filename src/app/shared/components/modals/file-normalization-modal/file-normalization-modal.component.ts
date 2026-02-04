@@ -312,6 +312,23 @@ export class FileNormalizationModalComponent {
       const padded = num.length === 1 ? '0' + num : num;
       return `# ${padded}`;
     });
+    
+    // Numbers before a parenthetical suffix:
+    name = name.replace(
+      /\b(\d{1,3})\b(?=\s*\()/g,
+      (match, num: string, offset: number, full: string) => {
+        const before2 = full.slice(Math.max(0, offset - 2), offset);
+        const before6 = full.slice(Math.max(0, offset - 6), offset);
+
+        // If already "# " before it, or part of "Scene_", leave it alone
+        if (before2 === '# ' || before6 === 'Scene_') {
+          return match;
+        }
+
+        const padded = num.length === 1 ? '0' + num : num;
+        return `# ${padded}`;
+      },
+    );
 
     // Numbers immediately before " - Scene_": "6 - Scene_1" → "# 06 - Scene_1"
     name = name.replace(
