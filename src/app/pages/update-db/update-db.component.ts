@@ -93,8 +93,9 @@ export class UpdateDbComponent implements OnInit {
             event.stopPropagation();
 
             const rawTitle: string = params.data?.title || '';
-            const baseTitle =
-              params.context.componentParent.getBaseTitle(rawTitle);
+            // Strip trailing " # 07" etc.
+            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?$/);
+            const baseTitle = match ? match[1] : rawTitle;
 
             if (!navigator.clipboard) {
               console.warn('Clipboard API not available');
@@ -225,8 +226,8 @@ export class UpdateDbComponent implements OnInit {
         filter: false,
         resizable: false,
         cellRenderer: (params: ICellRendererParams) => {
-          // Only show for duplicates
-          if (!params.data?.duplicate) return '';
+          if (!(params.data?.needsExternalSearch || params.data?.duplicate)) return '';
+
 
           const icon = document.createElement('i');
           icon.classList.add(
@@ -234,26 +235,25 @@ export class UpdateDbComponent implements OnInit {
             'fa-magnifying-glass',
             'external-search-icon',
           );
-
-          if (params.data?.externalSearched) {
-            icon.classList.add('searched');
-          }
-
-          icon.title = 'Copy base title + search external drives in Finder';
+          icon.title = 'Copy base title + search external drives';
 
           icon.addEventListener('click', (event) => {
             event.stopPropagation();
 
-            params.data.externalSearched = true;
-            icon.classList.add('searched');
-
             const rawTitle: string = params.data?.title || '';
-            params.context.componentParent.searchExternalDrives(rawTitle);
+            // strict: only strips " # 01" (spaces required)
+            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?$/);
+            const baseTitle = (match ? match[1] : rawTitle).trim();
+
+            navigator.clipboard?.writeText(baseTitle).catch(() => {});
+            params.context.componentParent.searchExternalDrives(baseTitle);
           });
 
           return icon;
         },
       },
+
+      // Add more columns as needed
     ],
 
     onGridReady: (params) => {
@@ -490,6 +490,27 @@ export class UpdateDbComponent implements OnInit {
       },
     });
   }
+
+  private getBaseTitleStrict(rawTitle: string): string {
+    const title = (rawTitle || '').trim();
+
+    // Strict: only treat numbered titles as " ... # 01" (spaces required)
+    const match = title.match(/^(.*?)(?:\s+#\s+\d+)?$/);
+    return (match ? match[1] : title).trim();
+  }
+
+  /**
+   * Click action for the magnifying-glass icon.
+   * - Copies the base title (before " # NN")
+   * - Opens Finder Smart Folder search across external volumes (via PHP endpoint)
+   */
+  public searchExternalDrives(baseTitle: string): void {
+    // call your PHP endpoint that opens the .savedSearch
+    this.fileService.openExternalDriveSearch(baseTitle).subscribe({
+      error: (err) => console.error('openExternalDriveSearch failed', err),
+    });
+  }
+
   formatFileSize(sizeInBytes: number): string {
     if (sizeInBytes >= 1e9) {
       return (sizeInBytes / 1e9).toFixed(2) + ' GB';
@@ -500,22 +521,5 @@ export class UpdateDbComponent implements OnInit {
     } else {
       return sizeInBytes + ' bytes';
     }
-  }
-  private getBaseTitle(rawTitle: string): string {
-    const match = (rawTitle || '').match(/^(.*?)(?:\s+#\s+\d+)?$/);
-    const baseTitle = match ? match[1] : rawTitle;
-    return (baseTitle || '').trim();
-  }
-
-  public searchExternalDrives(rawTitle: string): void {
-    const baseTitle = this.getBaseTitle(rawTitle);
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(baseTitle).catch(() => {});
-    }
-
-    this.fileService.openExternalDriveSearch(baseTitle).subscribe({
-      error: (err) => console.error('openExternalDriveSearch failed:', err),
-    });
   }
 }

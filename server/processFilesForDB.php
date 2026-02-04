@@ -179,6 +179,7 @@ function populateTitlesArray(array $sessionFiles)
             'titleSize' => $file['fileSize'],
             'fileDimensions' => $file['fileDimensions'] ?? '', // Ensure this key exists
             'titleDuration' => $file['fileDuration'] ?? 0, // Ensure this key exists
+            'titlePath' => $file['fileNameAndPath']
         ];
     }
 
@@ -215,6 +216,47 @@ function checkDatabaseForTitle(
     $titleItem['fileDimensions'] = $titleItem['fileDimensions'] ?? '';
     $titleItem['titleDuration'] = $titleItem['titleDuration'] ?? 0;
     $title = $titleItem['title'];
+
+    // --- UI helper flags: show "external search" icon when DB numbering mismatches this file title ---
+    // IMPORTANT: compute these based on the *incoming* file title, before any handleNumberedTitle()/handleMissingNumberedTitle()
+    // logic mutates the title or updates DB rows.
+    $sourceTitle = $titleItem['title'];
+    [$baseTitleStrict, $titleHasNumberStrict] = splitBaseTitleAndHasNumberStrict($sourceTitle);
+    $presence = getDbNumberingPresenceCached($db, $table, $baseTitleStrict);
+
+    $titleItem['baseTitle'] = $baseTitleStrict;
+    $titleItem['titleHasNumber'] = $titleHasNumberStrict;
+    $titleItem['dbHasUnnumberedVariant'] = $presence['dbHasUnnumberedVariant'];
+    $titleItem['dbHasNumberedVariant'] = $presence['dbHasNumberedVariant'];
+
+    // Show icon when:
+    // 1) this file has NO number but DB has numbered variants, OR
+    // 2) this file HAS a number but DB has an unnumbered variant
+
+    $dbHasOtherNumberedVariant = false;
+
+    if ($titleHasNumberStrict) {
+        $stmt = $db->prepare("
+    SELECT 1
+    FROM `$table`
+    WHERE title LIKE CONCAT(?, ' # %')
+      AND title <> ?
+    LIMIT 1
+  ");
+        $stmt->bind_param('ss', $baseTitleStrict, $title);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $dbHasOtherNumberedVariant = ($res && $res->num_rows > 0);
+        $stmt->close();
+    }
+
+    $titleItem['dbHasOtherNumberedVariant'] = $dbHasOtherNumberedVariant;
+    $titleItem['needsExternalSearch'] =
+        (!$titleHasNumberStrict && $titleItem['dbHasNumberedVariant']) ||
+        ($titleHasNumberStrict && $titleItem['dbHasUnnumberedVariant']) ||
+        ($titleHasNumberStrict && $titleItem['dbHasOtherNumberedVariant']);
+    // ----------------------------------------------------------------------------------------------
+
     $titleSize = $titleItem['titleSize'];
     $fileDimensions = $titleItem['fileDimensions']; // Use default if missing
     $fileDuration = $titleItem['titleDuration']; // Use default if missing
@@ -431,6 +473,71 @@ function handleMissingNumberedTitle($title, array $titleItem, array &$duplicateT
 
     return $title;
 }
+
+
+/**
+ * Strictly split a title into baseTitle + hasNumber where the numbered form must be " ... # 01"
+ * (spaces required around '#').
+ */
+function splitBaseTitleAndHasNumberStrict(string $title): array
+{
+    $t = trim($title);
+
+    if (preg_match('/^(.*)\s+#\s+(\d+)$/', $t, $m)) {
+        return [trim($m[1]), true];
+    }
+
+    return [$t, false];
+}
+
+/**
+ * Check whether DB contains:
+ *  - the unnumbered variant: "Base Title"
+ *  - any numbered variant:  "Base Title # NN"
+ *
+ * Uses a static cache so we only query once per baseTitle per request.
+ */
+function getDbNumberingPresenceCached($db, string $table, string $baseTitle): array
+{
+    static $cache = [];
+
+    $key = $table . '|' . $baseTitle;
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+
+    $hasUnnumbered = false;
+    $hasNumbered = false;
+
+    // Exact unnumbered variant
+    if ($stmt = $db->prepare("SELECT 1 FROM `$table` WHERE title = ? LIMIT 1")) {
+        $stmt->bind_param('s', $baseTitle);
+        if ($stmt->execute()) {
+            $res = $stmt->get_result();
+            $hasUnnumbered = ($res && $res->num_rows > 0);
+        }
+        $stmt->close();
+    }
+
+    // Any numbered variant (strict: must contain " # " after the base title)
+    $likePrefix = $baseTitle . ' # ';
+    if ($stmt = $db->prepare("SELECT 1 FROM `$table` WHERE title LIKE CONCAT(?, '%') LIMIT 1")) {
+        $stmt->bind_param('s', $likePrefix);
+        if ($stmt->execute()) {
+            $res = $stmt->get_result();
+            $hasNumbered = ($res && $res->num_rows > 0);
+        }
+        $stmt->close();
+    }
+
+    $cache[$key] = [
+        'dbHasUnnumberedVariant' => $hasUnnumbered,
+        'dbHasNumberedVariant' => $hasNumbered,
+    ];
+
+    return $cache[$key];
+}
+
 
 function addToDB(array $titleItem, $db, $table)
 {

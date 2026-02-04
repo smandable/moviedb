@@ -35,6 +35,7 @@ export interface ProcessFilesResponse {
     titleSize: number;
     fileDimensions: string;
     titleDuration: string;
+    titlePath: string;
     duplicate?: boolean;
     id?: number;
     dateCreatedInDB?: string;
@@ -42,6 +43,12 @@ export interface ProcessFilesResponse {
     sizeInDB?: number;
     durationInDB?: string;
     isLarger?: string;
+    // Numbering-mismatch helpers for UI
+    baseTitle?: string;
+    titleHasNumber?: boolean;
+    dbHasUnnumberedVariant?: boolean;
+    dbHasNumberedVariant?: boolean;
+    needsExternalSearch?: boolean;
   }>;
 }
 
@@ -58,7 +65,6 @@ export class FileService {
   private processFilesForDBUrl = `${this.baseUrl}processFilesForDB.php`;
   private updateRowUrl = `${this.baseUrl}editCurrentRow.php`;
   private openExternalDriveSearchUrl = `${this.baseUrl}openExternalDriveSearch.php`;
-
   // private performDbOpsUrl    = `${this.baseUrl}performDatabaseOperations.php`;
 
   constructor(private http: HttpClient) {}
@@ -69,13 +75,15 @@ export class FileService {
    * @returns An observable containing the list of files.
    */
   checkFileNamesToNormalize(
-    directory: string,
+    directory: string
   ): Observable<{ files: NormalizedFile[] }> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http
-      .post<{
-        files: NormalizedFile[];
-      }>(this.checkFilesUrl, { directory }, { headers })
+      .post<{ files: NormalizedFile[] }>(
+        this.checkFilesUrl,
+        { directory },
+        { headers }
+      )
       .pipe(catchError(this.handleError));
   }
 
@@ -85,14 +93,16 @@ export class FileService {
    * @returns An observable with the renaming results.
    */
   renameTheFilesToNormalize(
-    files: NormalizedFile[],
+    files: NormalizedFile[]
   ): Observable<{ results: RenameResult[] }> {
     console.log('Preparing to send files to rename:', files);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http
-      .post<{
-        results: RenameResult[];
-      }>(this.renameFilesUrl, { files }, { headers })
+      .post<{ results: RenameResult[] }>(
+        this.renameFilesUrl,
+        { files },
+        { headers }
+      )
       .pipe(catchError(this.handleError));
   }
 
@@ -106,7 +116,7 @@ export class FileService {
     return this.http.post<ProcessFilesResponse>(
       this.processFilesForDBUrl,
       { directory },
-      { headers },
+      { headers }
     );
   }
 
@@ -119,8 +129,19 @@ export class FileService {
     return this.http.post<any>(
       'path/to/performDatabaseOperations.php',
       {},
-      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) },
+      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) }
     );
+  }
+
+
+  /**
+   * Opens a Finder Smart Folder search scoped to external volumes (server-side).
+   */
+  openExternalDriveSearch(query: string): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http
+      .post<any>(this.openExternalDriveSearchUrl, { query }, { headers })
+      .pipe(catchError(this.handleError));
   }
 
   /**
@@ -131,22 +152,16 @@ export class FileService {
   private handleError(error: HttpErrorResponse) {
     console.error('FileService error:', error);
     return throwError(
-      () => new Error('An error occurred while processing the request.'),
+      () => new Error('An error occurred while processing the request.')
     );
   }
   updateRow(
     id: number,
-    updateFields: { dimensions: string; filesize: number; duration: number },
+    updateFields: { dimensions: string; filesize: number; duration: number }
   ): Observable<any> {
     const payload = { id, updateFields };
     console.log('Sending to server:', payload);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post<any>(this.updateRowUrl, payload, { headers });
-  }
-  openExternalDriveSearch(query: string): Observable<any> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http
-      .post<any>(this.openExternalDriveSearchUrl, { query }, { headers })
-      .pipe(catchError(this.handleError));
   }
 }
