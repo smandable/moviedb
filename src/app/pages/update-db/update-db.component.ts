@@ -93,9 +93,8 @@ export class UpdateDbComponent implements OnInit {
             event.stopPropagation();
 
             const rawTitle: string = params.data?.title || '';
-            // Strip trailing " # 07" etc.
-            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?$/);
-            const baseTitle = match ? match[1] : rawTitle;
+            const baseTitle =
+              params.context.componentParent.getBaseTitle(rawTitle);
 
             if (!navigator.clipboard) {
               console.warn('Clipboard API not available');
@@ -218,8 +217,43 @@ export class UpdateDbComponent implements OnInit {
         filter: false,
         width: 150,
       },
+      {
+        headerName: '',
+        colId: 'externalSearch',
+        width: 55,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellRenderer: (params: ICellRendererParams) => {
+          // Only show for duplicates
+          if (!params.data?.duplicate) return '';
 
-      // Add more columns as needed
+          const icon = document.createElement('i');
+          icon.classList.add(
+            'fa-solid',
+            'fa-magnifying-glass',
+            'external-search-icon',
+          );
+
+          if (params.data?.externalSearched) {
+            icon.classList.add('searched');
+          }
+
+          icon.title = 'Copy base title + search external drives in Finder';
+
+          icon.addEventListener('click', (event) => {
+            event.stopPropagation();
+
+            params.data.externalSearched = true;
+            icon.classList.add('searched');
+
+            const rawTitle: string = params.data?.title || '';
+            params.context.componentParent.searchExternalDrives(rawTitle);
+          });
+
+          return icon;
+        },
+      },
     ],
 
     onGridReady: (params) => {
@@ -236,7 +270,7 @@ export class UpdateDbComponent implements OnInit {
   constructor(
     private fileService: FileService,
     private cdr: ChangeDetectorRef,
-    private modalService: NgbModal
+    private modalService: NgbModal,
   ) {}
 
   ngOnInit(): void {}
@@ -309,7 +343,7 @@ export class UpdateDbComponent implements OnInit {
   openFilesModal(files: NormalizedFile[]): void {
     const modalRef: NgbModalRef = this.modalService.open(
       FileNormalizationModalComponent,
-      { size: 'xl', scrollable: true }
+      { size: 'xl', scrollable: true },
     );
     modalRef.componentInstance.files = files;
     modalRef.componentInstance.directory = this.directory;
@@ -317,7 +351,7 @@ export class UpdateDbComponent implements OnInit {
     modalRef.componentInstance.renameFilesEvent.subscribe(
       (filesToRename: NormalizedFile[]) => {
         this.renameFiles(filesToRename); // Call renameFiles with the filtered files
-      }
+      },
     );
 
     modalRef.result.then(
@@ -331,7 +365,7 @@ export class UpdateDbComponent implements OnInit {
       (reason) => {
         // Handle dismissal if needed
         this.showDatabaseOperationsButton = true;
-      }
+      },
     );
   }
 
@@ -342,7 +376,7 @@ export class UpdateDbComponent implements OnInit {
   renameFiles(files: NormalizedFile[]): void {
     // Filter out files that should be renamed (not excluded and needing normalization)
     const filesToRename = files.filter(
-      (file) => !file.exclude && file.needsNormalization
+      (file) => !file.exclude && file.needsNormalization,
     );
 
     if (filesToRename.length === 0) {
@@ -439,7 +473,7 @@ export class UpdateDbComponent implements OnInit {
           // Add new data
           this.gridApi.applyTransaction({ add: this.rowData });
           this.gridApi.forEachNode((node) =>
-            console.log('Grid Node Data:', node.data)
+            console.log('Grid Node Data:', node.data),
           );
         }
 
@@ -451,7 +485,7 @@ export class UpdateDbComponent implements OnInit {
         this.isLoading = false;
         console.error('Error performing database operations:', error);
         console.log(
-          'Failed to perform database operations. See console for details.'
+          'Failed to perform database operations. See console for details.',
         );
       },
     });
@@ -466,5 +500,22 @@ export class UpdateDbComponent implements OnInit {
     } else {
       return sizeInBytes + ' bytes';
     }
+  }
+  private getBaseTitle(rawTitle: string): string {
+    const match = (rawTitle || '').match(/^(.*?)(?:\s+#\s+\d+)?$/);
+    const baseTitle = match ? match[1] : rawTitle;
+    return (baseTitle || '').trim();
+  }
+
+  public searchExternalDrives(rawTitle: string): void {
+    const baseTitle = this.getBaseTitle(rawTitle);
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(baseTitle).catch(() => {});
+    }
+
+    this.fileService.openExternalDriveSearch(baseTitle).subscribe({
+      error: (err) => console.error('openExternalDriveSearch failed:', err),
+    });
   }
 }

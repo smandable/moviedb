@@ -179,7 +179,6 @@ function populateTitlesArray(array $sessionFiles)
             'titleSize' => $file['fileSize'],
             'fileDimensions' => $file['fileDimensions'] ?? '', // Ensure this key exists
             'titleDuration' => $file['fileDuration'] ?? 0, // Ensure this key exists
-            'titlePath' => $file['fileNameAndPath']
         ];
     }
 

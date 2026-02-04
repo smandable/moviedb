@@ -59,6 +59,34 @@
   color: #2196f3;
 }
 
+:host ::ng-deep .external-search-icon {
+  cursor: pointer;
+  color: #ffffff;
+  font-size: 0.95rem;
+  transition: color 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+:host ::ng-deep .external-search-icon.searched {
+  color: #2196f3;
+}
+
+:host ::ng-deep .ag-cell[col-id="externalSearch"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// center the whole column contents
+:host ::ng-deep .ag-cell[col-id="externalSearch"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 // Clamp modal height, just in case
 :host ::ng-deep .modal-dialog-scrollable {
   max-height: 80vh;
