@@ -226,8 +226,8 @@ export class UpdateDbComponent implements OnInit {
         filter: false,
         resizable: false,
         cellRenderer: (params: ICellRendererParams) => {
-          if (!(params.data?.needsExternalSearch || params.data?.duplicate)) return '';
-
+          if (!(params.data?.needsExternalSearch || params.data?.duplicate))
+            return '';
 
           const icon = document.createElement('i');
           icon.classList.add(
@@ -235,18 +235,29 @@ export class UpdateDbComponent implements OnInit {
             'fa-magnifying-glass',
             'external-search-icon',
           );
-          icon.title = 'Copy base title + search external drives';
+
+          // Initial state
+          const clicked = !!params.data?.externalSearchClicked;
+          icon.classList.add(clicked ? 'is-clicked' : 'is-pending');
+
+          icon.title = clicked
+            ? 'Searched (click to search again)'
+            : 'Copy base title + search external drives';
 
           icon.addEventListener('click', (event) => {
             event.stopPropagation();
 
             const rawTitle: string = params.data?.title || '';
-            // strict: only strips " # 01" (spaces required)
             const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?$/);
             const baseTitle = (match ? match[1] : rawTitle).trim();
 
             navigator.clipboard?.writeText(baseTitle).catch(() => {});
             params.context.componentParent.searchExternalDrives(baseTitle);
+
+            // Mark as clicked + update styling
+            params.data.externalSearchClicked = true;
+            icon.classList.remove('is-pending');
+            icon.classList.add('is-clicked');
           });
 
           return icon;

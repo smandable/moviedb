@@ -59,16 +59,18 @@
   color: #2196f3;
 }
 
-
 :host ::ng-deep .external-search-icon {
   cursor: pointer;
-  color: #ffffff;
   font-size: 0.9rem;
   transition: color 0.15s ease-in-out;
 }
 
-:host ::ng-deep .external-search-icon.searched {
-  color: #2196f3;
+:host ::ng-deep .external-search-icon.is-pending {
+  color: #ffffff; // “needs attention”
+}
+
+:host ::ng-deep .external-search-icon.is-clicked {
+  color: #2196f3; // “already searched”
 }
 
 :host ::ng-deep .ag-cell[col-id="externalSearch"] {
@@ -76,7 +78,6 @@
   align-items: center;
   justify-content: center;
 }
-
 
 // Clamp modal height, just in case
 :host ::ng-deep .modal-dialog-scrollable {
