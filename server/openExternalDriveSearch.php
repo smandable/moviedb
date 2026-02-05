@@ -101,13 +101,6 @@ if (!$canWrite) {
     exit;
 }
 
-// Prune old savedSearch files (keep folder tidy)
-$files = glob($folder . '/MovieDB External Search - *.savedSearch') ?: [];
-usort($files, fn($a, $b) => filemtime($b) <=> filemtime($a)); // newest first
-$keep = 200;
-for ($i = $keep; $i < count($files); $i++) {
-    @unlink($files[$i]);
-}
 // Unique savedSearch per query so Finder can’t “cache” the first one
 $safeName = preg_replace('/[^A-Za-z0-9._ -]+/', '-', $query);
 $safeName = trim($safeName);
@@ -144,6 +137,9 @@ if (!@rename($tmpFile, $outFile)) {
         exit;
     }
 }
+
+$keep = 20;
+pruneSavedSearchFiles($folder, $keep, $outFile);
 
 $stateFile  = $folder . '/finder_window_id.txt';
 $scriptFile = $folder . '/reuse_finder_window.applescript';
@@ -253,6 +249,29 @@ if ($osascriptCode !== 0 || $newId === '') {
         'consoleUid' => $uid,
     ]);
     exit;
+}
+
+function pruneSavedSearchFiles(string $folder, int $keep, string $keepPath): void
+{
+    if ($keep < 1) $keep = 1;
+
+    $files = glob($folder . '/MovieDB External Search - *.savedSearch') ?: [];
+    usort($files, fn($a, $b) => filemtime($b) <=> filemtime($a)); // newest first
+
+    $kept = 0;
+    foreach ($files as $f) {
+        if (!is_file($f)) continue;
+        // Always keep the one we just opened
+        if ($f === $keepPath) continue;
+
+        // Keep newest (keep-1) others
+        if ($kept < ($keep - 1)) {
+            $kept++;
+            continue;
+        }
+
+        @unlink($f);
+    }
 }
 
 // Success

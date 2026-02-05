@@ -332,9 +332,9 @@ export class UpdateDbComponent implements OnInit {
       .subscribe({
         next: (response) => {
           if (response.success) {
-            // alert(`Database updated successfully for "${data.title}".`);
             data.isLarger = null; // Clear the "Larger" flag
             data.needsUpdateMissingMeta = false; // Clears the missing metadata flag
+            data.needsUpdateFilesize = false; // Clears needs update filesize flag
             this.gridApi?.refreshCells({ force: true }); // Refresh the grid
           } else {
             alert(`Failed to update database: ${response.message}`);

@@ -1,4 +1,7 @@
 <?php
+
+header('Content-Type: application/json');
+
 // Increase the max execution time as needed
 ini_set('max_execution_time', 0);
 
@@ -6,12 +9,20 @@ require 'formatSize.php';
 require 'db_connect.php';
 $config = require 'config.php'; // Load configuration
 
-// Retrieve the flag from config
-$updateMissingDataOnly = isset($config->updateMissingDataOnly) ? (bool)$config->updateMissingDataOnly : false;
+$table = is_object($config) ? ($config->table ?? '') : ($config['table'] ?? '');
+$updateMissingDataOnly = is_object($config)
+    ? !empty($config->updateMissingDataOnly)
+    : !empty($config['updateMissingDataOnly']);
+
+if ($table === '') {
+    http_response_code(500);
+    echo json_encode(['error' => 'Config missing table name']);
+    exit();
+}
 
 // Validate Input
-$input = json_decode(file_get_contents('php://input'), true);
-$directory = isset($input['directory']) ? trim($input['directory']) : '';
+$input = json_decode(file_get_contents('php://input') ?: '', true);
+$directory = is_array($input) ? trim((string)($input['directory'] ?? '')) : '';
 
 if (empty($directory)) {
     http_response_code(400); // Bad Request
@@ -51,8 +62,14 @@ foreach ($files as $file) {
         if (in_array($fileExtension, ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'mpg', 'm4v', 'divx'])) {
             // For videos, use FFmpeg to get dimensions and duration
             $ffmpegOutput = [];
-            $ffprobeCmd = "ffprobe -v error -print_format json -show_entries format=duration -show_entries stream=width,height \"$filePath\"";
-            $ffprobeOutput = shell_exec($ffprobeCmd);
+            $ffprobe = '/opt/homebrew/bin/ffprobe';
+            if (!is_executable($ffprobe)) $ffprobe = 'ffprobe'; // or fall back to 'ffprobe'
+
+            $cmd = escapeshellcmd($ffprobe)
+                . ' -v error -print_format json -show_entries format=duration -show_entries stream=width,height '
+                . escapeshellarg($filePath)
+                . ' 2>/dev/null';
+            $ffprobeOutput = shell_exec($cmd);
             // error_log("FFprobe raw output for $filePath: " . print_r($ffprobeOutput, true));
 
             // Check if ffprobe executed successfully
@@ -126,7 +143,6 @@ $duplicateTitlesMissing01Array = [];
 $titlesMissing01Array = [];
 
 foreach ($titlesArray as &$titleItem) {
-    // error_log("Main Script - Processing titleItem: " . print_r($titleItem, true));
 
     $titleItem = checkDatabaseForTitle(
         $titleItem,
@@ -134,7 +150,7 @@ foreach ($titlesArray as &$titleItem) {
         $duplicateTitlesMissing01Array,
         $titlesMissing01Array,
         $db,
-        $config->table,
+        $table,
         $updateMissingDataOnly
     );
 }
@@ -298,7 +314,6 @@ function checkDatabaseForTitle(
     $title = $dbTitle;
     $titleItem['title'] = $title;
 
-
     // Check if title exists in DB
     if ($stmt = $db->prepare("SELECT id, date_created, dimensions, filesize, duration, filepath FROM `$table` WHERE title = ?")) {
         $stmt->bind_param('s', $title);
@@ -315,6 +330,8 @@ function checkDatabaseForTitle(
                 $titleItem['durationInDB'] = $row['duration'];
 
                 $isLarger = $titleItem['isLarger'] = compareFileSizeToDB($titleSize, $row['filesize']);
+                $titleItem['needsUpdateFilesize'] = ($isLarger === 'isLargerZeroDBSize');
+
                 $duplicateTitlesArray[] = ['title' => $title, 'isLarger' => $isLarger];
 
                 // If existing file in DB has missing metadata, set an additional flag:
@@ -446,8 +463,8 @@ function checkDatabaseForTitle(
 
 function handleNumberedTitle($title, $db, $table)
 {
-    if (preg_match('/# [0-9]+$/', $title)) {
-        $titleN = preg_split('/ # [0-9]+/', $title)[0];
+    if (preg_match('/\s+#\s+\d+$/', $title)) {
+        $titleN = preg_split('/\s+#\s+\d+/', $title)[0];
         if ($stmt = $db->prepare("SELECT id FROM `$table` WHERE title = ?")) {
             $stmt->bind_param('s', $titleN);
             if ($stmt->execute()) {
@@ -472,7 +489,7 @@ function handleNumberedTitle($title, $db, $table)
 
 function handleMissingNumberedTitle($title, array $titleItem, array &$duplicateTitlesMissing01Array, array &$titlesMissing01Array, $db, $table)
 {
-    if (!preg_match('/# [0-9]+$/', $title)) {
+    if (!preg_match('/\s+#\s+\d+$/', $title)) {
         $title01 = $title . ' # 01';
 
         // Check for exact # 01 title
@@ -573,14 +590,14 @@ function addToDB(array $titleItem, $db, $table)
     }
 
     $title = $titleItem['title'];
-    $titleSize = (string) $titleItem['titleSize']; // Cast to string
+    $titleSize = (int)($titleItem['titleSize'] ?? 0);
     $titleDimensions = $titleItem['fileDimensions'] ?? ''; // Default to an empty string
-    $titleDuration = (string) $titleItem['titleDuration']; // Cast to string for consistency
+    $titleDuration = (int)($titleItem['titleDuration'] ?? 0);
 
     // error_log("Preparing to insert: title=$title, dimensions=$titleDimensions, size=$titleSize, duration=$titleDuration");
 
     if ($stmt = $db->prepare("INSERT IGNORE INTO `$table` (title, dimensions, filesize, duration, date_created) VALUES (?, ?, ?, ?, NOW())")) {
-        $stmt->bind_param('ssis', $title, $titleDimensions, $titleSize, $titleDuration);
+        $stmt->bind_param('ssii', $title, $titleDimensions, $titleSize, $titleDuration);
         if (!$stmt->execute()) {
             error_log("Database insertion failed for '{$title}': " . $stmt->error);
         } else {
@@ -707,14 +724,22 @@ function renameSessionFilesAddMissing01(
     array $duplicateTitlesMissing01Array,
     array &$sessionFiles
 ): array {
+
+    $toKey = function (string $s): string {
+        $s = trim($s);
+        return function_exists('mb_strtolower')
+            ? mb_strtolower($s, 'UTF-8')
+            : strtolower($s);
+    };
+
     // Build a set of base titles that should get " # 01"
     $bases = [];
 
     foreach ($titlesMissing01Array as $x) {
-        if (!empty($x['title'])) $bases[mb_strtolower(trim($x['title']))] = true;
+        if (!empty($x['title'])) $bases[$toKey((string)$x['title'])] = true;
     }
     foreach ($duplicateTitlesMissing01Array as $x) {
-        if (!empty($x['title'])) $bases[mb_strtolower(trim($x['title']))] = true;
+        if (!empty($x['title'])) $bases[$toKey((string)$x['title'])] = true;
     }
 
     if (!$bases) return [];
@@ -746,7 +771,7 @@ function renameSessionFilesAddMissing01(
         }
 
         // Only rename if this base is one of the "missing #01" bases
-        if (!isset($bases[mb_strtolower($base)])) continue;
+        if (!isset($bases[$toKey($base)])) continue;
 
         $newNameNoExt = $base . ' # 01' . $suffix;
         $newPath = $dir . '/' . $newNameNoExt . $ext;
@@ -773,6 +798,7 @@ function renameSessionFilesAddMissing01(
 
     return $pathMap;
 }
+
 
 
 function returnHTML($titlesArray)
