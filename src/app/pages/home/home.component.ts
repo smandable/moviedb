@@ -1,14 +1,11 @@
 // Angular modules
-import { NgIf } from '@angular/common';
-import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
 
 // Services
-import { StoreService } from '@services/store.service';
 import { MovieService, Movie } from '@services/movie.service';
 
 // Components
-import { ProgressBarComponent } from '@blocks/progress-bar/progress-bar.component';
 import { PageLayoutComponent } from '@layouts/page-layout/page-layout.component';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CustomFloatingFilterComponent } from '@components/grid/custom-floating-filter/custom-floating-filter.component';
@@ -28,8 +25,9 @@ import {
   ICellRendererParams,
   ColDef,
   IFilterComp,
-  IFilterDef,
 } from 'ag-grid-community';
+
+import { Subscription } from 'rxjs';
 
 // Extend the standard GridApi with the client-side model
 type ClientSideGridApi<TData> = GridApi<TData> & {
@@ -39,7 +37,7 @@ type ClientSideGridApi<TData> = GridApi<TData> & {
   // getFilterInstance now uses a callback and returns void
   getFilterInstance?(
     colKey: string,
-    callback: (filter: IFilterComp | null) => void
+    callback: (filter: IFilterComp | null) => void,
   ): void;
 };
 
@@ -53,24 +51,23 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
   standalone: true,
   imports: [PageLayoutComponent, AgGridAngular],
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
+  private routerSub?: Subscription;
+
   // Bind this property to the grid's rowData
   public rowData: Movie[] = [];
   public totalItems: number = 0; // Holds the total count
+  public resultsCount: number = 0; // Search results
 
   // Track which row’s title is currently “copied” (for icon highlight)
   public mainCopiedId: number | null = null;
 
-  private mainCopyResetTimeout: any = null;
+  private mainCopyResetTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Track whether the Title filter actually has text
   public isTitleFilterActive: boolean = false;
 
   private gridApi!: ClientSideGridApi<Movie>;
-  private columnApi: any;
-
-  // Reference to the AgGridAngular component in the template
-  @ViewChild('agGrid') agGrid!: AgGridAngular<Movie>;
 
   // AG Grid configuration
   public gridOptions: GridOptions<Movie> = {
@@ -133,7 +130,7 @@ export class HomeComponent implements OnInit {
               } else {
                 console.warn("Filter instance for 'title' is null.");
               }
-            }
+            },
           );
         } else {
           console.warn('getFilterInstance is not available on gridApi.');
@@ -205,7 +202,11 @@ export class HomeComponent implements OnInit {
         });
       }
     },
-
+    onModelUpdated: () => {
+      // Always reflects current visible rows (after filter + after deletes)
+      this.resultsCount = this.gridApi.getDisplayedRowCount();
+      this.cdr.detectChanges();
+    },
     // Handle cell edits
     onCellValueChanged: (event) => this.onCellValueChanged(event),
   };
@@ -257,9 +258,9 @@ export class HomeComponent implements OnInit {
         const comp = this as HomeComponent;
 
         // Only show the icon when the Title filter has some text
-        if (!comp.isTitleFilterActive) {
-          icon.style.display = 'none';
-        }
+        // if (!comp.isTitleFilterActive) {
+        //   icon.style.display = 'none';
+        // }
 
         // Highlight the icon if this row is the “last copied”
         if (comp.mainCopiedId === params.data?.id) {
@@ -363,20 +364,28 @@ export class HomeComponent implements OnInit {
   ];
 
   constructor(
-    public storeService: StoreService,
     private movieService: MovieService,
     private router: Router,
-    private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef // Inject ChangeDetectorRef for manual change detection
+    private cdr: ChangeDetectorRef, // Inject ChangeDetectorRef for manual change detection
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to router events to detect navigation back to '/home'
-    this.router.events.subscribe((event) => {
-      if (event instanceof NavigationEnd && event.url === '/home') {
-        this.loadMovies(); // Reload data when navigating back to Home
+    this.routerSub = this.router.events.subscribe((event) => {
+      if (
+        event instanceof NavigationEnd &&
+        event.urlAfterRedirects.startsWith('/home')
+      ) {
+        this.loadMovies();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    if (this.mainCopyResetTimeout) {
+      clearTimeout(this.mainCopyResetTimeout);
+      this.mainCopyResetTimeout = null;
+    }
+    this.routerSub?.unsubscribe();
   }
 
   /**
@@ -387,7 +396,7 @@ export class HomeComponent implements OnInit {
       next: (movies: Movie[]) => {
         this.rowData = movies.map((movie) => ({
           ...movie,
-          titleSize:
+          filesize:
             typeof movie.filesize === 'string'
               ? parseInt(movie.filesize, 10)
               : movie.filesize,
@@ -397,9 +406,6 @@ export class HomeComponent implements OnInit {
               : movie.duration,
         }));
         this.totalItems = movies.length;
-
-        // Trigger change detection to update the view
-        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Failed to load movies:', error);
@@ -420,7 +426,7 @@ export class HomeComponent implements OnInit {
       next: (response) => {
         // Remove the movie from the rowData array
         this.rowData = this.rowData.filter((m) => m.id !== movie.id);
-        this.totalItems--;
+        this.totalItems = this.rowData.length;
 
         // Trigger change detection to update the view
         this.cdr.detectChanges();
