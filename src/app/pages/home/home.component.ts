@@ -427,6 +427,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         // Remove the movie from the rowData array
         this.rowData = this.rowData.filter((m) => m.id !== movie.id);
         this.totalItems = this.rowData.length;
+        this.resultsCount =
+          this.gridApi?.getDisplayedRowCount?.() ?? this.totalItems;
 
         // Trigger change detection to update the view
         this.cdr.detectChanges();
