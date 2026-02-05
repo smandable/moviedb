@@ -191,7 +191,9 @@ export class UpdateDbComponent implements OnInit {
         field: 'isLarger',
         headerName: 'Larger',
         cellRenderer: (params: ICellRendererParams) => {
-          const isLargerFlag = params.data.isLarger === 'isLarger';
+          const isLargerFlag =
+            params.data.isLarger === 'isLarger' ||
+            params.data.isLarger === 'isLargerZeroDBSize';
           const needsUpdateFileSizeFlag =
             params.data.needsUpdateFilesize === true;
           const needsUpdateMissingMetaFlag =

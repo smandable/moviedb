@@ -239,7 +239,6 @@ function checkDatabaseForTitle(
     $table,
     $updateMissingDataOnly = false
 ) {
-    // error_log("checkDatabaseForTitle - Initial titleItem: " . print_r($titleItem, true));
 
     // Ensure required keys exist
     $titleItem['fileDimensions'] = $titleItem['fileDimensions'] ?? '';
@@ -256,8 +255,6 @@ function checkDatabaseForTitle(
     // IMPORTANT: compute these based on the *incoming* file title, before any handleNumberedTitle()/handleMissingNumberedTitle()
     // logic mutates the title or updates DB rows.
 
-
-    // --- UI helper flags (based on incoming filename/title) ---
     $sourceTitle = $titleItem['title'];
     $titleItem['sourceTitle'] = $sourceTitle;
 
@@ -320,103 +317,105 @@ function checkDatabaseForTitle(
         if ($stmt->execute()) {
             $result = $stmt->get_result();
             if ($result && $result->num_rows > 0) {
+
                 // Duplicate found in DB
                 $row = $result->fetch_assoc();
-                $titleItem['duplicate'] = true;
-                $titleItem['id'] = $row['id'];
-                $titleItem['dateCreatedInDB'] = $row['date_created'];
-                $titleItem['dimensionsInDB'] = $row['dimensions'];
-                $titleItem['sizeInDB'] = $row['filesize'];
-                $titleItem['durationInDB'] = $row['duration'];
 
-                $isLarger = $titleItem['isLarger'] = compareFileSizeToDB($titleSize, $row['filesize']);
-                $titleItem['needsUpdateFilesize'] = ($isLarger === 'isLargerZeroDBSize');
+                // --- Normalize DB row values once (avoid "stringy DB values") ---
+                $rowId         = (int)($row['id'] ?? 0);
+                $rowDimensions = trim((string)($row['dimensions'] ?? ''));
+                $rowFilesize   = (int)($row['filesize'] ?? 0);
+                $rowDuration   = (int)($row['duration'] ?? 0);
+                // --------------------------------------------------------------
+
+                // Basic fields
+                $titleItem['duplicate'] = true;
+                $titleItem['id'] = $rowId;
+                $titleItem['dateCreatedInDB'] = $row['date_created'] ?? '';
+                $titleItem['dimensionsInDB'] = $rowDimensions;
+                $titleItem['sizeInDB'] = $rowFilesize;
+                $titleItem['durationInDB'] = $rowDuration;
+
+                // Comparisons using normalized ints
+                $isLarger = $titleItem['isLarger'] = compareFileSizeToDB($titleSize, $rowFilesize);
+
+                // True when DB filesize is missing (0) OR smaller than the file
+                $titleItem['needsUpdateFilesize'] = ($titleSize > 0 && $rowFilesize < $titleSize);
 
                 $duplicateTitlesArray[] = ['title' => $title, 'isLarger' => $isLarger];
 
-                // If existing file in DB has missing metadata, set an additional flag:
-                $hasMissingMeta = false;
-                if ((empty($row['dimensions']) || strtolower($row['dimensions']) === '0 x 0')
-                    || (empty($row['duration']) || $row['duration'] == 0)
-                    || (empty($row['filesize']) || $row['filesize'] == 0)
-                ) {
-                    $hasMissingMeta = true;
-                }
+                // Missing-meta flag using normalized values
+                $rowDimensionsLower = strtolower($rowDimensions);
+                $hasMissingMeta =
+                    ($rowDimensions === '' || $rowDimensionsLower === '0 x 0')
+                    || ($rowDuration === 0)
+                    || ($rowFilesize === 0);
 
-                // Pass that to the front-end:
                 $titleItem['needsUpdateMissingMeta'] = $hasMissingMeta;
 
-                // **New Logic: Update Missing Data if Flag is Set**
+                // Update Missing Data if Flag is Set
                 if ($updateMissingDataOnly) {
                     $needsUpdate = false;
-                    $newDimensions = $row['dimensions']; // Initialize with existing value
-                    $newDuration = $row['duration']; // Initialize with existing value
-                    $newFilesize = $row['filesize']; // Initialize with existing value
 
-                    // Track which fields are updated
+                    // Use normalized baseline values
+                    $newDimensions = $rowDimensions;
+                    $newDuration   = $rowDuration;
+                    $newFilesize   = $rowFilesize;
+
                     $updatedFields = [];
 
-                    // Check if dimensions are blank or zero
-                    if (empty($row['dimensions']) || strtolower($row['dimensions']) === '0 x 0') {
-                        if (!empty($fileDimensions)) { // Ensure new dimensions are available
-                            $needsUpdate = true;
-                            $newDimensions = $fileDimensions;
-                            $updatedFields[] = "dimensions to '{$newDimensions}'";
-                        }
+                    // dimensions
+                    if (($rowDimensions === '' || $rowDimensionsLower === '0 x 0') && $fileDimensions !== '') {
+                        $needsUpdate = true;
+                        $newDimensions = $fileDimensions;
+                        $updatedFields[] = "dimensions to '{$newDimensions}'";
                     }
 
-                    // Check if duration is zero
-                    if (empty($row['duration']) || $row['duration'] == 0) {
-                        if ($fileDuration > 0) { // Ensure new duration is valid
-                            $needsUpdate = true;
-                            $newDuration = $fileDuration;
-                            $updatedFields[] = "duration to '{$newDuration}'";
-                        }
+                    // duration
+                    if ($rowDuration === 0 && $fileDuration > 0) {
+                        $needsUpdate = true;
+                        $newDuration = $fileDuration;
+                        $updatedFields[] = "duration to '{$newDuration}'";
                     }
 
-                    // **Add Logic to Update filesize if it's zero**
-                    if ($row['filesize'] == 0) {
-                        if ($titleSize > 0) { // Ensure new filesize is valid
-                            $needsUpdate = true;
-                            $newFilesize = $titleSize;
-                            $updatedFields[] = "filesize to '{$newFilesize}'";
-                        }
+                    // filesize
+                    if ($rowFilesize === 0 && $titleSize > 0) {
+                        $needsUpdate = true;
+                        $newFilesize = $titleSize;
+                        $updatedFields[] = "filesize to '{$newFilesize}'";
                     }
 
                     if ($needsUpdate) {
-                        // Prepare dynamic update query
                         $fieldsToUpdate = [];
                         $params = [];
                         $types = '';
 
-                        if ($newDimensions !== $row['dimensions']) {
+                        if ($newDimensions !== $rowDimensions) {
                             $fieldsToUpdate[] = 'dimensions = ?';
                             $params[] = $newDimensions;
                             $types .= 's';
                         }
 
-                        if ($newDuration !== $row['duration']) {
+                        if ($newDuration !== $rowDuration) {
                             $fieldsToUpdate[] = 'duration = ?';
                             $params[] = $newDuration;
                             $types .= 'i';
                         }
 
-                        if ($newFilesize !== $row['filesize']) {
+                        if ($newFilesize !== $rowFilesize) {
                             $fieldsToUpdate[] = 'filesize = ?';
                             $params[] = $newFilesize;
                             $types .= 'i';
                         }
 
-                        // If there are fields to update, proceed
                         if (!empty($fieldsToUpdate)) {
                             $updateQuery = "UPDATE `$table` SET " . implode(', ', $fieldsToUpdate) . " WHERE id = ?";
-                            $params[] = $row['id'];
+                            $params[] = $rowId;
                             $types .= 'i';
 
                             if ($stmtUpdate = $db->prepare($updateQuery)) {
                                 $stmtUpdate->bind_param($types, ...$params);
                                 if ($stmtUpdate->execute()) {
-                                    // **Modified Log Messages to Include Title and Specific Fields Updated**
                                     if (!empty($updatedFields)) {
                                         $updatedFieldsStr = implode(' and ', $updatedFields);
                                         error_log("Updated '{$title}' with {$updatedFieldsStr}.");
@@ -435,12 +434,10 @@ function checkDatabaseForTitle(
                                 $titleItem['status'] = 'Failed to prepare update statement';
                             }
                         } else {
-                            // No actual changes needed
                             error_log("No valid fields to update for '{$title}'.");
                             $titleItem['status'] = 'No updates required';
                         }
                     } else {
-                        // No missing data to update
                         error_log("No missing data to update for '{$title}'.");
                         $titleItem['status'] = 'No updates required';
                     }
@@ -499,7 +496,7 @@ function handleMissingNumberedTitle($title, array $titleItem, array &$duplicateT
                 $result = $stmt->get_result();
                 if ($result && $result->num_rows > 0) {
                     $row = $result->fetch_assoc();
-                    $isLarger = compareFileSizeToDB($titleItem['titleSize'], $row['filesize']);
+                    $isLarger = compareFileSizeToDB((int)$titleItem['titleSize'], (int)$row['filesize']);
                     $duplicateTitlesMissing01Array[] = ['title' => $title, 'isLarger' => $isLarger];
                     $title = $title01;
                 }
@@ -613,13 +610,14 @@ function addToDB(array $titleItem, $db, $table)
 
     return null;
 }
-
-
 function compareFileSizeToDB($size, $sizeInDB)
 {
+    $size     = (int)$size;
+    $sizeInDB = (int)$sizeInDB;
+
     if ($sizeInDB > 0 && $sizeInDB < $size) {
         return 'isLarger';
-    } elseif ($sizeInDB == 0 && $sizeInDB < $size) {
+    } elseif ($sizeInDB === 0 && $sizeInDB < $size) {
         return 'isLargerZeroDBSize';
     }
     return '';
@@ -649,7 +647,7 @@ function searchSessionForDuplicateFiles(array $duplicateTitlesArray, array $sess
                 // error_log("Matched duplicate: $fileName under $dupTitle");
 
                 // Check if it's larger
-                if ($dup['isLarger'] === 'isLarger') {
+                if ($dup['isLarger'] === 'isLarger' || $dup['isLarger'] === 'isLargerZeroDBSize') {
                     $destination .= 'larger/';
                 }
 
@@ -717,7 +715,7 @@ function splitBaseAndSuffixPreserve(string $nameNoExt): array
  * for any base title found in $titlesMissing01Array or $duplicateTitlesMissing01Array.
  *
  * Updates $sessionFiles in-place so later duplicate-moving still works.
- * Returns a map of oldPath => newPath so you can update titlesArray titlePath too.
+ * Returns a map of oldPath => newPath so we can update titlesArray titlePath too.
  */
 function renameSessionFilesAddMissing01(
     array $titlesMissing01Array,
@@ -798,9 +796,6 @@ function renameSessionFilesAddMissing01(
 
     return $pathMap;
 }
-
-
-
 function returnHTML($titlesArray)
 {
     echo json_encode([
