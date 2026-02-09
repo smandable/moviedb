@@ -4,6 +4,7 @@ import { Router, NavigationEnd } from '@angular/router';
 
 // Services
 import { MovieService, Movie } from '@services/movie.service';
+import { FileService } from '@services/file.service';
 
 // Components
 import { PageLayoutComponent } from '@layouts/page-layout/page-layout.component';
@@ -204,6 +205,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     },
     onModelUpdated: () => {
       // Always reflects current visible rows (after filter + after deletes)
+      if (!this.gridApi) return;
       this.resultsCount = this.gridApi.getDisplayedRowCount();
       this.cdr.detectChanges();
     },
@@ -340,31 +342,49 @@ export class HomeComponent implements OnInit, OnDestroy {
     },
     {
       headerName: '', // No heading
-      colId: 'delete', // Optional: set a colId for clarity
-      width: 100, // Narrow column
+      colId: 'actions', // Optional: set a colId for clarity
+      width: 120, // Narrow column
       filter: false, // Disable filter
       sortable: false, // Disable sorting
 
-      // Renderer for the delete icon
       cellRenderer: (params: ICellRendererParams<Movie>) => {
-        const icon = document.createElement('span');
-        icon.innerHTML = '🗑️';
-        icon.style.cursor = 'pointer';
-        icon.title = 'Delete this row';
+        const wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.alignItems = 'center';
+        wrap.style.gap = '10px';
 
-        // Attach click event to delete the row
-        icon.addEventListener('click', () => {
-          const rowData = params.data as Movie;
-          this.deleteRow(rowData);
+        // 🗑️ delete
+        const trash = document.createElement('span');
+        trash.innerHTML = '🗑️';
+        trash.style.cursor = 'pointer';
+        trash.title = 'Delete this row';
+        trash.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.deleteRow(params.data as Movie);
         });
 
-        return icon;
+        // 🔍 search
+        const search = document.createElement('i');
+        search.classList.add('fa-solid', 'fa-magnifying-glass', 'home-action-icon');
+        search.style.cursor = 'pointer';
+        search.title = 'Search this title on drives';
+
+        search.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.searchExternalDrivesForRow(params.data as Movie);
+        });
+
+        wrap.appendChild(trash);
+        wrap.appendChild(search);
+
+        return wrap;
       },
     },
   ];
 
   constructor(
     private movieService: MovieService,
+    private fileService: FileService,
     private router: Router,
     private cdr: ChangeDetectorRef, // Inject ChangeDetectorRef for manual change detection
   ) {}
@@ -437,6 +457,19 @@ export class HomeComponent implements OnInit, OnDestroy {
         console.error('Delete failed:', error);
         alert('Failed to delete row. See console for details.');
       },
+    });
+  }
+
+  private searchExternalDrivesForRow(rowOrQuery: Movie | string): void {
+    const raw =
+      typeof rowOrQuery === 'string' ? rowOrQuery : (rowOrQuery?.title ?? '');
+
+    // Strip trailing " # 07" etc (works either way)
+    const baseTitle = raw.replace(/\s+#\s+\d+$/, '').trim();
+
+    this.fileService.openExternalDriveSearch(baseTitle).subscribe({
+      next: () => {},
+      error: (err) => console.error('External drive search failed:', err),
     });
   }
 

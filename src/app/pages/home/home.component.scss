@@ -30,3 +30,18 @@
 :host ::ng-deep .home-title-copy-icon.active {
   color: #2196f3;
 }
+
+.home-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  justify-content: center;
+}
+
+.home-action-icon {
+  cursor: pointer;
+  line-height: 1;
+}
+.home-action-icon:hover {
+  opacity: 0.75;
+}
