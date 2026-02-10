@@ -420,7 +420,7 @@ export class UpdateDbComponent implements OnInit {
   public processingComplete: boolean = false;
 
   /**
-   * Handles the "Perform Database Operations" button click.
+   * Handles the "Update Database" button click.
    * Sends a request to process files for database operations.
    */
   performDatabaseOperations(): void {
@@ -498,7 +498,7 @@ export class UpdateDbComponent implements OnInit {
         this.isLoading = false;
         console.error('Error performing database operations:', error);
         console.log(
-          'Failed to perform database operations. See console for details.',
+          'Failed to update database. See console for details.',
         );
       },
     });
