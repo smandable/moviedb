@@ -226,9 +226,18 @@ if (!function_exists('cleanupFunctions')) {
         );
         // Numbers immediately before " - Scene_"
         $name = preg_replace_callback(
-            '/\b(\d+)(?=\s-\sScene_)/',
+            '/(?<!# )\b(\d+)(?=\s-\sScene_)/',
             function ($matches) {
                 $number = $matches[1];
+
+                // ✅ Skip if it's a 4-digit year (1975–2035)
+                if (strlen($number) === 4) {
+                    $year = (int)$number;
+                    if ($year >= 1975 && $year <= 2035) {
+                        return $number;
+                    }
+                }
+
                 if (strlen($number) === 1) {
                     $number = '0' . $number;
                 }
@@ -237,14 +246,20 @@ if (!function_exists('cleanupFunctions')) {
             $name
         );
 
-        // Trailing numbers at the end
-        // BUT ignore:
-        //  - already formatted numbers
-        //  - numbers that are part of "Scene_1"
+        // Trailing numbers at the end (but not already "# " and not part of Scene_)
         $name = preg_replace_callback(
             '/(?<!# )(?<!Scene_)\b(\d+)\b$/',
             function ($matches) {
                 $number = $matches[1];
+
+                // Skip if it's a 4-digit year (1975–2035)
+                if (strlen($number) === 4) {
+                    $year = (int)$number;
+                    if ($year >= 1975 && $year <= 2035) {
+                        return $number;
+                    }
+                }
+
                 if (strlen($number) === 1) {
                     $number = '0' . $number;
                 }

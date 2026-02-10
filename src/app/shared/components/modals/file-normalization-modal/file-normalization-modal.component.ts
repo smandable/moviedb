@@ -312,7 +312,7 @@ export class FileNormalizationModalComponent {
       const padded = num.length === 1 ? '0' + num : num;
       return `# ${padded}`;
     });
-    
+
     // Numbers before a parenthetical suffix:
     name = name.replace(
       /\b(\d{1,3})\b(?=\s*\()/g,
@@ -329,15 +329,25 @@ export class FileNormalizationModalComponent {
         return `# ${padded}`;
       },
     );
-
+    const isYear = (digits: string): boolean => {
+      if (digits.length !== 4) return false;
+      if (!/^\d{4}$/.test(digits)) return false;
+      const year = parseInt(digits, 10);
+      return year >= 1975 && year <= 2035;
+    };
     // Numbers immediately before " - Scene_": "6 - Scene_1" → "# 06 - Scene_1"
     name = name.replace(
       /\b(\d+)(?=\s-\sScene_)/g,
       (match, num: string, offset: number, full: string) => {
-        // If already "# " before it, leave it alone
         if (offset >= 2 && full.slice(offset - 2, offset) === '# ') {
           return match;
         }
+
+        // ✅ Skip if year
+        if (isYear(num)) {
+          return match;
+        }
+
         const padded = num.length === 1 ? '0' + num : num;
         return `# ${padded}`;
       },
@@ -350,8 +360,12 @@ export class FileNormalizationModalComponent {
         const before2 = full.slice(Math.max(0, offset - 2), offset);
         const before6 = full.slice(Math.max(0, offset - 6), offset);
 
-        // If already "# " before it, or part of "Scene_", leave it alone
         if (before2 === '# ' || before6 === 'Scene_') {
+          return match;
+        }
+
+        // ✅ Skip if year
+        if (isYear(num)) {
           return match;
         }
 
