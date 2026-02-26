@@ -54,7 +54,7 @@ export class UpdateDbComponent implements OnInit {
       enableClickSelection: true, // ⬅️ still let user select by clicking the row
     },
     context: { componentParent: this },
-    getRowId: (params) => `${params.data.title}`,
+    getRowId: (p) => `${p.data.id ?? ''}::${p.data.title}::${p.data.titlePath ?? ''}`,
     rowHeight: 36,
 
     defaultColDef: {

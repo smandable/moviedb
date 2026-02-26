@@ -460,27 +460,51 @@ function checkDatabaseForTitle(
 
 function handleNumberedTitle($title, $db, $table)
 {
-    if (preg_match('/\s+#\s+\d+$/', $title)) {
-        $titleN = preg_split('/\s+#\s+\d+/', $title)[0];
-        if ($stmt = $db->prepare("SELECT id FROM `$table` WHERE title = ?")) {
-            $stmt->bind_param('s', $titleN);
-            if ($stmt->execute()) {
-                $result = $stmt->get_result();
-                if ($result && $result->num_rows > 0) {
-                    $row = $result->fetch_assoc();
-                    $title1 = $titleN . ' # 01';
+    if (!preg_match('/\s+#\s+\d+$/', $title)) {
+        return $title;
+    }
 
-                    // Update the title
-                    if ($updateStmt = $db->prepare("UPDATE `$table` SET title=? WHERE title=?")) {
-                        $updateStmt->bind_param('ss', $title1, $titleN);
-                        $updateStmt->execute();
-                        $updateStmt->close();
-                    }
-                }
-            }
-            $stmt->close();
+    $titleN = preg_split('/\s+#\s+\d+/', $title)[0];
+    $title1 = $titleN . ' # 01';
+
+    // If unnumbered title exists, get its ID
+    $rowId = null;
+    if ($stmt = $db->prepare("SELECT id FROM `$table` WHERE title = ? LIMIT 1")) {
+        $stmt->bind_param('s', $titleN);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $res->num_rows > 0) {
+            $row = $res->fetch_assoc();
+            $rowId = (int)($row['id'] ?? 0);
+        }
+        $stmt->close();
+    }
+
+    if (!$rowId) {
+        return $title;
+    }
+
+    // Prevent collision if "# 01" already exists
+    if ($stmt = $db->prepare("SELECT 1 FROM `$table` WHERE title = ? LIMIT 1")) {
+        $stmt->bind_param('s', $title1);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $exists = ($res && $res->num_rows > 0);
+        $stmt->close();
+
+        if ($exists) {
+            error_log("Skipping DB title update (target exists): '{$titleN}' -> '{$title1}'");
+            return $title;
         }
     }
+
+    // Update only that row
+    if ($updateStmt = $db->prepare("UPDATE `$table` SET title = ? WHERE id = ? LIMIT 1")) {
+        $updateStmt->bind_param('si', $title1, $rowId);
+        $updateStmt->execute();
+        $updateStmt->close();
+    }
+
     return $title;
 }
 
