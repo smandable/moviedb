@@ -519,7 +519,10 @@ export class UpdateDbComponent implements OnInit {
   public searchExternalDrives(baseTitle: string): void {
     // call your PHP endpoint that opens the .savedSearch
     this.fileService.openExternalDriveSearch(baseTitle).subscribe({
-      error: (err) => console.error('openExternalDriveSearch failed', err),
+      error: (err) => {
+        console.error('openExternalDriveSearch failed', err);
+        alert('Failed to search external drives. See console for details.');
+      },
     });
   }
 
