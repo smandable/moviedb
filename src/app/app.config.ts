@@ -24,7 +24,6 @@ import { environment }            from '@env/environment';
 import { routes }                 from './app.routes';
 
 // Services
-import { AppService }             from '@services/app.service';
 import { StoreService }           from '@services/store.service';
 
 export function createTranslateLoader(http : HttpClient)
@@ -68,7 +67,6 @@ export const appConfig : ApplicationConfig = {
 
     // Services
     StoreService,
-    AppService,
 
     // Pipes
     DatePipe,
