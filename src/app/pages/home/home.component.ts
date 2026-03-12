@@ -453,6 +453,7 @@ export class HomeComponent implements OnInit, OnDestroy {
               : movie.duration,
         }));
         this.totalItems = movies.length;
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Failed to load movies:', error);
