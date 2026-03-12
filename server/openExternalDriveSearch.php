@@ -10,13 +10,13 @@ $query = is_array($input) ? trim((string)($input['query'] ?? '')) : '';
 $len = function_exists('mb_strlen') ? mb_strlen($query) : strlen($query);
 if ($query === '' || $len > 120) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Invalid query']);
+    echo json_encode(['success' => false, 'message' => 'Invalid query']);
     exit;
 }
 
 if (preg_match('/["\\\\\\x00-\\x1F]/', $query)) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Query contains unsupported characters']);
+    echo json_encode(['success' => false, 'message' => 'Query contains unsupported characters']);
     exit;
 }
 
@@ -28,7 +28,7 @@ foreach ($volumeNames as $name) {
 }
 if (!$scopes) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'None of the expected external volumes are mounted under /Volumes']);
+    echo json_encode(['success' => false, 'message' => 'None of the expected external volumes are mounted under /Volumes']);
     exit;
 }
 
@@ -234,7 +234,7 @@ if ($osascriptCode !== 0 || $newId === '') {
     exec('/usr/bin/open ' . escapeshellarg($outFile) . ' > /dev/null 2>&1 &');
 
     echo json_encode([
-        'ok' => true,
+        'success' => true,
         'opened' => $outFile,
         'folder' => $folder,
         'stateFile' => $stateFile,
@@ -276,7 +276,7 @@ function pruneSavedSearchFiles(string $folder, int $keep, string $keepPath): voi
 
 // Success
 echo json_encode([
-    'ok' => true,
+    'success' => true,
     'opened' => $outFile,
     'folder' => $folder,
     'folderMode' => ($folder === $preferred ? 'preferred' : 'fallback'),

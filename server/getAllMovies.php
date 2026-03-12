@@ -41,7 +41,7 @@ try {
 } catch (Exception $e) {
     // Handle exceptions and return an error message
     http_response_code(500);
-    echo json_encode(['error' => true, 'message' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 } finally {
     // Ensure the database connection is closed
     $db->close();

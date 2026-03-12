@@ -28,7 +28,7 @@ export interface RenameResult {
 }
 
 export interface ProcessFilesResponse {
-  error?: string;
+  success?: boolean;
   message: string;
   titles: Array<{
     title: string;

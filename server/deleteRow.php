@@ -6,7 +6,7 @@ $input = json_decode(file_get_contents('php://input'), true);
 
 if (!isset($input['id']) || empty(trim($input['id']))) {
     http_response_code(400); // Bad Request
-    echo json_encode(['error' => 'Id is required.']);
+    echo json_encode(['success' => false, 'message' => 'Id is required.']);
     exit;
 }
 
@@ -21,7 +21,7 @@ try {
 
     if ($idCheckResult->num_rows === 0) {
         http_response_code(404); // Not Found
-        echo json_encode(['error' => 'Record with the specified ID does not exist.']);
+        echo json_encode(['success' => false, 'message' => 'Record with the specified ID does not exist.']);
         $idCheckStmt->close();
         exit;
     }
@@ -35,12 +35,12 @@ try {
         echo json_encode(['success' => true, 'message' => "Successfully deleted record with ID: $id"]);
     } else {
         http_response_code(500); // Internal Server Error
-        echo json_encode(['error' => 'Failed to delete record.', 'details' => $deleteStmt->error]);
+        echo json_encode(['success' => false, 'message' => 'Failed to delete record.', 'details' => $deleteStmt->error]);
     }
     $deleteStmt->close();
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'An error occurred.', 'details' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'An error occurred.', 'details' => $e->getMessage()]);
 } finally {
     $db->close();
 }

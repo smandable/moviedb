@@ -8,7 +8,7 @@ ob_start();
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405); // Method Not Allowed
-    echo json_encode(['error' => 'Only POST requests are allowed']);
+    echo json_encode(['success' => false, 'message' => 'Only POST requests are allowed']);
     exit();
 }
 
@@ -18,7 +18,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 // Validate the input
 if (!isset($data['directory']) || empty($data['directory'])) {
     http_response_code(400); // Bad Request
-    echo json_encode(['error' => 'Directory path is required']);
+    echo json_encode(['success' => false, 'message' => 'Directory path is required']);
     exit();
 }
 
@@ -27,7 +27,7 @@ $directory = rtrim($data['directory'], '/');
 // Check if the directory exists
 if (!is_dir($directory)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid directory path']);
+    echo json_encode(['success' => false, 'message' => 'Invalid directory path']);
     exit();
 }
 

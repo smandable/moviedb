@@ -16,7 +16,7 @@ $updateMissingDataOnly = is_object($config)
 
 if ($table === '') {
     http_response_code(500);
-    echo json_encode(['error' => 'Config missing table name']);
+    echo json_encode(['success' => false, 'message' => 'Config missing table name']);
     exit();
 }
 
@@ -26,14 +26,14 @@ $directory = is_array($input) ? trim((string)($input['directory'] ?? '')) : '';
 
 if (empty($directory)) {
     http_response_code(400); // Bad Request
-    echo json_encode(['error' => 'Directory is required.']);
+    echo json_encode(['success' => false, 'message' => 'Directory is required.']);
     exit();
 }
 
 // Check if the directory exists
 if (!is_dir($directory)) {
     http_response_code(400); // Bad Request
-    echo json_encode(['error' => 'Invalid directory path.']);
+    echo json_encode(['success' => false, 'message' => 'Invalid directory path.']);
     exit();
 }
 

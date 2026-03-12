@@ -3,7 +3,7 @@
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405); // Method Not Allowed
-    echo json_encode(['error' => 'Only POST requests are allowed']);
+    echo json_encode(['success' => false, 'message' => 'Only POST requests are allowed']);
     exit();
 }
 
@@ -13,7 +13,7 @@ $data = json_decode(file_get_contents('php://input'), true);
 // Validate the input
 if (!isset($data['files']) || !is_array($data['files'])) {
     http_response_code(400); // Bad Request
-    echo json_encode(['error' => 'Files data is required']);
+    echo json_encode(['success' => false, 'message' => 'Files data is required']);
     exit();
 }
 

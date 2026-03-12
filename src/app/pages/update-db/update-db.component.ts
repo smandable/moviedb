@@ -439,8 +439,8 @@ export class UpdateDbComponent implements OnInit {
         this.isLoading = false;
         // console.log('Process Files For DB Response:', response);
 
-        if (response.error) {
-          alert(`Error: ${response.error}`);
+        if (response.success === false) {
+          alert(`Error: ${response.message}`);
           return;
         }
         // Reset counts
