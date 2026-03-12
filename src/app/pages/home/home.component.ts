@@ -284,23 +284,42 @@ export class HomeComponent implements OnInit, OnDestroy {
             .writeText(copyValue)
             .catch((err) => console.error('Clipboard error:', err));
 
-          // Mark this row as the one with the “blue” icon
+          // Collect affected row nodes (old highlight + new highlight)
+          const prevId = comp.mainCopiedId;
           comp.mainCopiedId = params.data?.id ?? null;
 
-          // Re-render the Title column so icons recolor correctly
+          const rowNodes: any[] = [];
+          comp.gridApi.forEachNode((node: any) => {
+            if (node.data?.id === prevId || node.data?.id === comp.mainCopiedId) {
+              rowNodes.push(node);
+            }
+          });
+
+          // Re-render only the affected rows in the Title column
           comp.gridApi.refreshCells({
+            rowNodes,
             columns: ['title'],
             force: true,
           });
 
-          // 🔵 Auto-reset highlight after 3 seconds of no clicks
+          // Auto-reset highlight after 3 seconds of no clicks
           if (comp.mainCopyResetTimeout) {
             clearTimeout(comp.mainCopyResetTimeout);
           }
 
+          const resetId = comp.mainCopiedId;
           comp.mainCopyResetTimeout = setTimeout(() => {
             comp.mainCopiedId = null;
+
+            const resetNodes: any[] = [];
+            comp.gridApi.forEachNode((node: any) => {
+              if (node.data?.id === resetId) {
+                resetNodes.push(node);
+              }
+            });
+
             comp.gridApi.refreshCells({
+              rowNodes: resetNodes,
               columns: ['title'],
               force: true,
             });
