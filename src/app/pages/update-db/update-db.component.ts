@@ -83,6 +83,8 @@ export class UpdateDbComponent implements OnInit {
           // Copy icon
           const icon = document.createElement('i');
           icon.classList.add('fa-regular', 'fa-copy', 'copy-title-icon');
+          icon.setAttribute('role', 'button');
+          icon.setAttribute('aria-label', 'Copy title');
 
           // If this row was copied before, keep it blue
           if (params.data?.titleCopied) {
@@ -237,6 +239,8 @@ export class UpdateDbComponent implements OnInit {
             'fa-magnifying-glass',
             'external-search-icon',
           );
+          icon.setAttribute('role', 'button');
+          icon.setAttribute('aria-label', 'Search external drives');
 
           // Initial state
           const clicked = !!params.data?.externalSearchClicked;
@@ -370,7 +374,7 @@ export class UpdateDbComponent implements OnInit {
     modalRef.result.then(
       (result) => {
         if (result === 'rename') {
-          console.log('Rename operation completed.');
+          // Rename operation completed
         }
         // Set the button visibility after modal closes successfully
         this.showDatabaseOperationsButton = true;
@@ -402,8 +406,6 @@ export class UpdateDbComponent implements OnInit {
     this.fileService.renameTheFilesToNormalize(filesToRename).subscribe({
       next: (response) => {
         this.isLoading = false;
-        console.log('Rename Results:', response.results);
-        console.log('Files have been renamed successfully.');
         // Close the modal
         this.modalService.dismissAll();
         // Show the new button
@@ -485,14 +487,9 @@ export class UpdateDbComponent implements OnInit {
 
           // Add new data
           this.gridApi.applyTransaction({ add: this.rowData });
-          this.gridApi.forEachNode((node) =>
-            console.log('Grid Node Data:', node.data),
-          );
         }
 
         this.processingComplete = true; // Show totals
-        console.log('Process Complete');
-        console.log(response.message);
       },
       error: (error) => {
         this.isLoading = false;

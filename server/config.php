@@ -1,11 +1,10 @@
 <?php
 
 return (object) [
-    'host' => 'localhost:3306',
-    'username' => 'root',
-    'pass' => 'spm024',
-    // 'database' => 'movieLibraryTEST',
-    'database' => 'movieLibraryPROD',
-    'table' => 'movies_het',
-    'updateMissingDataOnly' => false, // Set to true to enable updating missing data (dimensions, duration and filesize), if false then script will behave normally and move to duplicates, etc
+    'host'     => getenv('DB_HOST') ?: 'localhost:3306',
+    'username' => getenv('DB_USERNAME') ?: 'root',
+    'pass'     => getenv('DB_PASSWORD') ?: '',
+    'database' => getenv('DB_DATABASE') ?: 'movieLibrary',
+    'table'    => getenv('DB_TABLE') ?: 'movies',
+    'updateMissingDataOnly' => filter_var(getenv('UPDATE_MISSING_DATA_ONLY'), FILTER_VALIDATE_BOOLEAN),
 ];

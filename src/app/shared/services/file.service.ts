@@ -96,7 +96,6 @@ export class FileService {
   renameTheFilesToNormalize(
     files: NormalizedFile[],
   ): Observable<{ results: RenameResult[] }> {
-    console.log('Preparing to send files to rename:', files);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http
       .post<{
@@ -158,7 +157,6 @@ export class FileService {
     updateFields: { dimensions: string; filesize: number; duration: number },
   ): Observable<any> {
     const payload = { id, updateFields };
-    console.log('Sending to server:', payload);
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post<any>(this.updateRowUrl, payload, { headers });
   }

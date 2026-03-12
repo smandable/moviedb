@@ -1,105 +1,193 @@
-# ▶️ EasyAngular
+# MovieDB
 
-Welcome to the EasyAngular boilerplate! This project is designed to help you quickly start a new **Angular 18** project with **Bootstrap 5** and various useful libraries. It comes with pre-coded elements to streamline your development process.
+A local movie file cataloging and management application built with Angular and PHP. MovieDB scans directories for video files, extracts metadata using FFprobe, detects duplicates, and provides an interactive grid-based interface for browsing and managing your movie library.
 
-## Getting started
-### Prerequisites
+## Features
 
-Make sure you have the following installed :
-- [Node.js](https://nodejs.org/) (version 20)
-- [Angular CLI](https://angular.dev/) (version 18) using `npm install -g @angular/cli`
+- **Movie Library Grid** — Browse your entire collection in a sortable, filterable AG Grid table with inline editing
+- **Metadata Extraction** — Automatically extracts video dimensions, duration, and file size via FFprobe
+- **Duplicate Detection** — Identifies duplicate files across volumes and flags size differences
+- **Batch File Renaming** — Scan for and normalize inconsistent file names in bulk
+- **External Drive Search** — Search for titles across mounted macOS volumes via Finder smart folders
+- **Internationalization** — i18n support via ngx-translate (English by default)
 
-### Installation
-Clone the repository :
-```sh
-git clone https://github.com/NicolasRoehm/angular-boilerplate.git
-cd angular-boilerplate
+## Tech Stack
+
+| Layer     | Technology                                                                    |
+|-----------|-------------------------------------------------------------------------------|
+| Frontend  | Angular 18, TypeScript 5.4, RxJS 7.8                                         |
+| UI        | AG Grid 33, Bootstrap 5.3, Tailwind CSS, ng-bootstrap, Font Awesome 6        |
+| Backend   | PHP 7+, MySQL / MariaDB                                                      |
+| Tooling   | Angular CLI 18, Karma + Jasmine, PostCSS                                     |
+| Metadata  | FFprobe (via Homebrew)                                                        |
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) v20+
+- npm (included with Node.js)
+- PHP 7+ with the MySQLi extension
+- MySQL or MariaDB
+- [FFprobe](https://ffmpeg.org/) — install via Homebrew:
+  ```bash
+  brew install ffmpeg
+  ```
+- A local web server that can serve PHP (e.g. [MAMP](https://www.mamp.info/), Apache, or PHP's built-in server)
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd moviedb
+```
+
+### 2. Install dependencies
+
+```bash
 npm install
 ```
 
-### ✒️ Usage
-- Rename `EasyAngular` and `easy-angular` with your project name
-- Place favicon generated with [RealFavIconGenerator](https://realfavicongenerator.net/) into `src/assets/img/favicon` folder
+### 3. Set up the database
 
-### Development server
+Create a MySQL database and table for storing movie records:
 
-Run the following command for a development server. Navigate to http://localhost:4200/. The app will automatically reload if you change any of the source files.
-```sh
-ng-serve
+```sql
+CREATE DATABASE movieLibrary;
+
+USE movieLibrary;
+
+CREATE TABLE movies (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255),
+  dimensions VARCHAR(50),
+  duration FLOAT,
+  filesize BIGINT,
+  filepath TEXT,
+  date_created DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-## Boilerplate content
-### 🗂️ Source code structure
+### 4. Configure the PHP backend
 
-<table>
-  <tr>
-    <td>
-      <img src="./src/assets/img/project/folder-structure.png" alt="Project Structure" width="200"/>
-    </td>
-    <td>
-      <ul>
-        <li><strong>Pages</strong>
-          <ul>
-            <li>Auth (login, forgot password, validate account) with 2 possible layouts</li>
-            <li>Home</li>
-            <li>404</li>
-          </ul>
-        </li>
-        <li><strong>Shared components</strong>
-          <ul>
-            <li>Blocks : toast & progress bar</li>
-            <li>Forms : confirm</li>
-            <li>Layouts : page & header</li>
-            <li>Modals : wrapper</li>
-          </ul>
-        </li>
-        <li><strong>Enums</strong> : endpoints / environments / storage keys</li>
-        <li><strong>Helpers</strong> : storage / string</li>
-        <li><strong>Services</strong> : app (for requests) / store (for state management using signals)</li>
-        <li><strong>i18n</strong> : en.json (for internationalization)</li>
-      </ul>
-    </td>
-  </tr>
-</table>
+Copy the example environment file and fill in your credentials:
 
-### 🌐 Included packages
-- [Bootstrap 5](https://getbootstrap.com/) : SCSS style & [ng-bootstrap](https://ng-bootstrap.github.io/) components
-- [Axios](https://github.com/axios/axios) : HTTP client
-- [ArrayTyper](https://github.com/FranzStrudel/-caliatys-array-typer) : Utility for type-safe array operations
-- [angular-svg-icon](https://github.com/czeckd/angular-svg-icon) : SVG icon support
-- [ngx-translate](https://github.com/ngx-translate/core) : Internationalization library
-
-## 🛠️ Tools
-- Generate models from JSON - https://app.quicktype.io/
-- Generate favicon from SVG - https://realfavicongenerator.net/
-
-## Angular CLI commands
-### Code scaffolding
-Generate a new component :
-```sh
-ng generate component component-name
-```
-You can also use `ng generate` for directives, pipes, services, classes, guards, interfaces, enums, and modules.
-
-### Build
-Build the project :
-```sh
-ng build
-```
-The build artifacts will be stored in the `dist/` directory.
-
-### Running tests
-#### Unit tests
-Run unit tests via Karma :
-```sh
-ng test
+```bash
+cp server/.env.example server/.env
 ```
 
-#### End-to-End tests
-Run end-to-end tests via a platform of your choice. You need to add a package that implements end-to-end testing capabilities :
-```sh
-ng e2e
+Edit `server/.env` with your database details:
+
+```
+DB_HOST=localhost:3306
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+DB_DATABASE=movieLibrary
+DB_TABLE=movies
+UPDATE_MISSING_DATA_ONLY=false
 ```
 
-## Further help
-To get more help on the Angular CLI, use `ng help` or visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Both `server/.env` and `server/config.php` are gitignored.
+
+### 5. Start the PHP server
+
+Ensure your PHP server (MAMP, Apache, etc.) is running and serves the `server/` directory at the URL configured in `src/environments/environment.ts`. The default development URL is:
+
+```
+http://localhost:8888/moviedb/server/
+```
+
+### 6. Start the development server
+
+```bash
+ng serve
+```
+
+Navigate to `http://localhost:4200`. The app will automatically reload on source changes.
+
+## Available Scripts
+
+| Command              | Description                                      |
+|----------------------|--------------------------------------------------|
+| `ng serve`           | Start the Angular dev server on port 4200        |
+| `npm run build`      | Build the application                            |
+| `npm run build:prod` | Build with production optimizations              |
+| `npm run start:prod` | Serve the production build on port 4200          |
+| `npm run watch`      | Build in watch mode (development config)         |
+| `npm test`           | Run unit tests via Karma                         |
+| `npm run add-page`   | Scaffold a new page module and component         |
+
+## Project Structure
+
+```
+moviedb/
+├── src/
+│   ├── app/
+│   │   ├── pages/
+│   │   │   ├── home/                  # Movie library grid view
+│   │   │   ├── update-db/             # File scanning & DB sync
+│   │   │   └── not-found/             # 404 page
+│   │   ├── shared/
+│   │   │   ├── components/            # Reusable UI (toast, modals, layout, grid)
+│   │   │   ├── services/              # App, Movie, File, and Store services
+│   │   │   ├── helpers/               # Formatters, grid theme, storage, string utils
+│   │   │   ├── enums/                 # Endpoint, environment, storage key enums
+│   │   │   └── directives/            # Custom directives
+│   │   ├── app.routes.ts              # Route definitions (lazy-loaded)
+│   │   └── app.config.ts              # App providers & configuration
+│   ├── assets/
+│   │   ├── scss/                      # Global styles and variables
+│   │   ├── i18n/                      # Translation files (en.json)
+│   │   └── img/                       # Favicons and images
+│   └── environments/                  # Dev and prod environment configs
+├── server/                            # PHP backend API
+│   ├── db_connect.php                 # Database connection
+│   ├── getAllMovies.php               # Fetch all movies
+│   ├── editCurrentRow.php             # Update a movie record
+│   ├── deleteRow.php                  # Delete a movie record
+│   ├── processFilesForDB.php          # Scan directory & extract metadata
+│   ├── checkFileNamesToNormalize.php  # Check files needing renaming
+│   ├── renameTheFilesToNormalize.php  # Batch rename files
+│   └── openExternalDriveSearch.php    # macOS Finder search
+├── angular.json                       # Angular CLI configuration
+├── tsconfig.json                      # TypeScript config with path aliases
+├── karma.conf.js                      # Test runner configuration
+└── package.json
+```
+
+## API Endpoints
+
+All endpoints are served by the PHP backend. The base URL is configured in `src/environments/`.
+
+| Endpoint                          | Method | Description                                          |
+|-----------------------------------|--------|------------------------------------------------------|
+| `getAllMovies.php`                | GET    | Retrieve all movie records ordered by date created   |
+| `editCurrentRow.php`             | POST   | Update one or more fields on a movie record          |
+| `deleteRow.php`                  | POST   | Delete a movie record by ID                          |
+| `processFilesForDB.php`          | POST   | Scan a directory, extract metadata, find duplicates  |
+| `checkFileNamesToNormalize.php`  | POST   | Check which files in a directory need renaming       |
+| `renameTheFilesToNormalize.php`  | POST   | Execute batch file renaming                          |
+| `openExternalDriveSearch.php`    | POST   | Open a macOS Finder smart folder search              |
+
+## Configuration
+
+### Environment Files
+
+Environment-specific settings live in `src/environments/`:
+
+- **`environment.ts`** — Development (API at `localhost:8888/moviedb/server/`)
+- **`environment.prod.ts`** — Production (API at `localhost:8888/api/`)
+
+### TypeScript Path Aliases
+
+The project uses path aliases for clean imports (configured in `tsconfig.json`):
+
+```typescript
+import { MovieService } from '@services/movie.service';
+import { fileSizeFormatter } from '@helpers/formatters.helper';
+import { EndpointEnum } from '@enums/endpoint.enum';
+```
+
+### Supported Video Formats
+
+MP4, MKV, AVI, MOV, WMV, MPG, M4V, DIVX

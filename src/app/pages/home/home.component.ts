@@ -35,6 +35,7 @@ type ClientSideGridApi<TData> = GridApi<TData> & {
   setSortModel?(sortModel: { colId: string; sort: 'asc' | 'desc' }[]): void;
   getSortModel?(): any;
   isAnyFilterPresent(): boolean;
+  applyColumnState?(params: { state: { colId: string; sort: 'asc' | 'desc' | null; sortIndex?: number }[]; defaultState?: { sort: null } }): void;
   // getFilterInstance now uses a callback and returns void
   getFilterInstance?(
     colKey: string,
@@ -148,7 +149,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.loadMovies(); // Load data once the grid is ready
 
       // Apply initial sort by 'date_created' descending using applyColumnState
-      (this.gridApi as any).applyColumnState({
+      this.gridApi.applyColumnState?.({
         state: [{ colId: 'date_created', sort: 'desc', sortIndex: 0 }],
         defaultState: { sort: null },
       });
@@ -191,13 +192,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       if (anyFilter) {
         // Apply sort by 'title' ascending
-        (this.gridApi as any).applyColumnState({
+        this.gridApi.applyColumnState?.({
           state: [{ colId: 'title', sort: 'asc', sortIndex: 0 }],
           defaultState: { sort: null },
         });
       } else {
         // Apply sort by 'date_created' descending
-        (this.gridApi as any).applyColumnState({
+        this.gridApi.applyColumnState?.({
           state: [{ colId: 'date_created', sort: 'desc', sortIndex: 0 }],
           defaultState: { sort: null },
         });
@@ -255,6 +256,8 @@ export class HomeComponent implements OnInit, OnDestroy {
 
         const icon = document.createElement('i');
         icon.classList.add('fa-regular', 'fa-copy', 'home-title-copy-icon');
+        icon.setAttribute('role', 'button');
+        icon.setAttribute('aria-label', 'Copy title');
 
         // Reference back to component
         const comp = this as HomeComponent;
@@ -358,6 +361,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         trash.innerHTML = '🗑️';
         trash.style.cursor = 'pointer';
         trash.title = 'Delete this row';
+        trash.setAttribute('role', 'button');
+        trash.setAttribute('aria-label', 'Delete this row');
         trash.addEventListener('click', (event) => {
           event.stopPropagation();
           this.deleteRow(params.data as Movie);
@@ -368,6 +373,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         search.classList.add('fa-solid', 'fa-magnifying-glass', 'home-action-icon');
         search.style.cursor = 'pointer';
         search.title = 'Search this title on drives';
+        search.setAttribute('role', 'button');
+        search.setAttribute('aria-label', 'Search this title on drives');
 
         search.addEventListener('click', (event) => {
           event.stopPropagation();

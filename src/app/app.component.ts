@@ -7,15 +7,12 @@ import { RouterOutlet }     from '@angular/router';
 // Services
 import { StoreService }     from '@services/store.service';
 
-// Components
-import { ToastComponent }   from '@blocks/toast/toast.component';
-
 @Component({
   selector    : 'app-root',
   templateUrl : './app.component.html',
   styleUrls   : ['./app.component.scss'],
   standalone  : true,
-  imports     : [RouterOutlet, ToastComponent, NgIf]
+  imports     : [RouterOutlet, NgIf]
 })
 export class AppComponent implements OnInit
 {

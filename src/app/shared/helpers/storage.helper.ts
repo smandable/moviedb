@@ -7,40 +7,10 @@ import { environment }  from '@env/environment';
 // Enums
 import { StorageKey }   from '@enums/storage-key.enum';
 
-// Models
-// import { AuthResponse } from '@models/auth-response.model';
-
 @Injectable()
 export class StorageHelper
 {
   private static storagePrefix : string = environment.appName + '_' + environment.version + '_';
-
-  // ----------------------------------------------------------------------------------------------
-  // SECTION Methods ------------------------------------------------------------------------------
-  // ----------------------------------------------------------------------------------------------
-
-  // NOTE Token
-
-  // public static setToken(user : AuthResponse) : void
-  // {
-  //   StorageHelper.setItem(StorageKey.TOKEN, user);
-  // }
-
-  // public static removeToken() : void
-  // {
-  //   StorageHelper.removeItem(StorageKey.TOKEN);
-  // }
-
-  // public static getToken() : AuthResponse | null
-  // {
-  //   // Prevent SSR error
-  //   if (typeof localStorage === 'undefined')
-  //     return undefined;
-  //   const data = StorageHelper.getItem(StorageKey.TOKEN);
-  //   return data ? new AuthResponse(data) : null;
-  // }
-
-  // !SECTION Methods
 
   // ----------------------------------------------------------------------------------------------
   // SECTION LocalStorage -------------------------------------------------------------------------
@@ -56,9 +26,9 @@ export class StorageHelper
   {
     const itemKey = this.prefixer(key, prefix);
     const res = localStorage.getItem(itemKey);
-    if (res !== 'undefined')
-      return JSON.parse(res as any);
-    console.error('StorageHelper : getItem -> undefined key');
+    if (res !== null)
+      return JSON.parse(res);
+    console.error('StorageHelper : getItem -> key not found');
     return null;
   }
 

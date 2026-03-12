@@ -1,6 +1,7 @@
 <?php
 
-// Load configuration
+// Load environment variables, then configuration
+require_once 'env_loader.php';
 $config = include 'config.php';
 
 // Validate configuration

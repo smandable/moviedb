@@ -41,5 +41,7 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Config file
+# Config / environment
 /server/config.php
+/server/.env
+IMPROVEMENTS.md

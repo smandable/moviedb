@@ -12,7 +12,6 @@ import { AxiosInstance }            from 'axios';
 import { CreateAxiosDefaults }      from 'axios';
 
 // Internal modules
-import { ToastManager }             from '@blocks/toast/toast.manager';
 import { environment }              from '@env/environment';
 
 // Helpers
@@ -51,7 +50,6 @@ export class AppService
   constructor
   (
     private storeService     : StoreService,
-    private toastManager     : ToastManager,
     private router           : Router,
     private translateService : TranslateService,
   )
@@ -69,51 +67,17 @@ export class AppService
   public async authenticate(email : string, password : string) : Promise<boolean>
   {
     return Promise.resolve(true);
-
-    // StorageHelper.removeToken();
-
-    // const url      = Endpoint.AUTHENTICATE;
-    // const { data } = await this.api.post(url, { email, password });
-
-    // if (!data)
-    //   return false;
-
-    // const authResponse = new AuthResponse(data);
-    // StorageHelper.setToken(authResponse);
-    // this.initAuthHeader();
-    // return true;
   }
 
   public async forgotPassword(email : string) : Promise<boolean>
   {
     return Promise.resolve(true);
-
-    // const url      = Endpoint.FORGOT_PASSWORD;
-    // const { data } = await this.api.post(url, { email });
-
-    // return !!data;
   }
 
   public async validateAccount(token : string, password : string) : Promise<boolean>
   {
     return Promise.resolve(true);
-
-    // const url      = Endpoint.VALIDATE_ACCOUNT;
-    // const { data } = await this.api.post(url, { token, password });
-
-    // return !!data;
   }
-
-  // public async getLastLines(siteId : string) : Promise<Line[]>
-  // {
-  //   const url      = StringHelper.interpolate(Endpoint.GET_LAST_LINES, [ siteId ]);
-  //   const { data } = await this.api.get(url);
-
-  //   if (!data)
-  //     return [];
-
-  //   return ArrayTyper.asArray(Line, data);
-  // }
 
   // !SECTION Methods
 
@@ -123,29 +87,21 @@ export class AppService
 
   private initAuthHeader() : void
   {
-    // const token = StorageHelper.getToken();
-    // if (!token)
-    //   return;
-
-    // this.api.defaults.headers.common['Authorization'] = `Bearer ${token.jwtToken}`;
-    // this.api.defaults.headers.common['Token']         = token.jwtToken;
   }
 
   public initRequestInterceptor(instance : AxiosInstance) : void
   {
     instance.interceptors.request.use((config) =>
     {
-      console.log('interceptors.request.config', config);
       this.storeService.isLoading.set(true);
 
       return config;
     },
     (error) =>
     {
-      console.log('interceptors.request.error', error);
       this.storeService.isLoading.set(false);
 
-      this.toastManager.quickShow(error);
+      console.error('Request error:', error);
       return Promise.reject(error);
     });
   }
@@ -154,21 +110,19 @@ export class AppService
   {
     instance.interceptors.response.use((response) =>
     {
-      console.log('interceptors.response.response', response);
       this.storeService.isLoading.set(false);
 
       return response;
     },
     async (error : AxiosError) =>
     {
-      console.log('interceptors.response.error', error);
       this.storeService.isLoading.set(false);
 
       // NOTE Prevent request canceled error
       if (error.code === 'ERR_CANCELED')
         return Promise.resolve(error);
 
-      this.toastManager.quickShow(error.message);
+      console.error('Response error:', error.message);
       return Promise.reject(error);
     });
   }
