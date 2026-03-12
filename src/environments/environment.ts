@@ -21,7 +21,8 @@ export const environment = {
   appName         : 'MovieDB',
   envName         : EnvName.LOCAL,
   defaultLanguage : 'en',
-  apiBaseUrl      : baseUrl,
+  apiBaseUrl         : baseUrl,
+  defaultDirectory   : '/Volumes/Recorded 4/fixed/',
 };
 
 /*
