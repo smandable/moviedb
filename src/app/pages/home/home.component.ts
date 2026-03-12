@@ -1,5 +1,5 @@
 // Angular modules
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 
 // Services
@@ -52,6 +52,7 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
   styleUrls: ['./home.component.scss'],
   standalone: true,
   imports: [PageLayoutComponent, AgGridAngular],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent implements OnInit, OnDestroy {
   private routerSub?: Subscription;

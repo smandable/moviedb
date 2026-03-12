@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { AgGridAngular } from 'ag-grid-angular';
 import { PageLayoutComponent } from '@layouts/page-layout/page-layout.component';
 import {
@@ -37,6 +37,7 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
     FormsModule,
     NgbModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UpdateDbComponent implements OnInit {
   public directory: string = environment.defaultDirectory;
