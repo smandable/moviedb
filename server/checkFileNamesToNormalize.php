@@ -31,53 +31,59 @@ if (!is_dir($directory)) {
     exit();
 }
 
-$files = scandir($directory);
-$normalizedFiles = [];
+try {
+    $files = scandir($directory);
+    $normalizedFiles = [];
 
-foreach ($files as $file) {
-    // Skip current and parent directories
-    if ($file === '.' || $file === '..') {
-        continue;
+    foreach ($files as $file) {
+        // Skip current and parent directories
+        if ($file === '.' || $file === '..') {
+            continue;
+        }
+
+        // Skip hidden files
+        if (substr($file, 0, 1) === '.') {
+            continue;
+        }
+
+        $path = $directory;
+        $fileName = $file;
+
+        $fileExtension       = pathinfo($fileName, PATHINFO_EXTENSION);
+        $fileNameNoExtension = pathinfo($fileName, PATHINFO_FILENAME);
+
+        $originalBase   = $fileNameNoExtension;                 // raw base name
+        $normalizedBase = normalizeFileBaseName($originalBase); // shared pipeline
+
+        $needsNormalization = ($originalBase !== $normalizedBase);
+
+        $newFileName = $normalizedBase . ($fileExtension ? '.' . $fileExtension : '');
+
+        // Prepare file data
+        $normalizedFiles[] = [
+            'path'               => $path,
+            'originalFileName'   => $fileName,
+            // Only send newFileName when we actually want to rename
+            'newFileName'        => $needsNormalization ? $newFileName : '',
+            'fileExtension'      => $fileExtension,
+            'fileNameNoExtension' => $normalizedBase,
+            'needsNormalization' => $needsNormalization,
+            'status'             => $needsNormalization ? 'Needs Renaming' : '',
+        ];
     }
 
-    // Skip hidden files
-    if (substr($file, 0, 1) === '.') {
-        continue;
-    }
+    // Set appropriate headers for JSON response
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+    header('Content-Type: application/json');
 
-    $path = $directory;
-    $fileName = $file;
-
-    $fileExtension       = pathinfo($fileName, PATHINFO_EXTENSION);
-    $fileNameNoExtension = pathinfo($fileName, PATHINFO_FILENAME);
-
-    $originalBase   = $fileNameNoExtension;                 // raw base name
-    $normalizedBase = normalizeFileBaseName($originalBase); // shared pipeline
-
-    $needsNormalization = ($originalBase !== $normalizedBase);
-
-    $newFileName = $normalizedBase . ($fileExtension ? '.' . $fileExtension : '');
-
-    // Prepare file data
-    $normalizedFiles[] = [
-        'path'               => $path,
-        'originalFileName'   => $fileName,
-        // Only send newFileName when we actually want to rename
-        'newFileName'        => $needsNormalization ? $newFileName : '',
-        'fileExtension'      => $fileExtension,
-        'fileNameNoExtension' => $normalizedBase,
-        'needsNormalization' => $needsNormalization,
-        'status'             => $needsNormalization ? 'Needs Renaming' : '',
-    ];
+    // Output the result as a flat array
+    echo json_encode(['files' => $normalizedFiles]);
+} catch (Exception $e) {
+    ob_clean();
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'File processing error: ' . $e->getMessage()]);
 }
-
-// Set appropriate headers for JSON response
-header('Cache-Control: no-cache, must-revalidate');
-header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
-header('Content-Type: application/json');
-
-// Output the result as a flat array
-echo json_encode(['files' => $normalizedFiles]);
 
 // End output buffering and send output
 ob_end_flush();

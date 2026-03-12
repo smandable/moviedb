@@ -37,6 +37,8 @@ if (!is_dir($directory)) {
     exit();
 }
 
+try {
+
 // Retrieve all files from the directory, excluding hidden files
 $files = array_diff(scandir($directory), ['..', '.']);
 
@@ -185,6 +187,11 @@ if (!$updateMissingDataOnly) {
 
 // Return final results as JSON
 returnHTML($titlesArray);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Processing error: ' . $e->getMessage()]);
+}
 
 // -------------------- FUNCTION DEFINITIONS --------------------
 

@@ -20,6 +20,8 @@ if (!isset($data['files']) || !is_array($data['files'])) {
 $files = $data['files'];
 $results = [];
 
+try {
+
 foreach ($files as $file) {
     if (!isset($file['path'], $file['originalFileName'], $file['newFileName'])) {
         $results[] = [
@@ -117,3 +119,8 @@ foreach ($files as $file) {
 }
 
 echo json_encode(['results' => $results]);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Rename error: ' . $e->getMessage()]);
+}
