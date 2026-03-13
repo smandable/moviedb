@@ -3,8 +3,8 @@ import {
   IFloatingFilterParams,
   TextFilterModel,
 } from 'ag-grid-community';
-import { NgFor, NgIf } from '@angular/common';
-import { Component, OnDestroy } from '@angular/core';
+import { NgFor, NgIf, NgStyle } from '@angular/common';
+import { Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 const HISTORY_KEY = 'filterHistory';
@@ -16,6 +16,7 @@ const MIN_TERM_LENGTH = 2;
   template: `
     <div class="filter-wrapper">
       <input
+        #filterInput
         type="text"
         [(ngModel)]="currentValue"
         (input)="onInputChanged()"
@@ -32,19 +33,22 @@ const MIN_TERM_LENGTH = 2;
       >
         <i class="fas fa-times clear-button fa-2x" style="color: red;"></i>
       </button>
-      <ul *ngIf="showDropdown && searchHistory.length" class="filter-history-dropdown">
-        <li
-          *ngFor="let term of searchHistory"
-          (mousedown)="selectTerm(term)"
-        >
-          {{ term }}
-        </li>
-      </ul>
     </div>
+    <ul
+      *ngIf="showDropdown && searchHistory.length"
+      class="filter-history-dropdown"
+      [ngStyle]="dropdownStyle"
+    >
+      <li
+        *ngFor="let term of searchHistory"
+        (mousedown)="selectTerm(term)"
+      >
+        {{ term }}
+      </li>
+    </ul>
   `,
   styles: [`
     .filter-wrapper {
-      position: relative;
       display: flex;
       align-items: center;
     }
@@ -63,11 +67,8 @@ const MIN_TERM_LENGTH = 2;
       font-size: 14px;
     }
     .filter-history-dropdown {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      margin: 2px 0 0;
+      position: fixed;
+      margin: 0;
       padding: 0;
       list-style: none;
       background: #1e1e1e;
@@ -76,6 +77,7 @@ const MIN_TERM_LENGTH = 2;
       z-index: 9999;
       max-height: 220px;
       overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
     .filter-history-dropdown li {
       padding: 6px 10px;
@@ -88,15 +90,18 @@ const MIN_TERM_LENGTH = 2;
     }
   `],
   standalone: true,
-  imports: [FormsModule, NgIf, NgFor],
+  imports: [FormsModule, NgIf, NgFor, NgStyle],
 })
 export class CustomFloatingFilterComponent
   implements IFloatingFilter<TextFilterModel>, OnDestroy {
+
+  @ViewChild('filterInput', { static: false }) filterInputRef!: ElementRef<HTMLInputElement>;
 
   params!: IFloatingFilterParams<TextFilterModel>;
   currentValue: string = '';
   showDropdown: boolean = false;
   searchHistory: string[] = [];
+  dropdownStyle: Record<string, string> = {};
 
   private previousValue: string = '';
   private blurTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -113,7 +118,6 @@ export class CustomFloatingFilterComponent
   }
 
   ngOnDestroy(): void {
-    // Save current term before component is destroyed
     this.saveTermIfValid(this.currentValue);
     window.removeEventListener('storage', this.storageListener);
     if (this.blurTimeout) {
@@ -126,13 +130,10 @@ export class CustomFloatingFilterComponent
   }
 
   onInputChanged(): void {
-    // If the user manually empties the input, save the previous term
     if (!this.currentValue && this.previousValue) {
       this.saveTermIfValid(this.previousValue);
     }
     this.previousValue = this.currentValue;
-
-    // Hide dropdown while typing
     this.showDropdown = false;
 
     this.params.parentFilterInstance((instance: any) => {
@@ -143,9 +144,7 @@ export class CustomFloatingFilterComponent
   }
 
   clearFilter(): void {
-    // Save the term being cleared
     this.saveTermIfValid(this.currentValue);
-
     this.currentValue = '';
     this.previousValue = '';
     this.params.parentFilterInstance((instance: any) => {
@@ -158,12 +157,12 @@ export class CustomFloatingFilterComponent
   onFocus(): void {
     this.loadHistory();
     if (this.searchHistory.length && !this.currentValue) {
+      this.positionDropdown();
       this.showDropdown = true;
     }
   }
 
   onBlur(): void {
-    // Small delay so click on dropdown item registers before hiding
     this.blurTimeout = setTimeout(() => {
       this.showDropdown = false;
     }, 150);
@@ -178,6 +177,16 @@ export class CustomFloatingFilterComponent
         instance.onFloatingFilterChanged('contains', this.currentValue);
       }
     });
+  }
+
+  private positionDropdown(): void {
+    if (!this.filterInputRef) return;
+    const rect = this.filterInputRef.nativeElement.getBoundingClientRect();
+    this.dropdownStyle = {
+      top: `${rect.bottom + 2}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+    };
   }
 
   private loadHistory(): void {
@@ -195,13 +204,11 @@ export class CustomFloatingFilterComponent
 
     this.loadHistory();
 
-    // Remove duplicate if present, then prepend
     this.searchHistory = this.searchHistory.filter(
       (t) => t.toLowerCase() !== trimmed.toLowerCase()
     );
     this.searchHistory.unshift(trimmed);
 
-    // Cap at max
     if (this.searchHistory.length > MAX_HISTORY) {
       this.searchHistory = this.searchHistory.slice(0, MAX_HISTORY);
     }
