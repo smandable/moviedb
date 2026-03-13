@@ -45,3 +45,23 @@
 .home-action-icon:hover {
   opacity: 0.75;
 }
+
+/* Allow the filter history dropdown to overflow the AG Grid header */
+:host ::ng-deep .ag-floating-filter-body {
+  overflow: visible;
+}
+:host ::ng-deep .ag-header-row-floating-filter {
+  overflow: visible;
+  z-index: 2;
+}
+:host ::ng-deep .ag-header-cell[col-id="title"] {
+  overflow: visible;
+}
+:host ::ng-deep .ag-header {
+  overflow: visible;
+  z-index: 3;
+}
+:host ::ng-deep .ag-body-viewport {
+  z-index: 1;
+  position: relative;
+}
