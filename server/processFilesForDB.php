@@ -327,7 +327,13 @@ function checkDatabaseForTitle(
     // -----------------------------------------------------------
 
     // --- Normalize title for DB operations ---
+    // Strip cast/scene suffixes: "Title # 03 - Cast" → "Title # 03", "Title - Scene_1 - Cast" → "Title"
     $dbTitle = $sourceTitle;
+    if (preg_match('/^(.*?\s+#\s+\d+)\s+-\s+/', $dbTitle, $castMatch)) {
+        $dbTitle = trim($castMatch[1]);
+    } elseif (preg_match('/^(.*?)\s+-\s+Scene_\d+/', $dbTitle, $sceneMatch)) {
+        $dbTitle = trim($sceneMatch[1]);
+    }
     $dbTitle = handleNumberedTitle($dbTitle, $db, $table);
     $dbTitle = handleMissingNumberedTitle($dbTitle, $titleItem, $duplicateTitlesMissing01Array, $titlesMissing01Array, $db, $table);
 
@@ -581,8 +587,15 @@ function splitBaseTitleAndHasNumberStrict(string $title): array
 {
     $t = trim($title);
 
-    if (preg_match('/^(.*)\s+#\s+(\d+)$/', $t, $m)) {
+    // Match "Title # NN" optionally followed by " - Scene_X", " - Cast", etc.
+    if (preg_match('/^(.*?)\s+#\s+(\d+)(?:\s+-\s+.*)?$/', $t, $m)) {
         return [trim($m[1]), true];
+    }
+
+    // Match "Title - Scene_X - ..." (no number, but has scene/cast suffix)
+    // Not numbered, so return base with false
+    if (preg_match('/^(.*?)\s+-\s+Scene_\d+(?:\s+-\s+.*)?$/', $t, $m)) {
+        return [trim($m[1]), false];
     }
 
     return [$t, false];

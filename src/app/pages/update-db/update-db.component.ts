@@ -98,9 +98,9 @@ export class UpdateDbComponent implements OnInit {
             event.stopPropagation();
 
             const rawTitle: string = params.data?.title || '';
-            // Strip trailing " # 07" etc.
-            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?$/);
-            const baseTitle = match ? match[1] : rawTitle;
+            // Strip " # NN", " - Scene_X", " - Cast" suffixes to get base title
+            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?(?:\s+-\s+.*)?$/);
+            const baseTitle = (match ? match[1] : rawTitle).trim();
 
             if (!navigator.clipboard) {
               console.warn('Clipboard API not available');
@@ -257,7 +257,8 @@ export class UpdateDbComponent implements OnInit {
             event.stopPropagation();
 
             const rawTitle: string = params.data?.title || '';
-            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?$/);
+            // Strip " # NN", " - Scene_X", " - Cast" suffixes to get base title
+            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?(?:\s+-\s+.*)?$/);
             const baseTitle = (match ? match[1] : rawTitle).trim();
 
             navigator.clipboard?.writeText(baseTitle).catch(() => {});
