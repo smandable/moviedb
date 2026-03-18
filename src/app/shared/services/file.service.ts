@@ -68,7 +68,6 @@ export class FileService {
   private processFilesForDBUrl = `${this.baseUrl}processFilesForDB.php`;
   private updateRowUrl = `${this.baseUrl}editCurrentRow.php`;
   private openExternalDriveSearchUrl = `${this.baseUrl}openExternalDriveSearch.php`;
-  // private performDbOpsUrl    = `${this.baseUrl}performDatabaseOperations.php`;
 
   constructor(private http: HttpClient) {}
 
@@ -111,24 +110,13 @@ export class FileService {
    */
   processFilesForDB(directory: string): Observable<ProcessFilesResponse> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post<ProcessFilesResponse>(
-      this.processFilesForDBUrl,
-      { directory },
-      { headers },
-    );
-  }
-
-  /**
-   * Performs database operations.
-   * @returns An observable containing the operation results.
-   */
-  performDatabaseOperations(): Observable<any> {
-    // Still a placeholder;
-    return this.http.post<any>(
-      'path/to/performDatabaseOperations.php',
-      {},
-      { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) },
-    );
+    return this.http
+      .post<ProcessFilesResponse>(
+        this.processFilesForDBUrl,
+        { directory },
+        { headers },
+      )
+      .pipe(catchError(this.handleError));
   }
 
   /**

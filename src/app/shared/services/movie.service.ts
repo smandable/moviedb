@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface Movie {
@@ -34,7 +35,7 @@ export class MovieService {
    * @returns An Observable of Movie array.
    */
   getAllMovies(): Observable<Movie[]> {
-    return this.http.get<Movie[]>(this.getAllMoviesUrl);
+    return this.http.get<Movie[]>(this.getAllMoviesUrl).pipe(catchError(this.handleError));
   }
 
   /**
@@ -47,7 +48,7 @@ export class MovieService {
   updateRow(id: number, field: string, value: any): Observable<any> {
     const body = { id, field, value };
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post<any>(this.updateMovieUrl, body, { headers });
+    return this.http.post<any>(this.updateMovieUrl, body, { headers }).pipe(catchError(this.handleError));
   }
 
   /**
@@ -56,7 +57,11 @@ export class MovieService {
    * @returns An Observable of the delete response.
    */
   deleteRow(id: number): Observable<any> {
-    return this.http.post(this.deleteMovieUrl, { id });
+    return this.http.post(this.deleteMovieUrl, { id }).pipe(catchError(this.handleError));
   }
-  
+
+  private handleError(error: HttpErrorResponse) {
+    console.error('MovieService error:', error);
+    return throwError(() => new Error('An error occurred while processing the request.'));
+  }
 }

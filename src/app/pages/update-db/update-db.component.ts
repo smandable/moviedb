@@ -332,7 +332,6 @@ export class UpdateDbComponent implements OnInit {
    * @param data The row data associated with the file.
    */
   updateDB(data: any): void {
-    // if (confirm(`Are you sure you want to update the database for "${data.title}"?`)) {
     this.fileService
       .updateRow(data.id, {
         dimensions: data.fileDimensions,
@@ -355,7 +354,6 @@ export class UpdateDbComponent implements OnInit {
           alert('An error occurred while updating the database.');
         },
       });
-    // }
   }
   /**
    * Opens a modal to display original and new filenames.
@@ -403,7 +401,7 @@ export class UpdateDbComponent implements OnInit {
     );
 
     if (filesToRename.length === 0) {
-      console.log('No files selected for renaming.');
+      console.error('No files selected for renaming.');
       return;
     }
 
@@ -445,7 +443,6 @@ export class UpdateDbComponent implements OnInit {
     this.fileService.processFilesForDB(this.directory).subscribe({
       next: (response: ProcessFilesResponse) => {
         this.isLoading = false;
-        // console.log('Process Files For DB Response:', response);
 
         if (response.success === false) {
           alert(`Error: ${response.message}`);
@@ -487,7 +484,6 @@ export class UpdateDbComponent implements OnInit {
         }));
 
         this.cdr.detectChanges();
-        // console.log('Row Data:', this.rowData); // Verify the data structure and values
 
         if (this.gridApi) {
           // Remove all existing rows
@@ -505,19 +501,8 @@ export class UpdateDbComponent implements OnInit {
       error: (error) => {
         this.isLoading = false;
         console.error('Error performing database operations:', error);
-        console.log(
-          'Failed to update database. See console for details.',
-        );
       },
     });
-  }
-
-  private getBaseTitleStrict(rawTitle: string): string {
-    const title = (rawTitle || '').trim();
-
-    // Strict: only treat numbered titles as " ... # 01" (spaces required)
-    const match = title.match(/^(.*?)(?:\s+#\s+\d+)?$/);
-    return (match ? match[1] : title).trim();
   }
 
   /**
