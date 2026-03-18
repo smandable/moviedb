@@ -7,9 +7,6 @@ import { RouterLinkActive }  from '@angular/router';
 
 // External modules
 import { NgbCollapse }       from '@ng-bootstrap/ng-bootstrap';
-import { NgbDropdown }       from '@ng-bootstrap/ng-bootstrap';
-import { NgbDropdownToggle } from '@ng-bootstrap/ng-bootstrap';
-import { NgbDropdownMenu }   from '@ng-bootstrap/ng-bootstrap';
 import { TranslateModule }   from '@ngx-translate/core';
 
 // Internal modules
@@ -20,7 +17,7 @@ import { environment }       from '@env/environment';
   templateUrl : './layout-header.component.html',
   styleUrls   : ['./layout-header.component.scss'],
   standalone  : true,
-  imports     : [RouterLink, NgbCollapse, RouterLinkActive, NgbDropdown, NgbDropdownToggle, NgbDropdownMenu, TranslateModule]
+  imports     : [RouterLink, NgbCollapse, RouterLinkActive, TranslateModule]
 })
 export class LayoutHeaderComponent implements OnInit
 {

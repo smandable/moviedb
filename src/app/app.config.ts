@@ -3,7 +3,6 @@ import { DatePipe }               from '@angular/common';
 import { withFetch }              from '@angular/common/http';
 import { withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClient }      from '@angular/common/http';
-import { HttpClient }             from '@angular/common/http';
 import { ApplicationConfig }      from '@angular/core';
 import { importProvidersFrom }    from '@angular/core';
 import { BrowserModule }          from '@angular/platform-browser';
@@ -14,9 +13,8 @@ import { withInMemoryScrolling }  from '@angular/router';
 import { withRouterConfig }       from '@angular/router';
 
 // External modules
-import { TranslateModule }        from '@ngx-translate/core';
-import { TranslateLoader }        from '@ngx-translate/core';
-import { TranslateHttpLoader }    from '@ngx-translate/http-loader';
+import { TranslateModule }           from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { AngularSvgIconModule }   from 'angular-svg-icon';
 
 // Internal modules
@@ -25,11 +23,6 @@ import { routes }                 from './app.routes';
 
 // Services
 import { StoreService }           from '@services/store.service';
-
-export function createTranslateLoader(http : HttpClient)
-{
-  return new TranslateHttpLoader(http, './assets/i18n/', '.json');
-}
 
 export const appConfig : ApplicationConfig = {
   providers : [
@@ -52,16 +45,13 @@ export const appConfig : ApplicationConfig = {
       // External modules
       TranslateModule.forRoot({
         defaultLanguage : environment.defaultLanguage,
-        loader : {
-          provide    : TranslateLoader,
-          useFactory : (createTranslateLoader),
-          deps       : [HttpClient]
-        }
       }),
       AngularSvgIconModule.forRoot(),
 
       // Internal modules
     ),
+
+    provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
 
     // External modules
 

@@ -1,5 +1,4 @@
 // Angular modules
-import { NgIf }             from '@angular/common';
 import { Component }        from '@angular/core';
 import { OnInit }           from '@angular/core';
 import { RouterOutlet }     from '@angular/router';
@@ -12,7 +11,7 @@ import { StoreService }     from '@services/store.service';
   templateUrl : './app.component.html',
   styleUrls   : ['./app.component.scss'],
   standalone  : true,
-  imports     : [RouterOutlet, NgIf]
+  imports     : [RouterOutlet]
 })
 export class AppComponent implements OnInit
 {

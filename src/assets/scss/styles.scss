@@ -2,14 +2,14 @@
 // NOTE Variables -------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------
 
-@import 'variables.scss';
+@use 'variables' as *;
 
 // ----------------------------------------------------------------------------------------------
 // NOTE Bootstrap -------------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------
 
 // NOTE Complete bootstrap
-@import '../../../node_modules/bootstrap/scss/bootstrap.scss';
+@use '../../../node_modules/bootstrap/scss/bootstrap' as *;
 
 // NOTE Bootstrap configuration
 // @import '../../../node_modules/bootstrap/scss/functions';
@@ -71,7 +71,7 @@
 // NOTE Project style ---------------------------------------------------------------------------
 // ----------------------------------------------------------------------------------------------
 
-@import 'project.scss';
+@use 'project' as *;
 
 // ----------------------------------------------------------------------------------------------
 // NOTE Overwrite styles ------------------------------------------------------------------------
@@ -110,5 +110,4 @@
     font-size: 14px; /* Adjust font size */
     color: #fff; /* Optional: Adjust color */
   }
-/* Importing Bootstrap SCSS file. */
-@import 'bootstrap/scss/bootstrap';
+/* Bootstrap SCSS already loaded above */
