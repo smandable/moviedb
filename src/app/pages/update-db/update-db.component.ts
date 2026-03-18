@@ -380,10 +380,12 @@ export class UpdateDbComponent implements OnInit {
         }
         // Set the button visibility after modal closes successfully
         this.showDatabaseOperationsButton = true;
+        this.cdr.markForCheck();
       },
       (reason) => {
         // Handle dismissal if needed
         this.showDatabaseOperationsButton = true;
+        this.cdr.markForCheck();
       },
     );
   }
@@ -412,9 +414,11 @@ export class UpdateDbComponent implements OnInit {
         this.modalService.dismissAll();
         // Show the new button
         this.showDatabaseOperationsButton = true;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.isLoading = false;
+        this.cdr.markForCheck();
         console.error('Error renaming files:', error);
         alert('Failed to rename files. See console for details.');
       },

@@ -144,6 +144,35 @@ $duplicateTitlesArray = [];
 $duplicateTitlesMissing01Array = [];
 $titlesMissing01Array = [];
 
+// Snapshot DB presence BEFORE the loop so that files inserted within this batch
+// don't affect the needsExternalSearch icon for other files in the same batch.
+$dbPresenceSnapshot = [];
+foreach ($titlesArray as $item) {
+    [$base, ] = splitBaseTitleAndHasNumberStrict($item['title']);
+    if (!isset($dbPresenceSnapshot[$base])) {
+        $dbPresenceSnapshot[$base] = getDbNumberingPresence($db, $table, $base);
+    }
+}
+
+// Also snapshot "other numbered variant" per specific title (for the AND title <> ? check)
+$dbOtherNumberedSnapshot = [];
+foreach ($titlesArray as $item) {
+    $sourceTitle = $item['title'];
+    [$base, $hasNumber] = splitBaseTitleAndHasNumberStrict($sourceTitle);
+    if ($hasNumber && !isset($dbOtherNumberedSnapshot[$sourceTitle])) {
+        $likePrefix = $base . ' # ';
+        $hasOther = false;
+        if ($stmt = $db->prepare("SELECT 1 FROM `$table` WHERE title LIKE CONCAT(?, '%') AND title <> ? LIMIT 1")) {
+            $stmt->bind_param('ss', $likePrefix, $sourceTitle);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $hasOther = ($res && $res->num_rows > 0);
+            $stmt->close();
+        }
+        $dbOtherNumberedSnapshot[$sourceTitle] = $hasOther;
+    }
+}
+
 foreach ($titlesArray as &$titleItem) {
 
     $titleItem = checkDatabaseForTitle(
@@ -153,7 +182,9 @@ foreach ($titlesArray as &$titleItem) {
         $titlesMissing01Array,
         $db,
         $table,
-        $updateMissingDataOnly
+        $updateMissingDataOnly,
+        $dbPresenceSnapshot,
+        $dbOtherNumberedSnapshot
     );
 }
 unset($titleItem); // break reference
@@ -244,7 +275,9 @@ function checkDatabaseForTitle(
     array &$titlesMissing01Array,
     $db,
     $table,
-    $updateMissingDataOnly = false
+    $updateMissingDataOnly = false,
+    array $dbPresenceSnapshot = [],
+    array $dbOtherNumberedSnapshot = []
 ) {
 
     // Ensure required keys exist
@@ -267,32 +300,18 @@ function checkDatabaseForTitle(
 
     [$baseTitleStrict, $titleHasNumberStrict] = splitBaseTitleAndHasNumberStrict($sourceTitle);
 
-    // NOTE: non-cached so later rows see DB changes made earlier in the same request
-    $presence = getDbNumberingPresence($db, $table, $baseTitleStrict);
+    // Use pre-batch snapshot so files inserted within this batch don't affect each other's icon
+    $presence = $dbPresenceSnapshot[$baseTitleStrict] ?? getDbNumberingPresence($db, $table, $baseTitleStrict);
 
     $titleItem['baseTitle'] = $baseTitleStrict;
     $titleItem['titleHasNumber'] = $titleHasNumberStrict;
     $titleItem['dbHasUnnumberedVariant'] = $presence['dbHasUnnumberedVariant'];
     $titleItem['dbHasNumberedVariant'] = $presence['dbHasNumberedVariant'];
 
+    // Use pre-batch snapshot for "other numbered variant" check
     $dbHasOtherNumberedVariant = false;
-
     if ($titleHasNumberStrict) {
-        $likePrefix = $baseTitleStrict . ' # ';
-        if ($stmt = $db->prepare("
-        SELECT 1
-        FROM `$table`
-        WHERE title LIKE CONCAT(?, '%')
-          AND title <> ?
-        LIMIT 1
-    ")) {
-            // IMPORTANT: compare against the incoming title (sourceTitle), not $title which may later mutate
-            $stmt->bind_param('ss', $likePrefix, $sourceTitle);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            $dbHasOtherNumberedVariant = ($res && $res->num_rows > 0);
-            $stmt->close();
-        }
+        $dbHasOtherNumberedVariant = $dbOtherNumberedSnapshot[$sourceTitle] ?? false;
     }
 
     $titleItem['dbHasOtherNumberedVariant'] = $dbHasOtherNumberedVariant;

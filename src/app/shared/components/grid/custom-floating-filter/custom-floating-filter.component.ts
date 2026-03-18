@@ -4,7 +4,7 @@ import {
   TextFilterModel,
 } from 'ag-grid-community';
 import { NgFor, NgIf, NgStyle } from '@angular/common';
-import { Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 const HISTORY_KEY = 'filterHistory';
@@ -97,6 +97,7 @@ export class CustomFloatingFilterComponent
 
   @ViewChild('filterInput', { static: false }) filterInputRef!: ElementRef<HTMLInputElement>;
 
+  private cdr = inject(ChangeDetectorRef);
   params!: IFloatingFilterParams<TextFilterModel>;
   currentValue: string = '';
   showDropdown: boolean = false;
@@ -165,6 +166,7 @@ export class CustomFloatingFilterComponent
   onBlur(): void {
     this.blurTimeout = setTimeout(() => {
       this.showDropdown = false;
+      this.cdr.markForCheck();
     }, 150);
   }
 
