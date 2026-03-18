@@ -16,7 +16,7 @@
 
     <!-- Display totals only after processing -->
     <div *ngIf="processingComplete" class="total-items-container mt-1 text-end">
-        <strong>Titles Processed:</strong> {{ totalItems }} |
+        <strong>Titles Processed:</strong> {{ totalItems }} ({{ formatFileSize(totalItemsSize) }}) |
         <strong>New:</strong> {{ newItemsCount }} ({{ formatFileSize(newItemsSize) }}) |
         <strong>Duplicate:</strong> {{ duplicateItemsCount }} ({{ formatFileSize(duplicateItemsSize) }})
       </div>

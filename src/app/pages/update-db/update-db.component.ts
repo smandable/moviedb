@@ -44,6 +44,7 @@ export class UpdateDbComponent implements OnInit {
   public totalItems: number = 0;
   public newItemsCount: number = 0;
   public duplicateItemsCount: number = 0;
+  public totalItemsSize: number = 0;
   public newItemsSize: number = 0;
   public duplicateItemsSize: number = 0;
 
@@ -451,6 +452,7 @@ export class UpdateDbComponent implements OnInit {
         }
         // Reset counts
         this.totalItems = 0;
+        this.totalItemsSize = 0;
         this.newItemsCount = 0;
         this.duplicateItemsCount = 0;
         this.newItemsSize = 0;
@@ -459,6 +461,7 @@ export class UpdateDbComponent implements OnInit {
         // Calculate counts and sizes
         response.titles.forEach((title) => {
           this.totalItems++;
+          this.totalItemsSize += title.titleSize || 0;
           if (title.duplicate) {
             this.duplicateItemsCount++;
             this.duplicateItemsSize += title.titleSize || 0;
@@ -496,6 +499,7 @@ export class UpdateDbComponent implements OnInit {
         }
 
         this.processingComplete = true; // Show totals
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.isLoading = false;
