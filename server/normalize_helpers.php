@@ -197,8 +197,14 @@ if (!function_exists('cleanupFunctions')) {
         $name = preg_replace($patterns, $replacements, $name);
         $name = trim($name);
 
-        // "#07" or "#   07" → "# 07"
-        $name = preg_replace('/#\s*(\d+)/', '# $1', $name);
+        // "#07" or "#   07" → "# 07"; "#1" → "# 01"
+        $name = preg_replace_callback('/#\s*(\d+)/', function ($matches) {
+            $number = $matches[1];
+            if (strlen($number) === 1) {
+                $number = '0' . $number;
+            }
+            return '# ' . $number;
+        }, $name);
 
         // Handle "Vol4", "Vol 4", "Vol.4", "Vol#4", "Vol #4"
         $name = preg_replace_callback(
