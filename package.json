@@ -53,6 +53,7 @@
     "typescript": "~5.9.3"
   },
   "overrides": {
-    "undici": "^7.24.0"
+    "undici": "^7.24.0",
+    "picomatch": "^4.0.4"
   }
 }
