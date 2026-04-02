@@ -13,12 +13,12 @@ function formatSize($size, $precision = 2)
         return 'Invalid size';
     }
 
-    if ($size >= 1073741824) {
-        return number_format($size / 1073741824, $precision) . ' GB';
-    } elseif ($size >= 1048576) {
-        return number_format($size / 1048576, $precision) . ' MB';
-    } elseif ($size >= 1024) {
-        return number_format($size / 1024, $precision) . ' KB';
+    if ($size >= 1e9) {
+        return number_format($size / 1e9, $precision) . ' GB';
+    } elseif ($size >= 1e6) {
+        return number_format($size / 1e6, $precision) . ' MB';
+    } elseif ($size >= 1e3) {
+        return number_format($size / 1e3, $precision) . ' KB';
     }
 
     return $size . ' Bytes';

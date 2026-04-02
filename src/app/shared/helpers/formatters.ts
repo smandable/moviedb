@@ -22,10 +22,10 @@ export function fileSizeFormatter(params: ValueFormatterParams): string {
 
   const units = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const exponent = Math.min(
-    Math.floor(Math.log(byteNumber) / Math.log(1024)),
+    Math.floor(Math.log(byteNumber) / Math.log(1000)),
     units.length - 1
   );
-  const size = byteNumber / Math.pow(1024, exponent);
+  const size = byteNumber / Math.pow(1000, exponent);
 
   return `${size.toFixed(2)}\u00A0${units[exponent]}`;
 }

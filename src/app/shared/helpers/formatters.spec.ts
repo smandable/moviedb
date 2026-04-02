@@ -18,24 +18,24 @@ describe('fileSizeFormatter', () => {
   });
 
   it('should format kilobytes', () => {
-    expect(fileSizeFormatter(params(1024))).toBe('1.00\u00A0KB');
-    expect(fileSizeFormatter(params(2048))).toBe('2.00\u00A0KB');
+    expect(fileSizeFormatter(params(1000))).toBe('1.00\u00A0KB');
+    expect(fileSizeFormatter(params(2000))).toBe('2.00\u00A0KB');
   });
 
   it('should format megabytes', () => {
-    expect(fileSizeFormatter(params(1048576))).toBe('1.00\u00A0MB');
+    expect(fileSizeFormatter(params(1000000))).toBe('1.00\u00A0MB');
   });
 
   it('should format gigabytes', () => {
-    expect(fileSizeFormatter(params(1073741824))).toBe('1.00\u00A0GB');
+    expect(fileSizeFormatter(params(1000000000))).toBe('1.00\u00A0GB');
   });
 
   it('should format terabytes', () => {
-    expect(fileSizeFormatter(params(1099511627776))).toBe('1.00\u00A0TB');
+    expect(fileSizeFormatter(params(1000000000000))).toBe('1.00\u00A0TB');
   });
 
   it('should handle string values by parsing them', () => {
-    expect(fileSizeFormatter(params('1048576'))).toBe('1.00\u00A0MB');
+    expect(fileSizeFormatter(params('1000000'))).toBe('1.00\u00A0MB');
   });
 
   it('should return "Invalid Size" for non-numeric strings', () => {

@@ -16,6 +16,7 @@ export interface NormalizedFile {
   // client-side only
   workingBaseName?: string;
   userEdited?: boolean;
+  showNormalizedPreview?: boolean;
 }
 
 @Component({
@@ -73,17 +74,29 @@ export class FileNormalizationModalComponent {
     // If user edited, we respect their casing choices.
     const targetBase = this.normalizeBaseName(workingBase, !!file.userEdited);
 
+    const workingFull = file.fileExtension
+      ? `${workingBase}.${file.fileExtension}`
+      : workingBase;
     const targetFull = file.fileExtension
       ? `${targetBase}.${file.fileExtension}`
       : targetBase;
 
-    // Only “no work to do” if the TARGET full name equals the ORIGINAL full name
-    if (!targetBase || targetFull === file.originalFileName) {
+    // Does normalization actually change what the user typed? (drives right-column display)
+    const normalizationChangesName = !!targetBase && targetFull !== workingFull;
+    // Does the file need to be renamed on disk at all?
+    const requiresRename =
+      !!targetBase &&
+      (normalizationChangesName || workingFull !== file.originalFileName);
+
+    if (!requiresRename) {
       file.needsNormalization = false;
       file.newFileName = '';
+      file.showNormalizedPreview = false;
     } else {
       file.needsNormalization = true;
-      file.newFileName = targetFull;
+      // Rename target: normalized result when it differs, otherwise the working name itself
+      file.newFileName = normalizationChangesName ? targetFull : workingFull;
+      file.showNormalizedPreview = normalizationChangesName;
     }
   }
   /**
@@ -340,7 +353,7 @@ export class FileNormalizationModalComponent {
     };
     // Numbers immediately before " - Scene_": "6 - Scene_1" → "# 06 - Scene_1"
     name = name.replace(
-      /\b(\d+)(?=\s-\sScene_)/g,
+      /\b(\d+)(?=\s+-\s*Scene_)/g,
       (match, num: string, offset: number, full: string) => {
         if (offset >= 2 && full.slice(offset - 2, offset) === '# ') {
           return match;
@@ -355,6 +368,9 @@ export class FileNormalizationModalComponent {
         return `# ${padded}`;
       },
     );
+
+    // Normalize spacing around hyphen before Scene_: "-Scene_" → "- Scene_"
+    name = name.replace(/\s*-\s*Scene_/g, ' - Scene_');
 
     // Trailing numbers at the end
     name = name.replace(

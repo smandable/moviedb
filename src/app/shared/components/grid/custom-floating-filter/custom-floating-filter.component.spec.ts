@@ -1,3 +1,5 @@
+import { ChangeDetectorRef } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { CustomFloatingFilterComponent } from './custom-floating-filter.component';
 import { IFloatingFilterParams, TextFilterModel } from 'ag-grid-community';
 
@@ -8,7 +10,13 @@ describe('CustomFloatingFilterComponent', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    component = new CustomFloatingFilterComponent();
+    TestBed.configureTestingModule({
+      imports: [CustomFloatingFilterComponent],
+      providers: [
+        { provide: ChangeDetectorRef, useValue: { markForCheck: jasmine.createSpy('markForCheck') } },
+      ],
+    });
+    component = TestBed.runInInjectionContext(() => new CustomFloatingFilterComponent());
     mockFilterInstance = {
       onFloatingFilterChanged: jasmine.createSpy('onFloatingFilterChanged'),
     };

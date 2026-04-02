@@ -54,7 +54,7 @@
 
           <!-- RIGHT: only shown when it actually differs -->
           <td class="align-middle">
-            <ng-container *ngIf="file.needsNormalization">
+            <ng-container *ngIf="file.showNormalizedPreview">
               {{ file.newFileName }}
             </ng-container>
           </td>

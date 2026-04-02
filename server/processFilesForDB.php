@@ -250,16 +250,17 @@ function populateTitlesArray(array $sessionFiles)
         ];
     }
 
-    // Combine files by title, summing sizes and durations
+    // Combine files by title, summing sizes and durations (case-insensitive grouping)
     return array_values(array_reduce(
         $titlesArray,
         function ($carry, $item) {
-            $t = $item['title'];
-            if (isset($carry[$t])) {
-                $carry[$t]['titleSize'] += $item['titleSize'];
-                $carry[$t]['titleDuration'] += $item['titleDuration'];
+            $t   = $item['title'];
+            $key = strtolower($t); // case-insensitive key so "Title" and "title" merge
+            if (isset($carry[$key])) {
+                $carry[$key]['titleSize']     += $item['titleSize'];
+                $carry[$key]['titleDuration'] += $item['titleDuration'];
             } else {
-                $carry[$t] = $item;
+                $carry[$key] = $item; // keep canonical title from first file seen
             }
             return $carry;
         },
@@ -344,7 +345,7 @@ function checkDatabaseForTitle(
     $titleItem['title'] = $title;
 
     // Check if title exists in DB
-    if ($stmt = $db->prepare("SELECT id, date_created, dimensions, filesize, duration, filepath FROM `$table` WHERE title = ?")) {
+    if ($stmt = $db->prepare("SELECT id, date_created, dimensions, filesize, duration, filepath FROM `$table` WHERE LOWER(title) = LOWER(?)")) {
         $stmt->bind_param('s', $title);
         if ($stmt->execute()) {
             $result = $stmt->get_result();

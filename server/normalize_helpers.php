@@ -232,7 +232,7 @@ if (!function_exists('cleanupFunctions')) {
         );
         // Numbers immediately before " - Scene_"
         $name = preg_replace_callback(
-            '/(?<!# )\b(\d+)(?=\s-\sScene_)/',
+            '/(?<!# )\b(\d+)(?=\s+-\s*Scene_)/',
             function ($matches) {
                 $number = $matches[1];
 
@@ -251,6 +251,9 @@ if (!function_exists('cleanupFunctions')) {
             },
             $name
         );
+
+        // Normalize spacing around hyphen before Scene_: "-Scene_" → "- Scene_"
+        $name = preg_replace('/\s*-\s*Scene_/', ' - Scene_', $name);
 
         // Trailing numbers at the end (but not already "# " and not part of Scene_)
         $name = preg_replace_callback(

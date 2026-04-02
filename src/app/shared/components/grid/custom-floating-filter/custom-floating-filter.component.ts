@@ -20,6 +20,7 @@ const MIN_TERM_LENGTH = 2;
         type="text"
         [(ngModel)]="currentValue"
         (input)="onInputChanged()"
+        (paste)="onPaste()"
         (focus)="onFocus()"
         (blur)="onBlur()"
         placeholder="Filter..."
@@ -144,6 +145,10 @@ export class CustomFloatingFilterComponent
     });
   }
 
+  onPaste(): void {
+    setTimeout(() => this.onInputChanged());
+  }
+
   clearFilter(): void {
     this.saveTermIfValid(this.currentValue);
     this.currentValue = '';
@@ -165,6 +170,7 @@ export class CustomFloatingFilterComponent
 
   onBlur(): void {
     this.blurTimeout = setTimeout(() => {
+      this.saveTermIfValid(this.currentValue);
       this.showDropdown = false;
       this.cdr.markForCheck();
     }, 150);

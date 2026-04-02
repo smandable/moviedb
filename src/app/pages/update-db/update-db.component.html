@@ -19,6 +19,9 @@
         <strong>Titles Processed:</strong> {{ totalItems }} ({{ formatFileSize(totalItemsSize) }}) |
         <strong>New:</strong> {{ newItemsCount }} ({{ formatFileSize(newItemsSize) }}) |
         <strong>Duplicate:</strong> {{ duplicateItemsCount }} ({{ formatFileSize(duplicateItemsSize) }})
+        <ng-container *ngIf="replacementGainSize > 0">
+          | <strong>Replacement Gain:</strong> +{{ formatFileSize(replacementGainSize) }}
+        </ng-container>
       </div>
 
     <!-- Directory Field and Buttons -->

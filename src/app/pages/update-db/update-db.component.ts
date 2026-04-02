@@ -47,6 +47,7 @@ export class UpdateDbComponent implements OnInit {
   public totalItemsSize: number = 0;
   public newItemsSize: number = 0;
   public duplicateItemsSize: number = 0;
+  public replacementGainSize: number = 0;
 
   public rowData: any[] = []; // Updated to accommodate processing results
   public gridOptions: GridOptions = {
@@ -455,6 +456,7 @@ export class UpdateDbComponent implements OnInit {
         this.duplicateItemsCount = 0;
         this.newItemsSize = 0;
         this.duplicateItemsSize = 0;
+        this.replacementGainSize = 0;
 
         // Calculate counts and sizes
         response.titles.forEach((title) => {
@@ -463,6 +465,10 @@ export class UpdateDbComponent implements OnInit {
           if (title.duplicate) {
             this.duplicateItemsCount++;
             this.duplicateItemsSize += title.titleSize || 0;
+            if (title.isLarger === 'isLarger' || title.isLarger === 'isLargerZeroDBSize') {
+              const sizeInDB = Number(title.sizeInDB) || 0;
+              this.replacementGainSize += (title.titleSize || 0) - sizeInDB;
+            }
           } else {
             this.newItemsCount++;
             this.newItemsSize += title.titleSize || 0;
