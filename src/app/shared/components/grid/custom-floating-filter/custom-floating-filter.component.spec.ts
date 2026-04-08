@@ -114,14 +114,14 @@ describe('CustomFloatingFilterComponent', () => {
       expect(history.length).toBe(2);
     });
 
-    it('should cap history at 10 items', () => {
-      for (let i = 1; i <= 12; i++) {
+    it('should cap history at 25 items', () => {
+      for (let i = 1; i <= 27; i++) {
         component.currentValue = 'Term' + i;
         component.clearFilter();
       }
       const history = JSON.parse(localStorage.getItem('filterHistory')!);
-      expect(history.length).toBe(10);
-      expect(history[0]).toBe('Term12');
+      expect(history.length).toBe(25);
+      expect(history[0]).toBe('Term27');
     });
 
     it('should show dropdown on focus when history exists and input is empty', () => {

@@ -8,7 +8,7 @@ import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, ViewChild 
 import { FormsModule } from '@angular/forms';
 
 const HISTORY_KEY = 'filterHistory';
-const MAX_HISTORY = 10;
+const MAX_HISTORY = 25;
 const MIN_TERM_LENGTH = 2;
 
 @Component({
