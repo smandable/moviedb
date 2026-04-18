@@ -12,7 +12,7 @@
       <string>/opt/homebrew/bin/npx</string>
       <string>serve</string>
       <string>-s</string>
-      <string>/Users/sean/Sites/moviedb/dist/moviedb</string>
+      <string>/Users/sean/Sites/moviedb/dist/moviedb/browser</string>
       <string>-l</string>
       <string>4200</string>
     </array>
@@ -26,7 +26,7 @@
 
     <!-- optional but handy -->
     <key>WorkingDirectory</key>
-    <string>/Users/sean/Sites/moviedb/dist/moviedb</string>
+    <string>/Users/sean/Sites/moviedb/dist/moviedb/browser</string>
 
     <!-- start at login & restart on crash -->
     <key>RunAtLoad</key><true/>
