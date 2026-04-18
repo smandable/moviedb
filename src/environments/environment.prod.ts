@@ -7,7 +7,7 @@ import packageInfo from '../../package.json';
 const scheme = 'http://';
 const host   = 'localhost';
 const port   = ':8888';
-const path   = '/api/';
+const path   = '/moviedb/server/';
 
 const baseUrl = scheme + host + port + path;
 
