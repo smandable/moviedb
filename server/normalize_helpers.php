@@ -7,6 +7,7 @@ if (!function_exists('normalizeFileBaseName')) {
         $base = titleCase($base);
         $base = cleanupFunctions($base);
         $base = sceneNormalization($base);
+        $base = castSeparator($base);
         $base = finalCleanup($base);
         return $base;
     }
@@ -292,6 +293,22 @@ if (!function_exists('sceneNormalization')) {
         $replacement = '$1 - $2';
 
         return preg_replace($pattern, $replacement, $fileName);
+    }
+}
+
+if (!function_exists('castSeparator')) {
+    function castSeparator(string $fileName): string
+    {
+        // After "Scene_N - ", treat " and " as a cast-member separator and turn it into ", ".
+        // Only applies to the segment after Scene_N so titles containing "and" are untouched.
+        if (preg_match('/Scene_\d+\s+-\s+/i', $fileName, $m, PREG_OFFSET_CAPTURE)) {
+            $offset = $m[0][1] + strlen($m[0][0]);
+            $before = substr($fileName, 0, $offset);
+            $after  = substr($fileName, $offset);
+            $after  = preg_replace('/\s+and\s+/i', ', ', $after);
+            return $before . $after;
+        }
+        return $fileName;
     }
 }
 
