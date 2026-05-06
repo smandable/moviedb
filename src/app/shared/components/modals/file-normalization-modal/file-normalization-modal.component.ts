@@ -156,6 +156,7 @@ export class FileNormalizationModalComponent {
     name = this.titleCase(name, respectUserCasing);
     name = this.cleanupFunctions(name);
     name = this.sceneNormalization(name);
+    name = this.castSeparator(name);
     name = this.finalCleanup(name);
     return name;
   }
@@ -404,6 +405,18 @@ export class FileNormalizationModalComponent {
     // /([Ss]cene_\d+)\s(?!- )([A-Za-z\-]+)/
     //   => "$1 - $2"
     return name.replace(/([Ss]cene_\d+)\s(?!- )([A-Za-z\-]+)/g, '$1 - $2');
+  }
+
+  private castSeparator(name: string): string {
+    // Mirrors PHP castSeparator: after "Scene_N - ", treat " and " as a
+    // cast-member separator and turn it into ", ". Title text before
+    // Scene_N is left untouched.
+    const m = name.match(/Scene_\d+\s+-\s+/i);
+    if (!m || m.index === undefined) return name;
+    const offset = m.index + m[0].length;
+    const before = name.slice(0, offset);
+    const after = name.slice(offset).replace(/\s+and\s+/gi, ', ');
+    return before + after;
   }
 
   private finalCleanup(name: string): string {
