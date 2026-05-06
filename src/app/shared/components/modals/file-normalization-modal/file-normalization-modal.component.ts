@@ -289,23 +289,18 @@ export class FileNormalizationModalComponent {
   private cleanupFunctions(fileName: string): string {
     let name = fileName.trim();
 
-    // Strip quality/codec/etc
-    const removePatterns = [
-      /2160p/gi,
-      /4k/gi,
-      /1080p/gi,
-      /720p/gi,
-      /480p/gi,
-      /360p/gi,
-      /DVDRip/gi,
-      /h264/gi,
-      /x264/gi,
-      /WEBRip/gi,
-      /XXX/gi,
-      /MP4/gi,
-      /xvid/gi,
-    ];
-    removePatterns.forEach((re) => (name = name.replace(re, '')));
+    // Truncate at the first quality/codec/release-type marker — anything
+    // past these (e.g. release-group tags like "-P0RNL0V3R", "-KTR") is junk.
+    // Optionally consumes " XXX " when it appears as the junk-anchor right
+    // before a quality marker, so titles that legitimately contain "XXX"
+    // (e.g. "XXX Adventures", "Adventures in XXX") are preserved when no
+    // quality marker follows.
+    name = name.replace(
+      /(?:\s*\bXXX\b\s+)?\b(?:2160p|4k|1080p|720p|480p|360p|DVDRip|h264|x264|WEBRip|MP4|xvid)\b.*/i,
+      '',
+    );
+    // Drop dangling separators that the truncation may leave behind.
+    name = name.replace(/[\s\-._]+$/, '');
 
     // "X vs Y" normalize spacing
     name = name.replace(/(\s+)vs(\s+)/gi, ' vs. ');

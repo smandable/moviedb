@@ -149,21 +149,22 @@ if (!function_exists('cleanupFunctions')) {
     {
         $name = trim($fileName);
 
-        // Strip quality/codec/etc junk
+        // Truncate at the first quality/codec/release-type marker — anything
+        // past these (e.g. release-group tags like "-P0RNL0V3R", "-KTR") is junk.
+        // Optionally consumes " XXX " when it appears as the junk-anchor right
+        // before a quality marker, so titles that legitimately contain "XXX"
+        // (e.g. "XXX Adventures", "Adventures in XXX") are preserved when no
+        // quality marker follows.
+        $name = preg_replace(
+            '/(?:\s*\bXXX\b\s+)?\b(?:2160p|4k|1080p|720p|480p|360p|DVDRip|h264|x264|WEBRip|MP4|xvid)\b.*/i',
+            '',
+            $name
+        );
+        // Drop dangling separators that the truncation may leave behind.
+        $name = rtrim($name, " \t\n\r\0\x0B-._");
+
+        // Remaining formatting (run on whatever survives the truncation)
         $patterns = [
-            '/2160p/i',
-            '/4k/i',
-            '/1080p/i',
-            '/720p/i',
-            '/480p/i',
-            '/360p/i',
-            '/DVDRip/i',
-            '/h264/i',
-            '/x264/i',
-            '/WEBRip/i',
-            '/XXX/i',
-            '/MP4/i',
-            '/xvid/i',
             '/(\s+)vs(\s+)/i',  // normalize spacing around "vs"
             '/disc/i',
             '/disk(\s*)/i',
@@ -172,20 +173,6 @@ if (!function_exists('cleanupFunctions')) {
         ];
 
         $replacements = [
-            // remove 2160p / 4k / codecs / etc.
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
             // "vs" spacing:
             ' vs. ',
             // disc / disk / cd variants:
