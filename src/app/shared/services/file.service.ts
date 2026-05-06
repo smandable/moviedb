@@ -136,9 +136,12 @@ export class FileService {
    */
   private handleError(error: HttpErrorResponse) {
     console.error('FileService error:', error);
-    return throwError(
-      () => new Error('An error occurred while processing the request.'),
-    );
+    const serverMsg =
+      (error.error && typeof error.error === 'object' && error.error.message) ||
+      (typeof error.error === 'string' && error.error) ||
+      error.message ||
+      'An error occurred while processing the request.';
+    return throwError(() => new Error(serverMsg));
   }
   updateRow(
     id: number,

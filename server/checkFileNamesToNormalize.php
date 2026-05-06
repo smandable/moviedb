@@ -2,6 +2,10 @@
 // Pull in shared normalization helpers
 require_once __DIR__ . '/normalize_helpers.php';
 
+// Keep PHP warnings/notices out of the JSON response body.
+// They still go to the error log; they just don't get echoed to the client.
+ini_set('display_errors', '0');
+
 // Start output buffering to prevent premature output
 ob_start();
 
@@ -32,7 +36,21 @@ if (!is_dir($directory)) {
 }
 
 try {
-    $files = scandir($directory);
+    $files = @scandir($directory);
+    if ($files === false) {
+        ob_clean();
+        http_response_code(500);
+        $err = error_get_last();
+        $detail = $err['message'] ?? 'unknown error';
+        // macOS TCC: httpd lacks Full Disk Access for /Volumes/*.
+        // Grant it in System Settings → Privacy & Security → Full Disk Access
+        // (add /opt/homebrew/opt/httpd/bin/httpd, then restart httpd).
+        echo json_encode([
+            'success' => false,
+            'message' => "Cannot read directory \"$directory\": $detail",
+        ]);
+        exit();
+    }
     $normalizedFiles = [];
 
     foreach ($files as $file) {
