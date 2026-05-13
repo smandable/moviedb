@@ -18,5 +18,5 @@ export const environment = {
   envName         : EnvName.PROD,
   defaultLanguage : 'en',
   apiBaseUrl         : baseUrl,
-  defaultDirectory   : '/Volumes/Recorded 4/fixed/',
+  defaultDirectory   : '/Volumes/Download/fixed/',
 };

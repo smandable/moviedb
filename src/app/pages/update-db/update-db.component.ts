@@ -41,6 +41,7 @@ ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
 })
 export class UpdateDbComponent implements OnInit {
   public directory: string = environment.defaultDirectory;
+  public defaultDirectory: string = environment.defaultDirectory;
   public totalItems: number = 0;
   public newItemsCount: number = 0;
   public duplicateItemsCount: number = 0;

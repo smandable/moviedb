@@ -20,7 +20,7 @@ if (preg_match('/["\\\\\\x00-\\x1F]/', $query)) {
     exit;
 }
 
-$volumeNames = ['Extra', 'Misc', 'Recorded 1', 'Recorded 2', 'Recorded 3', 'Recorded 4', 'SP'];
+$volumeNames = ['Extra', 'Misc', 'Recorded 1', 'Recorded 2', 'Recorded 3', 'Recorded 4', 'SP', 'Download'];
 $scopes = [];
 foreach ($volumeNames as $name) {
     $path = "/Volumes/$name";
