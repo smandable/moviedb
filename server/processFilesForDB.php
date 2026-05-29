@@ -5,7 +5,6 @@ header('Content-Type: application/json');
 // Increase the max execution time as needed
 ini_set('max_execution_time', 0);
 
-require 'formatSize.php';
 require 'db_connect.php';
 $config = require 'config.php'; // Load configuration
 

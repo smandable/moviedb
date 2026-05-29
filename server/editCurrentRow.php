@@ -1,10 +1,6 @@
 <?php
-// Include the database connection and configuration
+// Include the database connection (provides $db and the validated $table)
 require 'db_connect.php';
-$config = require 'config.php'; // Load configuration
-
-// Retrieve the table name from the configuration
-$table = isset($config->table) ? $config->table : 'movies_het';
 
 // Define allowed fields and their corresponding data types
 $allowedFields = [
