@@ -489,12 +489,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
   }
 
-  private searchExternalDrivesForRow(rowOrQuery: Movie | string): void {
-    const raw =
-      typeof rowOrQuery === 'string' ? rowOrQuery : (rowOrQuery?.title ?? '');
-
-    // Strip trailing " # 07" etc (works either way)
-    const baseTitle = stripTrailingNumber(raw).trim();
+  private searchExternalDrivesForRow(movie: Movie): void {
+    // Strip trailing " # 07" etc to get the base title
+    const baseTitle = stripTrailingNumber(movie?.title ?? '').trim();
 
     this.fileService.openExternalDriveSearch(baseTitle).subscribe({
       next: () => {},
