@@ -1,5 +1,4 @@
 // Angular modules
-import { DatePipe }               from '@angular/common';
 import { withFetch }              from '@angular/common/http';
 import { withInterceptorsFromDi } from '@angular/common/http';
 import { provideHttpClient }      from '@angular/common/http';
@@ -20,9 +19,6 @@ import { AngularSvgIconModule }   from 'angular-svg-icon';
 // Internal modules
 import { environment }            from '@env/environment';
 import { routes }                 from './app.routes';
-
-// Services
-import { StoreService }           from '@services/store.service';
 
 export const appConfig : ApplicationConfig = {
   providers : [
@@ -52,18 +48,6 @@ export const appConfig : ApplicationConfig = {
     ),
 
     provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
-
-    // External modules
-
-    // Services
-    StoreService,
-
-    // Pipes
-    DatePipe,
-
-    // Guards
-
-    // Resolvers
 
     provideHttpClient(withFetch(), withInterceptorsFromDi()),
     provideAnimations(),

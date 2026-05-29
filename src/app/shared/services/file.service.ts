@@ -19,6 +19,8 @@ export interface NormalizedFile {
   exclude?: boolean;
   // client-side only
   workingBaseName?: string;
+  userEdited?: boolean;
+  showNormalizedPreview?: boolean;
 }
 
 export interface RenameResult {

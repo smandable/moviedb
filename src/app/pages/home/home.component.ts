@@ -13,6 +13,7 @@ import { CustomFloatingFilterComponent } from '@components/grid/custom-floating-
 
 // Utilities
 import { fileSizeFormatter, durationFormatter } from '@helpers/formatters';
+import { stripTrailingNumber } from '@helpers/title';
 import { myTheme } from '@helpers/grid-theme';
 
 // AG Grid Imports
@@ -279,7 +280,7 @@ export class HomeComponent implements OnInit, OnDestroy {
           const rawTitle: string = params.data?.title || '';
 
           // Strip trailing " # 07" etc when copying
-          const copyValue = rawTitle.replace(/\s+#\s+\d+$/, '');
+          const copyValue = stripTrailingNumber(rawTitle);
 
           navigator.clipboard
             .writeText(copyValue)
@@ -493,7 +494,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       typeof rowOrQuery === 'string' ? rowOrQuery : (rowOrQuery?.title ?? '');
 
     // Strip trailing " # 07" etc (works either way)
-    const baseTitle = raw.replace(/\s+#\s+\d+$/, '').trim();
+    const baseTitle = stripTrailingNumber(raw).trim();
 
     this.fileService.openExternalDriveSearch(baseTitle).subscribe({
       next: () => {},

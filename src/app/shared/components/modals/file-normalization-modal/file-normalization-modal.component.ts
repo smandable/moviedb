@@ -2,22 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-export interface NormalizedFile {
-  path: string;
-  originalFileName: string;
-  newFileName: string;
-  fileExtension: string;
-  fileNameNoExtension: string;
-  needsNormalization: boolean;
-  status: string;
-  exclude?: boolean;
-
-  // client-side only
-  workingBaseName?: string;
-  userEdited?: boolean;
-  showNormalizedPreview?: boolean;
-}
+import { NormalizedFile } from '@services/file.service';
 
 @Component({
   selector: 'app-file-normalization-modal',
@@ -137,14 +122,6 @@ export class FileNormalizationModalComponent {
   private stripExtension(name: string): string {
     const lastDot = name.lastIndexOf('.');
     return lastDot > 0 ? name.slice(0, lastDot) : name;
-  }
-
-  private buildNewFileName(file: NormalizedFile): string {
-    const base = file.workingBaseName ?? '';
-    const normalizedBase = this.normalizeBaseName(base, !!file.userEdited);
-    return file.fileExtension
-      ? `${normalizedBase}.${file.fileExtension}`
-      : normalizedBase;
   }
 
   private normalizeBaseName(

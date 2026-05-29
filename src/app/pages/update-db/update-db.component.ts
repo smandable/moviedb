@@ -7,7 +7,8 @@ import {
   ProcessFilesResponse,
 } from '@services/file.service';
 import { FormsModule } from '@angular/forms';
-import { fileSizeFormatter, durationFormatter } from '@helpers/formatters';
+import { fileSizeFormatter, durationFormatter, formatBytes } from '@helpers/formatters';
+import { getBaseTitle } from '@helpers/title';
 import { environment } from 'src/environments/environment';
 import { myTheme } from '@helpers/grid-theme';
 import {
@@ -101,8 +102,7 @@ export class UpdateDbComponent implements OnInit {
 
             const rawTitle: string = params.data?.title || '';
             // Strip " # NN", " - Scene_X", " - Cast" suffixes to get base title
-            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?(?:\s+-\s+.*)?$/);
-            const baseTitle = (match ? match[1] : rawTitle).trim();
+            const baseTitle = getBaseTitle(rawTitle);
 
             if (!navigator.clipboard) {
               console.warn('Clipboard API not available');
@@ -260,8 +260,7 @@ export class UpdateDbComponent implements OnInit {
 
             const rawTitle: string = params.data?.title || '';
             // Strip " # NN", " - Scene_X", " - Cast" suffixes to get base title
-            const match = rawTitle.match(/^(.*?)(?:\s+#\s+\d+)?(?:\s+-\s+.*)?$/);
-            const baseTitle = (match ? match[1] : rawTitle).trim();
+            const baseTitle = getBaseTitle(rawTitle);
 
             navigator.clipboard?.writeText(baseTitle).catch(() => {});
             params.context.componentParent.searchExternalDrives(baseTitle);
@@ -490,17 +489,9 @@ export class UpdateDbComponent implements OnInit {
           titleDimensions: title.fileDimensions || '',
         }));
 
+        // The grid is bound to [rowData], so reassigning it above already
+        // refreshes the rows (diffed by getRowId) — no manual transaction needed.
         this.cdr.detectChanges();
-
-        if (this.gridApi) {
-          // Remove all existing rows
-          const allRowData: any[] = [];
-          this.gridApi.forEachNode((node) => allRowData.push(node.data));
-          this.gridApi.applyTransaction({ remove: allRowData });
-
-          // Add new data
-          this.gridApi.applyTransaction({ add: this.rowData });
-        }
 
         this.processingComplete = true; // Show totals
         this.cdr.markForCheck();
@@ -528,14 +519,6 @@ export class UpdateDbComponent implements OnInit {
   }
 
   formatFileSize(sizeInBytes: number): string {
-    if (sizeInBytes >= 1e9) {
-      return (sizeInBytes / 1e9).toFixed(2) + ' GB';
-    } else if (sizeInBytes >= 1e6) {
-      return (sizeInBytes / 1e6).toFixed(2) + ' MB';
-    } else if (sizeInBytes >= 1e3) {
-      return (sizeInBytes / 1e3).toFixed(2) + ' KB';
-    } else {
-      return sizeInBytes + ' bytes';
-    }
+    return formatBytes(sizeInBytes);
   }
 }

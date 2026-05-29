@@ -3,9 +3,6 @@ import { Component }        from '@angular/core';
 import { OnInit }           from '@angular/core';
 import { RouterOutlet }     from '@angular/router';
 
-// Services
-import { StoreService }     from '@services/store.service';
-
 @Component({
   selector    : 'app-root',
   templateUrl : './app.component.html',
@@ -15,12 +12,7 @@ import { StoreService }     from '@services/store.service';
 })
 export class AppComponent implements OnInit
 {
-  constructor
-  (
-    public storeService : StoreService,
-  )
-  {
-  }
+  constructor() {}
 
   // -------------------------------------------------------------------------------
   // NOTE Init ---------------------------------------------------------------------

@@ -1,13 +1,13 @@
 import { ValueFormatterParams } from 'ag-grid-community';
 
 /**
- * Formats file size from bytes to a human-readable string.
- * @param params - The parameters containing the value to format.
- * @returns A formatted string representing the file size.
+ * Formats a size in bytes into a human-readable string (base-1000 units).
+ * Shared by the grid's file-size column and the update-db totals row so they
+ * format identically.
+ * @param value - The size in bytes (number or numeric string).
+ * @returns A formatted string such as "1.50 GB".
  */
-export function fileSizeFormatter(params: ValueFormatterParams): string {
-  const value = params.value;
-
+export function formatBytes(value: number | string | null | undefined): string {
   if (value === null || value === undefined || value === 0) {
     return '0 Bytes'; // Handle empty, undefined, null, or zero values
   }
@@ -16,7 +16,7 @@ export function fileSizeFormatter(params: ValueFormatterParams): string {
   const byteNumber = typeof value === 'string' ? parseInt(value, 10) : value;
 
   if (isNaN(byteNumber)) {
-    console.error('fileSizeFormatter received invalid value:', value);
+    console.error('formatBytes received invalid value:', value);
     return 'Invalid Size';
   }
 
@@ -28,6 +28,15 @@ export function fileSizeFormatter(params: ValueFormatterParams): string {
   const size = byteNumber / Math.pow(1000, exponent);
 
   return `${size.toFixed(2)}\u00A0${units[exponent]}`;
+}
+
+/**
+ * AG Grid value formatter wrapper around {@link formatBytes}.
+ * @param params - The parameters containing the value to format.
+ * @returns A formatted string representing the file size.
+ */
+export function fileSizeFormatter(params: ValueFormatterParams): string {
+  return formatBytes(params.value);
 }
 
 /**

@@ -8,7 +8,6 @@ import { TranslateModule } from '@ngx-translate/core';
 import { PLATFORM_ID } from '@angular/core';
 import { UpdateDbComponent } from './update-db.component';
 import { FileService, ProcessFilesResponse } from '@services/file.service';
-import { StoreService } from '@services/store.service';
 import { environment } from 'src/environments/environment';
 import { of, throwError } from 'rxjs';
 
@@ -27,7 +26,6 @@ describe('UpdateDbComponent', () => {
       ],
       providers: [
         FileService,
-        StoreService,
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
     }).compileComponents();
@@ -231,19 +229,19 @@ describe('UpdateDbComponent', () => {
 
   describe('formatFileSize', () => {
     it('should format bytes', () => {
-      expect(component.formatFileSize(500)).toBe('500 bytes');
+      expect(component.formatFileSize(500)).toBe('500.00 Bytes');
     });
 
     it('should format KB', () => {
-      expect(component.formatFileSize(1500)).toBe('1.50 KB');
+      expect(component.formatFileSize(1500)).toBe('1.50 KB');
     });
 
     it('should format MB', () => {
-      expect(component.formatFileSize(1500000)).toBe('1.50 MB');
+      expect(component.formatFileSize(1500000)).toBe('1.50 MB');
     });
 
     it('should format GB', () => {
-      expect(component.formatFileSize(1500000000)).toBe('1.50 GB');
+      expect(component.formatFileSize(1500000000)).toBe('1.50 GB');
     });
   });
 

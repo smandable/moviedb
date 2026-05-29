@@ -9,7 +9,6 @@ import { PLATFORM_ID } from '@angular/core';
 import { HomeComponent } from './home.component';
 import { MovieService, Movie } from '@services/movie.service';
 import { FileService } from '@services/file.service';
-import { StoreService } from '@services/store.service';
 import { environment } from 'src/environments/environment';
 import { of, throwError } from 'rxjs';
 
@@ -56,7 +55,6 @@ describe('HomeComponent', () => {
       providers: [
         MovieService,
         FileService,
-        StoreService,
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],
     }).compileComponents();
