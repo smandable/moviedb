@@ -8,6 +8,7 @@ ini_set('max_execution_time', 0);
 require 'db_connect.php';
 require 'path_guard.php';
 require_once __DIR__ . '/normalize_helpers.php';
+require_once __DIR__ . '/title_presence.php';
 $config = require 'config.php'; // Load configuration
 
 $table = is_object($config) ? ($config->table ?? '') : ($config['table'] ?? '');
@@ -150,11 +151,17 @@ $titlesMissing01Array = [];
 
 // Snapshot DB presence BEFORE the loop so that files inserted within this batch
 // don't affect the needsExternalSearch icon for other files in the same batch.
+//
+// Load every title ONCE and answer all per-base presence checks from an
+// in-memory index (was an N+1: ~2-3 queries per title). The snapshot is still
+// taken from pre-loop DB state, so the frozen-icon behavior is unchanged.
+$presenceIndex = buildTitlePresenceIndex(loadAllTitles($db, $table));
+
 $dbPresenceSnapshot = [];
 foreach ($titlesArray as $item) {
     [$base, ] = splitBaseTitleAndHasNumberStrict($item['title']);
     if (!isset($dbPresenceSnapshot[$base])) {
-        $dbPresenceSnapshot[$base] = getDbNumberingPresence($db, $table, $base);
+        $dbPresenceSnapshot[$base] = presenceFromIndex($presenceIndex, $base);
     }
 }
 
@@ -164,16 +171,7 @@ foreach ($titlesArray as $item) {
     $sourceTitle = $item['title'];
     [$base, $hasNumber] = splitBaseTitleAndHasNumberStrict($sourceTitle);
     if ($hasNumber && !isset($dbOtherNumberedSnapshot[$sourceTitle])) {
-        $likePrefix = $base . ' # ';
-        $hasOther = false;
-        if ($stmt = $db->prepare("SELECT 1 FROM `$table` WHERE title LIKE CONCAT(?, '%') AND title <> ? LIMIT 1")) {
-            $stmt->bind_param('ss', $likePrefix, $sourceTitle);
-            $stmt->execute();
-            $res = $stmt->get_result();
-            $hasOther = ($res && $res->num_rows > 0);
-            $stmt->close();
-        }
-        $dbOtherNumberedSnapshot[$sourceTitle] = $hasOther;
+        $dbOtherNumberedSnapshot[$sourceTitle] = hasOtherNumberedFromIndex($presenceIndex, $sourceTitle, $base);
     }
 }
 
