@@ -46,3 +46,6 @@ Thumbs.db
 /server/.env
 IMPROVEMENTS.md
 .claude/
+
+# Local Claude Code project memory — machine-specific notes; repo is public
+CLAUDE.md
