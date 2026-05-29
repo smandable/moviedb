@@ -10,6 +10,7 @@
  */
 
 require 'db_connect.php';
+require_once __DIR__ . '/normalize_helpers.php';
 
 $dryRun = in_array('--dry-run', $argv ?? [], true);
 
@@ -47,7 +48,7 @@ foreach ($directories as $dir) {
         $nameNoExt = $fileInfo['filename'];
 
         // Same title-cleaning as processFilesForDB populateTitlesArray
-        $title = preg_replace(['/ - Scene.*/i', '/ - CD.*/i', '/ - Bonus.*| Bonus.*/i'], '', $nameNoExt);
+        $title = stripTitleVariantSuffixes($nameNoExt);
 
         $size = filesize($filePath);
         if ($size === false) continue;

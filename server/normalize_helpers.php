@@ -1,5 +1,21 @@
 <?php
 
+if (!function_exists('stripTitleVariantSuffixes')) {
+    /**
+     * Strip " - Scene...", " - CD..." and " - Bonus..."/" Bonus..." suffixes
+     * from a file base name to derive the canonical title. Shared by
+     * processFilesForDB.php and refreshFilesizes.php.
+     */
+    function stripTitleVariantSuffixes(string $name): string
+    {
+        return preg_replace(
+            ['/ - Scene.*/i', '/ - CD.*/i', '/ - Bonus.*| Bonus.*/i'],
+            '',
+            $name
+        );
+    }
+}
+
 if (!function_exists('normalizeFileBaseName')) {
     function normalizeFileBaseName(string $base): string
     {

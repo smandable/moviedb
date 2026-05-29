@@ -7,6 +7,7 @@ ini_set('max_execution_time', 0);
 
 require 'db_connect.php';
 require 'path_guard.php';
+require_once __DIR__ . '/normalize_helpers.php';
 $config = require 'config.php'; // Load configuration
 
 $table = is_object($config) ? ($config->table ?? '') : ($config['table'] ?? '');
@@ -242,7 +243,7 @@ function populateTitlesArray(array $sessionFiles)
         }
 
         // Clean up the title
-        $title = preg_replace(['/ - Scene.*/i', '/ - CD.*/i', '/ - Bonus.*| Bonus.*/i'], '', $file['fileNameNoExtension']);
+        $title = stripTitleVariantSuffixes($file['fileNameNoExtension']);
 
         $titlesArray[] = [
             'title' => $title, // Correctly map the title key
@@ -692,12 +693,6 @@ function compareFileSizeToDB($size, $sizeInDB)
 
 function searchSessionForDuplicateFiles(array $duplicateTitlesArray, array $sessionFiles)
 {
-    $patterns = [
-        '/ - Scene.*/i',
-        '/ - CD.*/i',
-        '/ - Bonus.*| Bonus.*/i'
-    ];
-
     foreach ($duplicateTitlesArray as $dup) {
         $dupTitle = $dup['title'];
         foreach ($sessionFiles as $file) {
@@ -705,7 +700,7 @@ function searchSessionForDuplicateFiles(array $duplicateTitlesArray, array $sess
                 continue;
             }
 
-            $fileNameNoExtension = preg_replace($patterns, '', $file['fileNameNoExtension']);
+            $fileNameNoExtension = stripTitleVariantSuffixes($file['fileNameNoExtension']);
 
             // Check if the duplicate title matches
             if (stripos($dupTitle, $fileNameNoExtension) === 0) {
