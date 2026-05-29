@@ -6,6 +6,7 @@ header('Content-Type: application/json');
 ini_set('max_execution_time', 0);
 
 require 'db_connect.php';
+require 'path_guard.php';
 $config = require 'config.php'; // Load configuration
 
 $table = is_object($config) ? ($config->table ?? '') : ($config['table'] ?? '');
@@ -35,6 +36,9 @@ if (!is_dir($directory)) {
     echo json_encode(['success' => false, 'message' => 'Invalid directory path.']);
     exit();
 }
+
+// Reject any directory that resolves outside the allowed base path.
+moviedb_reject_path($directory);
 
 try {
 
@@ -344,7 +348,7 @@ function checkDatabaseForTitle(
     $titleItem['title'] = $title;
 
     // Check if title exists in DB
-    if ($stmt = $db->prepare("SELECT id, date_created, dimensions, filesize, duration, filepath FROM `$table` WHERE LOWER(title) = LOWER(?)")) {
+    if ($stmt = $db->prepare("SELECT id, date_created, dimensions, filesize, duration FROM `$table` WHERE LOWER(title) = LOWER(?)")) {
         $stmt->bind_param('s', $title);
         if ($stmt->execute()) {
             $result = $stmt->get_result();

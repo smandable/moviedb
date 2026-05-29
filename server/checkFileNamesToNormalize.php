@@ -1,6 +1,7 @@
 <?php
 // Pull in shared normalization helpers
 require_once __DIR__ . '/normalize_helpers.php';
+require_once __DIR__ . '/path_guard.php';
 
 // Keep PHP warnings/notices out of the JSON response body.
 // They still go to the error log; they just don't get echoed to the client.
@@ -34,6 +35,9 @@ if (!is_dir($directory)) {
     echo json_encode(['success' => false, 'message' => 'Invalid directory path']);
     exit();
 }
+
+// Reject any directory that resolves outside the allowed base path.
+moviedb_reject_path($directory);
 
 try {
     $files = @scandir($directory);

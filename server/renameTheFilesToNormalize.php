@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/path_guard.php';
+
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405); // Method Not Allowed
@@ -33,6 +35,18 @@ foreach ($files as $file) {
     }
 
     $path         = rtrim($file['path'], '/');
+
+    // Reject paths that exist but resolve outside the allowed base.
+    // (Non-existent paths fall through to the "Original file not found" check.)
+    if (realpath($path) !== false && !moviedb_is_path_allowed($path)) {
+        $results[] = [
+            'originalFileName' => $file['originalFileName'],
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'Path not allowed',
+        ];
+        continue;
+    }
+
     $originalPath = $path . "/" . $file['originalFileName'];
     $newPath      = $path . "/" . $file['newFileName'];
 
