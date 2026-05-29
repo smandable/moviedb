@@ -175,7 +175,7 @@ All endpoints are served by the PHP backend. The base URL is configured in `src/
 Environment-specific settings live in `src/environments/`:
 
 - **`environment.ts`** — Development (API at `localhost:8888/moviedb/server/`)
-- **`environment.prod.ts`** — Production (API at `localhost:8888/api/`)
+- **`environment.prod.ts`** — Production (API at `localhost:8888/moviedb/server/`, same as development)
 
 ### TypeScript Path Aliases
 
