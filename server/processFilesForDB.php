@@ -9,6 +9,7 @@ require 'db_connect.php';
 require 'path_guard.php';
 require_once __DIR__ . '/normalize_helpers.php';
 require_once __DIR__ . '/title_presence.php';
+require_once __DIR__ . '/ffprobe.php';
 $config = require 'config.php'; // Load configuration
 
 $table = is_object($config) ? ($config->table ?? '') : ($config['table'] ?? '');
@@ -47,98 +48,63 @@ try {
 // Retrieve all files from the directory, excluding hidden files
 $files = array_diff(scandir($directory), ['..', '.']);
 
-$sessionFiles = [];
+// Resolve ffprobe once (not once per file).
+$ffprobe = '/opt/homebrew/bin/ffprobe';
+if (!is_executable($ffprobe)) $ffprobe = 'ffprobe'; // fall back to PATH
 
+$videoExtensions = ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'mpg', 'm4v', 'divx'];
+
+// Pass 1: gather file entries (stat only — cheap), preserving scandir order.
+$entries = [];
 foreach ($files as $file) {
-    // Skip hidden files
-    if (substr($file, 0, 1) === '.') continue;
+    if (substr($file, 0, 1) === '.') continue; // skip hidden files
 
     $filePath = rtrim($directory, '/') . '/' . $file;
+    if (!is_file($filePath)) continue;
 
-    if (is_file($filePath)) {
-        $fileInfo = pathinfo($filePath);
-        $fileNameNoExtension = $fileInfo['filename'];
-        $fileExtension = isset($fileInfo['extension']) ? strtolower($fileInfo['extension']) : '';
+    $fileInfo = pathinfo($filePath);
+    $ext = isset($fileInfo['extension']) ? strtolower($fileInfo['extension']) : '';
 
-        // Initialize metadata
-        $fileSize = filesize($filePath);
-        $fileDimensions = '';
-        $fileDuration = 0; // Default to 0 seconds
+    $entries[] = [
+        'fileNameNoExtension' => $fileInfo['filename'],
+        'fileSize'            => filesize($filePath),
+        'fileNameAndPath'     => $filePath,
+        'isVideo'             => in_array($ext, $videoExtensions, true),
+    ];
+}
 
-        // Extract dimensions and duration based on file type
-        if (in_array($fileExtension, ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'mpg', 'm4v', 'divx'])) {
-            // For videos, use FFmpeg to get dimensions and duration
-            $ffmpegOutput = [];
-            $ffprobe = '/opt/homebrew/bin/ffprobe';
-            if (!is_executable($ffprobe)) $ffprobe = 'ffprobe'; // or fall back to 'ffprobe'
+// Pass 2: probe every video concurrently. ffprobe (one process per file) is the
+// slow part of a scan, so a bounded pool is the big win on fast storage.
+$videoJobs = [];
+foreach ($entries as $i => $entry) {
+    if ($entry['isVideo']) $videoJobs[$i] = $entry['fileNameAndPath'];
+}
+$maxParallel = (int) (getenv('FFPROBE_PARALLEL') ?: 8);
+$probeResults = probeVideosParallel($videoJobs, $ffprobe, $maxParallel);
 
-            $cmd = escapeshellcmd($ffprobe)
-                . ' -v error -print_format json -show_entries format=duration -show_entries stream=width,height '
-                . escapeshellarg($filePath)
-                . ' 2>/dev/null';
-            $ffprobeOutput = shell_exec($cmd);
-            // error_log("FFprobe raw output for $filePath: " . print_r($ffprobeOutput, true));
+// Pass 3: assemble sessionFiles in the original order. A video whose probe
+// failed is skipped (matches the previous behavior).
+$sessionFiles = [];
+foreach ($entries as $i => $entry) {
+    $fileDimensions = '';
+    $fileDuration = 0;
 
-            // Check if ffprobe executed successfully
-            if ($ffprobeOutput === null) {
-                error_log("FFprobe command failed for file: $filePath");
-                continue; // Skip processing this file
-            }
-
-            // Decode JSON output
-            $ffprobeData = json_decode($ffprobeOutput, true);
-
-            // Check if JSON decoding was successful
-            if ($ffprobeData === null) {
-                error_log("Failed to decode FFprobe JSON output for file: $filePath");
-                continue; // Skip processing this file
-            }
-
-            // Extract duration from format
-            if (isset($ffprobeData['format']['duration'])) {
-                $duration = floatval($ffprobeData['format']['duration']);
-                if ($duration > 0) {
-                    $fileDuration = (int)$duration; // Store as integer seconds
-                } else {
-                    error_log("FFprobe returned non-positive duration for file: $filePath");
-                }
-            } else {
-                error_log("Duration not found in FFprobe output for file: $filePath");
-            }
-
-            // Extract dimensions from the first video stream
-            if (isset($ffprobeData['streams']) && is_array($ffprobeData['streams'])) {
-                foreach ($ffprobeData['streams'] as $streamIndex => $stream) {
-                    // error_log("Processing stream $streamIndex: " . print_r($stream, true));
-
-                    if (isset($stream['width'], $stream['height'])) {
-                        $width = $stream['width'] ?? 0;
-                        $height = $stream['height'] ?? 0;
-
-                        if ($width > 0 && $height > 0) {
-                            $fileDimensions = $width . ' x ' . $height;
-                            // error_log("File dimensions set to: $fileDimensions");
-                        } else {
-                            error_log("Invalid dimensions found in stream $streamIndex");
-                        }
-
-                        break; // Exit after processing the first stream with dimensions
-                    } else {
-                        error_log("Stream $streamIndex is not a video stream in this file: $filePath");
-                    }
-                }
-            }
+    if ($entry['isVideo']) {
+        if (!isset($probeResults[$i])) {
+            error_log("FFprobe failed for file: " . $entry['fileNameAndPath']);
+            continue; // skip files we couldn't probe
         }
-
-        // Add to sessionFiles array
-        $sessionFiles[] = [
-            'fileNameNoExtension' => $fileNameNoExtension,
-            'fileSize' => $fileSize,
-            'fileDimensions' => $fileDimensions,
-            'fileDuration' => $fileDuration,
-            'fileNameAndPath' => $filePath
-        ];
+        $fileDimensions = $probeResults[$i]['dimensions'];
+        $fileDuration   = $probeResults[$i]['duration'];
     }
+
+    $sessionFiles[] = [
+        'fileNameNoExtension' => $entry['fileNameNoExtension'],
+        'fileSize'            => $entry['fileSize'],
+        'fileDimensions'      => $fileDimensions,
+        'fileDuration'        => $fileDuration,
+        'fileNameAndPath'     => $entry['fileNameAndPath'],
+    ];
 }
 
 // Process titles
