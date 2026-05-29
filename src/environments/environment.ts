@@ -2,9 +2,6 @@
 // `ng build` replaces `environment.ts` with `environment.prod.ts`.
 // The list of file replacements can be found in `angular.json`.
 
-// Enums
-import { EnvName } from '@enums/environment.enum';
-
 // Packages
 import packageInfo from '../../package.json';
 
@@ -19,7 +16,6 @@ export const environment = {
   production      : false,
   version         : packageInfo.version,
   appName         : 'MovieDB',
-  envName         : EnvName.LOCAL,
   defaultLanguage : 'en',
   apiBaseUrl         : baseUrl,
   defaultDirectory   : '/Volumes/Download/fixed/',

@@ -1,6 +1,3 @@
-// Enums
-import { EnvName } from '@enums/environment.enum';
-
 // Packages
 import packageInfo from '../../package.json';
 
@@ -15,7 +12,6 @@ export const environment = {
   production      : true,
   version         : packageInfo.version,
   appName         : 'MovieDB',
-  envName         : EnvName.PROD,
   defaultLanguage : 'en',
   apiBaseUrl         : baseUrl,
   defaultDirectory   : '/Volumes/Download/fixed/',

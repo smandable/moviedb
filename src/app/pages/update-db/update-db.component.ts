@@ -14,7 +14,6 @@ import { myTheme } from '@helpers/grid-theme';
 import {
   AllCommunityModule,
   ModuleRegistry,
-  ClientSideRowModelModule,
   GridOptions,
   GridApi,
   ColDef,
@@ -24,7 +23,7 @@ import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FileNormalizationModalComponent } from '@modals/file-normalization-modal/file-normalization-modal.component';
 import { CommonModule } from '@angular/common';
 
-ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
   selector: 'app-update-db',

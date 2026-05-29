@@ -20,7 +20,6 @@ import { myTheme } from '@helpers/grid-theme';
 import {
   AllCommunityModule,
   ModuleRegistry,
-  ClientSideRowModelModule,
   GridOptions,
   GridReadyEvent,
   GridApi,
@@ -45,7 +44,7 @@ type ClientSideGridApi<TData> = GridApi<TData> & {
 };
 
 // Register AG Grid modules
-ModuleRegistry.registerModules([AllCommunityModule, ClientSideRowModelModule]);
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
   selector: 'app-home',
