@@ -60,14 +60,18 @@ describe('FileService', () => {
     });
 
     it('should handle HTTP errors via catchError', () => {
+      let capturedMessage = '';
       service.checkFileNamesToNormalize('/bad').subscribe({
         error: (err) => {
-          expect(err.message).toContain('error occurred');
+          // handleError surfaces the server-provided message via catchError
+          capturedMessage = err.message;
         },
       });
 
       const req = httpMock.expectOne(`${baseUrl}checkFileNamesToNormalize.php`);
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+
+      expect(capturedMessage).toContain('Server error');
     });
   });
 
