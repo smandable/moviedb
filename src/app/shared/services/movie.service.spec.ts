@@ -37,7 +37,6 @@ describe('MovieService', () => {
           dimensions: '1920x1080',
           duration: 3600,
           filesize: 1048576,
-          filepath: '/path/to/movie.mp4',
           date_created: '2024-01-01',
           duplicate: false,
           isLarger: '',

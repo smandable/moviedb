@@ -4,7 +4,7 @@ require 'db_connect.php';
 
 try {
     // Query to fetch records ordered by the creation date
-    $query = "SELECT id, title, dimensions, filesize, duration, filepath, date_created FROM `" . $table . "` ORDER BY date_created DESC";
+    $query = "SELECT id, title, dimensions, filesize, duration, date_created FROM `" . $table . "` ORDER BY date_created DESC";
     $result = $db->query($query);
 
     // Check for query success
@@ -26,7 +26,6 @@ try {
             'dimensions' => $row['dimensions'],
             'duration' => $duration, // Renamed and converted field
             'filesize' => $row['filesize'],
-            'filepath' => $row['filepath'],
             'date_created' => $row['date_created'],
         ];
     }

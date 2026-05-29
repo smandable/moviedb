@@ -63,7 +63,6 @@ CREATE TABLE movies (
   dimensions VARCHAR(50),
   duration FLOAT,
   filesize BIGINT,
-  filepath TEXT,
   date_created DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 ```

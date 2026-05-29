@@ -10,7 +10,6 @@ export interface Movie {
   dimensions: string;
   duration: number; // Updated field name and type
   filesize: number;
-  filepath: string;
   date_created: string;
   duplicate: boolean;
   isLarger: string;
