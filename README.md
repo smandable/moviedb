@@ -165,6 +165,7 @@ All endpoints are served by the PHP backend. The base URL is configured in `src/
 | `deleteRow.php`                  | POST   | Delete a movie record by ID                          |
 | `processFilesForDB.php`          | POST   | Scan a directory, extract metadata, find duplicates  |
 | `checkFileNamesToNormalize.php`  | POST   | Check which files in a directory need renaming       |
+| `normalizeName.php`              | POST   | Normalize a single base name (rename-modal preview)  |
 | `renameTheFilesToNormalize.php`  | POST   | Execute batch file renaming                          |
 | `openExternalDriveSearch.php`    | POST   | Open a macOS Finder smart folder search              |
 

@@ -70,6 +70,7 @@ export class FileService {
   private processFilesForDBUrl = `${this.baseUrl}processFilesForDB.php`;
   private updateRowUrl = `${this.baseUrl}editCurrentRow.php`;
   private openExternalDriveSearchUrl = `${this.baseUrl}openExternalDriveSearch.php`;
+  private normalizeNameUrl = `${this.baseUrl}normalizeName.php`;
 
   constructor(private http: HttpClient) {}
 
@@ -128,6 +129,26 @@ export class FileService {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http
       .post<any>(this.openExternalDriveSearchUrl, { query }, { headers })
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * Normalizes a single file base name server-side (single source of truth for
+   * the rename preview — same pipeline used by checkFileNamesToNormalize).
+   * @param name The working base name (no extension).
+   * @param respectUserCasing Preserve the user's casing when they've edited.
+   */
+  normalizeName(
+    name: string,
+    respectUserCasing: boolean,
+  ): Observable<{ normalized: string }> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http
+      .post<{ normalized: string }>(
+        this.normalizeNameUrl,
+        { name, respectUserCasing },
+        { headers },
+      )
       .pipe(catchError(this.handleError));
   }
 

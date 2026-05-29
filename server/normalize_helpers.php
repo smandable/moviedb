@@ -17,10 +17,10 @@ if (!function_exists('stripTitleVariantSuffixes')) {
 }
 
 if (!function_exists('normalizeFileBaseName')) {
-    function normalizeFileBaseName(string $base): string
+    function normalizeFileBaseName(string $base, bool $respectUserCasing = false): string
     {
         $base = basicFunctions($base);
-        $base = titleCase($base);
+        $base = titleCase($base, $respectUserCasing);
         $base = cleanupFunctions($base);
         $base = sceneNormalization($base);
         $base = castSeparator($base);
