@@ -49,6 +49,25 @@ if (!function_exists('moviedb_is_path_allowed')) {
     }
 }
 
+if (!function_exists('moviedb_is_plain_filename')) {
+    /**
+     * True if $name is a single path component safe to append to a directory:
+     * a non-empty string with no directory separators or NUL byte, and not
+     * "." or "..". This stops a client-supplied filename from using "/" or
+     * ".." segments to escape a directory that already passed
+     * moviedb_is_path_allowed().
+     *
+     * @param mixed $name Candidate filename from untrusted input.
+     */
+    function moviedb_is_plain_filename($name): bool
+    {
+        if (!is_string($name) || $name === '' || $name === '.' || $name === '..') {
+            return false;
+        }
+        return strpbrk($name, "/\\\0") === false;
+    }
+}
+
 if (!function_exists('moviedb_reject_path')) {
     /**
      * Emit a 403 JSON error for a disallowed path and stop. (No-op if allowed.)

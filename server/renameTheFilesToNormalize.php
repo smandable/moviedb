@@ -47,6 +47,20 @@ foreach ($files as $file) {
         continue;
     }
 
+    // Filename fields must be plain basenames, not path segments. The guard
+    // above only validated the directory ($path); without this check a crafted
+    // originalFileName/newFileName containing "/" or ".." would let rename()
+    // reach files outside the allowed base.
+    if (!moviedb_is_plain_filename($file['originalFileName'])
+        || !moviedb_is_plain_filename($file['newFileName'])) {
+        $results[] = [
+            'originalFileName' => $file['originalFileName'],
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'Invalid file name',
+        ];
+        continue;
+    }
+
     $originalPath = $path . "/" . $file['originalFileName'];
     $newPath      = $path . "/" . $file['newFileName'];
 
