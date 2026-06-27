@@ -191,3 +191,7 @@ import { EndpointEnum } from '@enums/endpoint.enum';
 ### Supported Video Formats
 
 MP4, MKV, AVI, MOV, WMV, MPG, M4V, DIVX
+
+## License
+
+MIT
