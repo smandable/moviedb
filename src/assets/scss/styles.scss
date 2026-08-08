@@ -42,10 +42,10 @@
     width: 100%; /* Make sure the input field stretches fully */
     box-sizing: border-box; /* Ensure padding and borders are included in width */
   }
-// File-normalization modal: 200px wider than Bootstrap's xl (1140px), but
+// File-normalization modal: 400px wider than Bootstrap's xl (1140px), but
 // never wider than the viewport minus the dialog margins
 .file-normalization-dialog {
-  --bs-modal-width: min(1340px, calc(100vw - 3.5rem));
+  --bs-modal-width: min(1540px, calc(100vw - 3.5rem));
 }
 
 .total-items-container {
