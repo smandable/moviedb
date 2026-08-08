@@ -40,7 +40,10 @@ export const appConfig : ApplicationConfig = {
 
       // External modules
       TranslateModule.forRoot({
-        defaultLanguage : environment.defaultLanguage,
+        // v17 renamed defaultLanguage -> fallbackLang; the old option no
+        // longer triggers a language load, so en.json was never fetched and
+        // every key fell through raw (navbar showed "HOME", not "Home")
+        fallbackLang : environment.defaultLanguage,
       }),
       AngularSvgIconModule.forRoot(),
 
