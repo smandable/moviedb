@@ -11,6 +11,10 @@ export const routes: Routes = [
     path: 'update-db',
     loadComponent: () => import('./pages/update-db/update-db.component').then(m => m.UpdateDbComponent),
   },
+  {
+    path: 'settings',
+    loadComponent: () => import('./pages/settings/settings.component').then(m => m.SettingsComponent),
+  },
   { path: '', redirectTo: '/home', pathMatch: 'full' },
   {
     path: '**',

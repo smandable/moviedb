@@ -6,6 +6,7 @@ import {
   NormalizedFile,
   ProcessFilesResponse,
 } from '@services/file.service';
+import { SettingsService } from '@services/settings.service';
 import { FormsModule } from '@angular/forms';
 import { fileSizeFormatter, durationFormatter, formatBytes } from '@helpers/formatters';
 import { getBaseTitle } from '@helpers/title';
@@ -317,11 +318,29 @@ export class UpdateDbComponent implements OnInit {
 
   constructor(
     private fileService: FileService,
+    private settingsService: SettingsService,
     private cdr: ChangeDetectorRef,
     private modalService: NgbModal,
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Server-stored setting overrides the compiled-in default (Settings page)
+    this.settingsService.getSettings().subscribe({
+      next: ({ settings }) => {
+        if (settings.defaultDirectory) {
+          const untouched = this.directory === this.defaultDirectory;
+          this.defaultDirectory = settings.defaultDirectory;
+          if (untouched) {
+            this.directory = settings.defaultDirectory;
+          }
+          this.cdr.markForCheck();
+        }
+      },
+      error: () => {
+        // Keep the environment default; the page still works
+      },
+    });
+  }
 
   /**
    * Handles the Process button click.

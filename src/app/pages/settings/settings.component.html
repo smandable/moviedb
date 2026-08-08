@@ -1,0 +1,166 @@
+<app-page-layout>
+  <div class="container my-3 settings-page" data-bs-theme="dark">
+    <h4 class="mb-3 text-light">Settings</h4>
+
+    <!-- Default directory -->
+    <div class="card mb-4">
+      <div class="card-header">Default Directory</div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">
+          The directory the Update DB page starts with.
+        </p>
+        <div class="d-flex align-items-center">
+          <input
+            type="text"
+            class="form-control me-2 directory-input"
+            [(ngModel)]="defaultDirectory"
+            (ngModelChange)="directoryStatus = 'idle'"
+          />
+          <button
+            class="btn btn-primary"
+            (click)="saveDirectory()"
+            [disabled]="directoryStatus === 'saving'"
+          >
+            {{ directoryStatus === "saving" ? "Saving…" : "Save" }}
+          </button>
+        </div>
+        <div
+          *ngIf="directoryStatus === 'saved'"
+          class="small mt-2"
+          [class.text-success]="!directoryMessage.includes('unmounted')"
+          [class.text-warning]="directoryMessage.includes('unmounted')"
+        >
+          {{ directoryMessage }}
+        </div>
+        <div *ngIf="directoryStatus === 'error'" class="small mt-2 text-danger">
+          {{ directoryMessage }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Normalization & renaming -->
+    <div class="card mb-4">
+      <div class="card-header">Normalization &amp; Renaming</div>
+      <div class="card-body">
+        <h6 class="mb-1">Cast Name Vocabulary</h6>
+        <p class="text-muted small mb-3">
+          Names the Add Cast tab suggests (server/cast_names.json).
+          <span *ngIf="castNamesLoaded && !castNamesError">
+            {{ castNames.length }} names.
+          </span>
+        </p>
+
+        <div *ngIf="castNamesError" class="text-danger small mb-2">
+          {{ castNamesError }}
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <div class="position-relative">
+              <input
+                type="text"
+                class="form-control pe-5"
+                placeholder="Search names…"
+                [(ngModel)]="filterText"
+              />
+              <button
+                *ngIf="filterText"
+                type="button"
+                class="btn-close clear-filter"
+                aria-label="Clear search"
+                title="Clear search"
+                (click)="filterText = ''"
+              ></button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex">
+              <input
+                type="text"
+                class="form-control me-2"
+                placeholder="Add a name…"
+                [(ngModel)]="newName"
+                (keydown.enter)="addName()"
+              />
+              <button
+                class="btn btn-success"
+                (click)="addName()"
+                [disabled]="!newName.trim()"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="castStatus" class="small text-muted mb-2">
+          {{ castStatus }}
+        </div>
+
+        <div class="cast-name-list" *ngIf="castNamesLoaded && !castNamesError">
+          <div class="small text-muted mb-1" *ngIf="filterText">
+            {{ filteredNames.length }}
+            {{ filteredNames.length === 1 ? "match" : "matches" }}<span
+              *ngIf="filteredNames.length > renderCap"
+            >
+              — showing first {{ renderCap }}</span
+            >
+          </div>
+          <div class="small text-muted mb-1" *ngIf="!filterText && castNames.length > renderCap">
+            Showing first {{ renderCap }} of {{ castNames.length }} — use search
+            to narrow.
+          </div>
+
+          <ul class="list-group">
+            <li
+              class="list-group-item d-flex align-items-center cast-name-row"
+              *ngFor="let name of filteredNames.slice(0, renderCap)"
+            >
+              <ng-container *ngIf="editingName !== name; else editRow">
+                <span class="flex-grow-1">{{ name }}</span>
+                <!-- Same emoji-action idiom as the home grid's row actions -->
+                <span
+                  class="action-icon me-2"
+                  role="button"
+                  title="Edit"
+                  aria-label="Edit"
+                  (click)="startEdit(name)"
+                  >✏️</span
+                >
+                <span
+                  class="action-icon"
+                  role="button"
+                  title="Delete"
+                  aria-label="Delete"
+                  (click)="deleteName(name)"
+                  >🗑️</span
+                >
+              </ng-container>
+              <ng-template #editRow>
+                <input
+                  type="text"
+                  class="form-control form-control-sm me-2"
+                  [(ngModel)]="editValue"
+                  (keydown.enter)="saveEdit()"
+                  (keydown.escape)="cancelEdit()"
+                />
+                <button
+                  class="btn btn-sm btn-success me-1"
+                  (click)="saveEdit()"
+                >
+                  Save
+                </button>
+                <button
+                  class="btn btn-sm btn-secondary"
+                  (click)="cancelEdit()"
+                >
+                  Cancel
+                </button>
+              </ng-template>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</app-page-layout>

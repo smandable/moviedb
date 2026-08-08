@@ -2,6 +2,41 @@
 //   background-color: #343a40 !important;
 // }
 
+// Settings link hides until the brand area is hovered or keyboard-focused,
+// then drops in just below the brand. Absolutely positioned so it never
+// shifts the nav links' layout.
+.brand-wrap {
+  position: relative;
+
+  .settings-link {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    font-size: 0.8rem;
+    color: #adb5bd;
+    text-decoration: none;
+    white-space: nowrap;
+    // Reads over whatever page content sits under the navbar
+    background-color: #212529;
+    padding: 0.15rem 0.5rem 0.25rem;
+    border-radius: 0 0 0.25rem 0.25rem;
+
+    &:hover,
+    &.active {
+      color: #fff;
+    }
+  }
+
+  &:hover .settings-link,
+  &:focus-within .settings-link {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .navbar-brand {
   img {
     width: 38px;
