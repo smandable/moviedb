@@ -37,14 +37,18 @@
     width: 40px;
   }
 
-  // Filename needs the most room; cast and preview split the rest
-  .cast-table col.col-scene {
-    width: calc((100% - 40px) * 0.4);
+  // Filename and New Filename match; cast names are short, so that column
+  // stays the narrowest. Plain percentages only: Chrome ignores calc() on
+  // <col> in fixed table layout (falls back to equal distribution). The
+  // 40px check col over-constrains the sum; the browser absorbs it
+  // proportionally, so the ratios hold.
+  .cast-table col.col-scene,
+  .cast-table col.col-new {
+    width: 38.75%;
   }
 
-  .cast-table col.col-cast,
-  .cast-table col.col-new {
-    width: calc((100% - 40px) * 0.3);
+  .cast-table col.col-cast {
+    width: 22.5%;
   }
 
   .cast-cell {
@@ -95,10 +99,11 @@
     width: 40px;
   }
 
-  // Split remaining width between Working Name and New Filename
+  // Split remaining width between Working Name and New Filename (plain %,
+  // not calc() — Chrome ignores calc() on <col> in fixed table layout)
   .normalize-table col.col-working,
   .normalize-table col.col-new {
-    width: calc((100% - 40px) / 2);
+    width: 50%;
   }
 
   .working-name-cell {

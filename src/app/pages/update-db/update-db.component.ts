@@ -364,7 +364,11 @@ export class UpdateDbComponent implements OnInit {
   openFilesModal(files: NormalizedFile[]): void {
     const modalRef: NgbModalRef = this.modalService.open(
       FileNormalizationModalComponent,
-      { size: 'xl', scrollable: true },
+      {
+        size: 'xl',
+        scrollable: true,
+        modalDialogClass: 'file-normalization-dialog',
+      },
     );
     modalRef.componentInstance.files = files;
     modalRef.componentInstance.directory = this.directory;
