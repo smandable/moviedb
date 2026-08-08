@@ -24,6 +24,10 @@ if (!function_exists('normalizeFileBaseName')) {
         $base = cleanupFunctions($base);
         $base = sceneNormalization($base);
         $base = castSeparator($base);
+        // Re-run titleCase: the " - " inserters above can start new segments
+        // (e.g. "brazzers-scene-4-jane" → "brazzers - Scene_4 - Jane" needs
+        // "Brazzers"), and the output must be a fixed point of the pipeline.
+        $base = titleCase($base, $respectUserCasing);
         $base = finalCleanup($base);
         return $base;
     }
@@ -43,9 +47,23 @@ if (!function_exists('basicFunctions')) {
 
         // Underscores → spaces, but preserve any case of "scene_"
         $SCENE_MARKER = 'SCENETEMPXXMARKER';
-        $name = preg_replace('/scene_/i', $SCENE_MARKER, $name);
+        $name = preg_replace('/\bscene_/i', $SCENE_MARKER, $name);
         $name = preg_replace('/_/', ' ', $name);
         $name = str_replace($SCENE_MARKER, 'Scene_', $name);
+
+        // Canonicalize any "scene<sep>N" ("Scene 1", "Scene-1", "Scene1") → "Scene_1".
+        // The trailing \b keeps digit-leading quality tags out ("Scene 1080p"),
+        // leading zeros are stripped ("Scene 01" → "Scene_1"), and 4-digit
+        // years stay years ("Crime Scene 1999").
+        $name = preg_replace_callback('/\bscene[\s_\-]*(\d+)\b/i', function ($m) {
+            // A scene number is never 4+ digits — that's a year or similar.
+            // Detach it from the word ("Scene_1999" → "Scene 1999") but
+            // leave it a plain number.
+            if (strlen($m[1]) >= 4) {
+                return preg_replace('/[\s_\-]+/', ' ', $m[0]);
+            }
+            return 'Scene_' . (int)$m[1];
+        }, $name);
 
         // Triple spaces → " - "
         $name = preg_replace('/\s{3}/', ' - ', $name);
@@ -102,6 +120,9 @@ if (!function_exists('titleCase')) {
         $mixedCaseExceptions = [
             'labeau'  => 'LaBeau',
             'deville' => 'DeVille',
+            // cleanupFunctions emits " vs. "; keep it lowercase when
+            // titleCase re-runs after cleanup.
+            'vs.'     => 'vs.',
         ];
 
         $result = $fileName;
@@ -176,8 +197,27 @@ if (!function_exists('cleanupFunctions')) {
             '',
             $name
         );
+        // Bare trailing resolution numbers ("..._1080", "... 720") are junk
+        // too — the quality list above only catches the "p"-suffixed forms.
+        // \s*$ tolerates the trailing space the truncation above leaves, and
+        // (?<!#) keeps "# 720"-style series indexes intact.
+        $name = preg_replace('/(?<!#)(?:\s+(?:2160|1080|720|480|360))+\s*$/', '', $name);
+
         // Drop dangling separators that the truncation may leave behind.
         $name = rtrim($name, " \t\n\r\0\x0B-._");
+
+        // A title-internal "XXX <article> …" tail is a subtitle (Axel Braun
+        // style: "Snow White XXX An Axel Braun Parody" → "Snow White XXX -
+        // An Axel Braun Parody"): set it off with " - " and capitalize the
+        // article. Other mid-title XXX ("My XXX Secretary", "Ghostbusters
+        // XXX Parody") stays inline; leading/trailing XXX is left alone.
+        // [\s-]+ before XXX also catches hyphen-glued forms ("Scene_1-XXX An
+        // …"), which would otherwise only be split on a later pass.
+        $name = preg_replace_callback(
+            '/(?<=\S)[\s\-]+XXX\s+(a|an|the)\s+(?=\S)/i',
+            fn($m) => ' XXX - ' . ucfirst(strtolower($m[1])) . ' ',
+            $name
+        );
 
         // Remaining formatting (run on whatever survives the truncation)
         $patterns = [
@@ -234,18 +274,22 @@ if (!function_exists('cleanupFunctions')) {
             },
             $name
         );
+        // Ensure " - " before Scene_N: "Title Scene_1" / "Title-Scene_1" /
+        // "Title, Scene_1" → "Title - Scene_1". Requires an actual separator
+        // (spaces/dashes, optionally led by a comma) preceded by a word-ish
+        // char, so glued text ("Obscene_1") and parenthesized forms
+        // ("(Scene_1)") are left alone.
+        $name = preg_replace('/(?<=[\w)])\s*(?:,[\s\-]*|[\s\-]+)Scene_(?=\d)/', ' - Scene_', $name);
+
         // Numbers immediately before " - Scene_"
         $name = preg_replace_callback(
             '/(?<!# )\b(\d+)(?=\s+-\s*Scene_)/',
             function ($matches) {
                 $number = $matches[1];
 
-                // ✅ Skip if it's a 4-digit year (1975–2035)
-                if (strlen($number) === 4) {
-                    $year = (int)$number;
-                    if ($year >= 1975 && $year <= 2035) {
-                        return $number;
-                    }
+                // 4+-digit numbers are years etc., never series indexes
+                if (strlen($number) >= 4) {
+                    return $number;
                 }
 
                 if (strlen($number) === 1) {
@@ -256,21 +300,15 @@ if (!function_exists('cleanupFunctions')) {
             $name
         );
 
-        // Normalize spacing around hyphen before Scene_: "-Scene_" → "- Scene_"
-        $name = preg_replace('/\s*-\s*Scene_/', ' - Scene_', $name);
-
         // Trailing numbers at the end (but not already "# " and not part of Scene_)
         $name = preg_replace_callback(
             '/(?<!# )(?<!Scene_)\b(\d+)\b$/',
             function ($matches) {
                 $number = $matches[1];
 
-                // Skip if it's a 4-digit year (1975–2035)
-                if (strlen($number) === 4) {
-                    $year = (int)$number;
-                    if ($year >= 1975 && $year <= 2035) {
-                        return $number;
-                    }
+                // 4+-digit numbers are years etc., never series indexes
+                if (strlen($number) >= 4) {
+                    return $number;
                 }
 
                 if (strlen($number) === 1) {
@@ -291,11 +329,16 @@ if (!function_exists('cleanupFunctions')) {
 if (!function_exists('sceneNormalization')) {
     function sceneNormalization(string $fileName): string
     {
-        // "Scene_1 Title" → "Scene_1 - Title" (but don't double-insert " - ")
-        $pattern     = '/([Ss]cene_\d+)\s(?!- )([A-Za-z\-]+)/';
-        $replacement = '$1 - $2';
-
-        return preg_replace($pattern, $replacement, $fileName);
+        // Ensure " - " between Scene_N and a following name:
+        // "Scene_1 Title" / "Scene_1-Title" → "Scene_1 - Title". The first
+        // letter after the dash is uppercased ("Scene_2 with Jane" →
+        // "Scene_2 - With Jane") to match titleCase's after-dash convention —
+        // otherwise a second normalization pass would change the name again.
+        return preg_replace_callback(
+            '/(Scene_\d+)(?:\s*-\s*|\s+)(\p{L})/u',
+            fn($m) => $m[1] . ' - ' . mb_strtoupper($m[2], 'UTF-8'),
+            $fileName
+        );
     }
 }
 
@@ -308,7 +351,10 @@ if (!function_exists('castSeparator')) {
             $offset = $m[0][1] + strlen($m[0][0]);
             $before = substr($fileName, 0, $offset);
             $after  = substr($fileName, $offset);
-            $after  = preg_replace('/\s+and\s+/i', ', ', $after);
+            // Absorb an optional preceding comma and repeated "and"s so
+            // "Jane, and Kira" / "Jane and and Kira" collapse to "Jane, Kira"
+            // in one pass.
+            $after  = preg_replace('/(?:\s*,)?(?:\s+and)+\s+/i', ', ', $after);
             return $before . $after;
         }
         return $fileName;
