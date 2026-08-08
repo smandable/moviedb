@@ -345,5 +345,156 @@ check(
     'Adventures in XXX'
 );
 
+echo "castDesquash (store-backed missing-space fix, injected vocab):\n";
+$vocab = [
+    'Jane Fauxheart',
+    'Kira Mock',
+    'Vanity',        // single-word store names never squash-match
+    'Lena Dupe',
+    'Le Nadupe',     // collides with Lena Dupe when squashed -> ambiguous
+    'Anna Belle',
+    'Annabelle',     // squash of Anna Belle IS a store name -> left alone
+];
+check(
+    'squashed name gets its space back',
+    castDesquash('Movie - Scene_1 - JaneFauxheart', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'multiple names, comma separated',
+    castDesquash('Movie - Scene_2 - JaneFauxheart, KiraMock', $vocab),
+    'Movie - Scene_2 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'case-insensitive match uses store casing',
+    castDesquash('Movie - Scene_1 - janefauxheart', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'ambiguous squash is never rewritten',
+    castDesquash('Movie - Scene_1 - LenaDupe', $vocab),
+    'Movie - Scene_1 - LenaDupe'
+);
+check(
+    'token that is already a store name is left alone',
+    castDesquash('Movie - Scene_1 - Annabelle', $vocab),
+    'Movie - Scene_1 - Annabelle'
+);
+check(
+    'unknown token is left alone',
+    castDesquash('Movie - Scene_1 - SomeRando', $vocab),
+    'Movie - Scene_1 - SomeRando'
+);
+check(
+    'title segment is never touched',
+    castDesquash('JaneFauxheart - Scene_1 - Kira Mock', $vocab),
+    'JaneFauxheart - Scene_1 - Kira Mock'
+);
+check(
+    'no Scene_N tail, no rewrite',
+    castDesquash('JaneFauxheart Compilation', $vocab),
+    'JaneFauxheart Compilation'
+);
+check(
+    'fixed point: already-spaced name is a no-op',
+    castDesquash('Movie - Scene_1 - Jane Fauxheart', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'short tokens are never rewritten',
+    castDesquash('Movie - Scene_1 - KiraM', array_merge($vocab, ['Kira M'])),
+    'Movie - Scene_1 - KiraM'
+);
+
+echo "castDesquash comma restoration:\n";
+check(
+    'two squashed names get spaces AND the comma',
+    castDesquash('Movie - Scene_3 - JaneFauxheart KiraMock', $vocab),
+    'Movie - Scene_3 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'already-spaced adjacent names get the comma',
+    castDesquash('Movie - Scene_1 - Jane Fauxheart Kira Mock', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'single-word store name segments too',
+    castDesquash('Movie - Scene_1 - Vanity Jane Fauxheart', $vocab),
+    'Movie - Scene_1 - Vanity, Jane Fauxheart'
+);
+check(
+    'two-word part is never split',
+    castDesquash('Movie - Scene_1 - Kira Mock', array_merge($vocab, ['Kira', 'Mock'])),
+    'Movie - Scene_1 - Kira Mock'
+);
+check(
+    'part that IS a store name is never split',
+    castDesquash(
+        'Movie - Scene_1 - Anna Belle Fauxheart',
+        array_merge($vocab, ['Anna Belle Fauxheart', 'Fauxheart'])
+    ),
+    'Movie - Scene_1 - Anna Belle Fauxheart'
+);
+check(
+    'unconsumable words leave the part alone',
+    castDesquash('Movie - Scene_1 - Jane Fauxheart Extended Cut', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart Extended Cut'
+);
+check(
+    'comma restoration is a fixed point',
+    castDesquash('Movie - Scene_3 - Jane Fauxheart, Kira Mock', $vocab),
+    'Movie - Scene_3 - Jane Fauxheart, Kira Mock'
+);
+
+echo "glued scene-number + name:\n";
+check(
+    'name glued to scene number is detached',
+    normalizeFileBaseName('The Feral Woman.Scene_2JaneFauxheart_1080p'),
+    'The Feral Woman - Scene_2 - JaneFauxheart'
+);
+check(
+    'glued name after bare sceneN',
+    normalizeFileBaseName('Movie Scene2JaneFauxheart'),
+    'Movie - Scene_2 - JaneFauxheart'
+);
+// cleanupFunctions has always stripped the quality tag itself; the guard
+// being asserted is that "720" never becomes "Scene_720" (lowercase 'p'
+// after the digits keeps the glue-detach from firing)
+check(
+    'quality tag digits never become a scene number',
+    normalizeFileBaseName('Movie Scene 720p'),
+    'Movie Scene'
+);
+check(
+    'glued detach then desquash end to end',
+    castDesquash(normalizeFileBaseName('Movie.Scene_2JaneFauxheart'), $vocab),
+    'Movie - Scene_2 - Jane Fauxheart'
+);
+check(
+    'ALL-LOWERCASE glued name resolves via the store',
+    castDesquash('Movie - Scene_2janefauxheart', $vocab),
+    'Movie - Scene_2 - Jane Fauxheart'
+);
+check(
+    'glued single-word store name resolves',
+    castDesquash('Movie - Scene_2vanity', $vocab),
+    'Movie - Scene_2 - Vanity'
+);
+check(
+    'glued blob with no unique store match is untouched',
+    castDesquash('Movie - Scene_2somerando', $vocab),
+    'Movie - Scene_2somerando'
+);
+check(
+    'glued ambiguous squash is untouched',
+    castDesquash('Movie - Scene_2lenadupe', $vocab),
+    'Movie - Scene_2lenadupe'
+);
+check(
+    '4K stays glued to the scene word (matches HEAD behavior)',
+    normalizeFileBaseName('Movie.Scene_4K'),
+    'Movie - Scene_4K'
+);
+
 echo "\n$checks checks, $failures failure(s)\n";
 exit($failures === 0 ? 0 : 1);

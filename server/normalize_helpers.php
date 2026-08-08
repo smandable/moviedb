@@ -24,6 +24,10 @@ if (!function_exists('normalizeFileBaseName')) {
         $base = cleanupFunctions($base);
         $base = sceneNormalization($base);
         $base = castSeparator($base);
+        // Store-backed fix for cast names missing their spaces
+        // ("GinaValentina" → "Gina Valentina"); before the titleCase re-run so
+        // an all-lowercase store entry still gets cased in the same pass
+        $base = castDesquash($base);
         // Re-run titleCase: the " - " inserters above can start new segments
         // (e.g. "brazzers-scene-4-jane" → "brazzers - Scene_4 - Jane" needs
         // "Brazzers"), and the output must be a fixed point of the pipeline.
@@ -50,6 +54,16 @@ if (!function_exists('basicFunctions')) {
         $name = preg_replace('/\bscene_/i', $SCENE_MARKER, $name);
         $name = preg_replace('/_/', ' ', $name);
         $name = str_replace($SCENE_MARKER, 'Scene_', $name);
+
+        // Detach a name glued straight onto the scene number
+        // ("Scene_2AlexGrey" → "Scene_2 AlexGrey") so the canonicalizer below
+        // can see the number. Only 1-2 digits followed by an UPPERCASE letter
+        // plus at least one more letter: real scene numbers are 1-2 digits,
+        // and the guards keep quality tags glued ("Scene 720p", "Scene_4K").
+        // (?i:) scopes the insensitivity to the word "scene" so [A-Z] stays
+        // strict. All-lowercase glue ("scene_2alexgrey") is left for
+        // castDesquash, which can consult the cast store.
+        $name = preg_replace('/\b((?i:scene)[\s_\-]*\d{1,2})(?=[A-Z][A-Za-z])/', '$1 ', $name);
 
         // Canonicalize any "scene<sep>N" ("Scene 1", "Scene-1", "Scene1") → "Scene_1".
         // The trailing \b keeps digit-leading quality tags out ("Scene 1080p"),
@@ -358,6 +372,164 @@ if (!function_exists('castSeparator')) {
             return $before . $after;
         }
         return $fileName;
+    }
+}
+
+if (!function_exists('moviedb_cast_squash_map')) {
+    /**
+     * Lookup tables for castDesquash, built from the cast-name store (or an
+     * injected vocabulary in tests):
+     *   [0] squash map: "ginavalentina" => "Gina Valentina" — only names that
+     *       contain a space; a squash produced by two different names maps to
+     *       null (ambiguous, never rewritten)
+     *   [1] known set: every full name and every individual word of a name,
+     *       lowercased — tokens found here are already valid and left alone
+     */
+    function moviedb_cast_squash_map(?array $vocab = null): array
+    {
+        static $cached = null;
+        $useStore = ($vocab === null);
+        if ($useStore) {
+            if ($cached !== null) {
+                return $cached;
+            }
+            require_once __DIR__ . '/cast_helpers.php';
+            $vocab = moviedb_load_cast_store();
+        }
+
+        $squash = [];
+        $known = [];
+        $fullNames = [];
+        foreach ($vocab as $name) {
+            if (!is_string($name) || $name === '') {
+                continue;
+            }
+            $lower = mb_strtolower($name);
+            $known[$lower] = true;
+            $fullNames[$lower] = $name;
+            foreach (explode(' ', $lower) as $word) {
+                if ($word !== '') {
+                    $known[$word] = true;
+                }
+            }
+            if (strpos($name, ' ') === false) {
+                continue; // a squash fix must be able to add a space
+            }
+            $key = str_replace(' ', '', $lower);
+            $squash[$key] = array_key_exists($key, $squash) ? null : $name;
+        }
+
+        $result = [$squash, $known, $fullNames];
+        if ($useStore) {
+            $cached = $result;
+        }
+        return $result;
+    }
+}
+
+if (!function_exists('moviedb_segment_cast_words')) {
+    /**
+     * Try to split $words into a sequence of store names (longest match
+     * first, backtracking, names up to 4 words). Returns the canonical
+     * names, or null when the words don't consume cleanly.
+     */
+    function moviedb_segment_cast_words(array $words, array $fullNames): ?array
+    {
+        if (!$words) {
+            return [];
+        }
+        $n = count($words);
+        for ($len = min(4, $n); $len >= 1; $len--) {
+            $key = mb_strtolower(implode(' ', array_slice($words, 0, $len)));
+            if (isset($fullNames[$key])) {
+                $rest = moviedb_segment_cast_words(array_slice($words, $len), $fullNames);
+                if ($rest !== null) {
+                    return array_merge([$fullNames[$key]], $rest);
+                }
+            }
+        }
+        return null;
+    }
+}
+
+if (!function_exists('castDesquash')) {
+    /**
+     * Fix cast names that lost their spaces ("GinaValentina" → "Gina
+     * Valentina") in the segment after "Scene_N - ", using the cast-name
+     * store as the reference. Precision-first: a token is rewritten only when
+     * it is at least 6 characters, is not already a store name (or a word of
+     * one), and exactly one store name matches it with the spaces removed.
+     */
+    function castDesquash(string $fileName, ?array $vocab = null): string
+    {
+        [$squashMap, $known, $fullNames] = moviedb_cast_squash_map($vocab);
+        if (!$squashMap && !$fullNames) {
+            return $fileName;
+        }
+
+        // A name glued straight onto the scene number in any casing
+        // ("Scene_2alexgrey"). basicFunctions only detaches the uppercase
+        // form; here the store itself is the evidence that the glue is a
+        // name, so lowercase resolves too — but only on a unique match.
+        $fileName = preg_replace_callback(
+            '/\b(Scene_\d{1,2})(\p{L}{6,})\b/u',
+            function ($m) use ($squashMap, $known, $fullNames) {
+                $key = mb_strtolower($m[2]);
+                if (isset($fullNames[$key])) {
+                    // The blob IS a store name ("Scene_2vanity")
+                    return $m[1] . ' - ' . $fullNames[$key];
+                }
+                if (isset($known[$key]) || !isset($squashMap[$key]) || $squashMap[$key] === null) {
+                    return $m[0];
+                }
+                return $m[1] . ' - ' . $squashMap[$key];
+            },
+            $fileName
+        );
+
+        if (!preg_match('/Scene_\d+\s+-\s+/i', $fileName, $m, PREG_OFFSET_CAPTURE)) {
+            return $fileName;
+        }
+
+        $offset = $m[0][1] + strlen($m[0][0]);
+        $before = substr($fileName, 0, $offset);
+        $after = substr($fileName, $offset);
+
+        $after = preg_replace_callback(
+            '/[^\s,]+/u',
+            function ($t) use ($squashMap, $known) {
+                $key = mb_strtolower($t[0]);
+                if (mb_strlen($key) < 6 || isset($known[$key])) {
+                    return $t[0];
+                }
+                return $squashMap[$key] ?? $t[0];
+            },
+            $after
+        );
+
+        // Second pass: restore missing commas. A comma part that is not
+        // itself a store name but segments cleanly into 2+ store names
+        // ("Elsa Jean Alexis Fawx") gets ", " between them. Two-word parts
+        // are never split — "First Last" is almost always one performer.
+        $parts = preg_split('/\s*,\s*/', $after);
+        $parts = array_values(array_filter($parts, fn($p) => trim($p) !== ''));
+        foreach ($parts as $i => $part) {
+            $part = trim($part);
+            if ($part === '' || isset($fullNames[mb_strtolower($part)])) {
+                continue;
+            }
+            $words = explode(' ', $part);
+            if (count($words) < 3) {
+                continue;
+            }
+            $segmented = moviedb_segment_cast_words($words, $fullNames);
+            if ($segmented !== null && count($segmented) >= 2) {
+                $parts[$i] = implode(', ', $segmented);
+            }
+        }
+        $after = implode(', ', $parts);
+
+        return $before . $after;
     }
 }
 
