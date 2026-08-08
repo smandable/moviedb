@@ -44,6 +44,9 @@ Thumbs.db
 # Config / environment
 /server/config.php
 /server/.env
+
+# Generated: cast-name vocabulary for the Add Cast tab (local library data)
+/server/cast_names.json
 IMPROVEMENTS.md
 .claude/
 
