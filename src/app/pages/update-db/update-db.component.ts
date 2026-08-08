@@ -356,7 +356,9 @@ export class UpdateDbComponent implements OnInit {
       });
   }
   /**
-   * Opens a modal to display original and new filenames.
+   * Opens a modal to display original and new filenames. The modal performs
+   * the renames itself (then flips to its "Add Cast" tab); the page just
+   * re-enables the Update Database button once the modal closes.
    * @param files The list of files to display.
    */
   openFilesModal(files: NormalizedFile[]): void {
@@ -367,62 +369,11 @@ export class UpdateDbComponent implements OnInit {
     modalRef.componentInstance.files = files;
     modalRef.componentInstance.directory = this.directory;
 
-    modalRef.componentInstance.renameFilesEvent.subscribe(
-      (filesToRename: NormalizedFile[]) => {
-        this.renameFiles(filesToRename); // Call renameFiles with the filtered files
-      },
-    );
-
-    modalRef.result.then(
-      (result) => {
-        if (result === 'rename') {
-          // Rename operation completed
-        }
-        // Set the button visibility after modal closes successfully
-        this.showDatabaseOperationsButton = true;
-        this.cdr.markForCheck();
-      },
-      (reason) => {
-        // Handle dismissal if needed
-        this.showDatabaseOperationsButton = true;
-        this.cdr.markForCheck();
-      },
-    );
-  }
-
-  /**
-   * Handles the Rename Files action.
-   * Calls the backend to perform renaming.
-   */
-  renameFiles(files: NormalizedFile[]): void {
-    // Filter out files that should be renamed (not excluded and needing normalization)
-    const filesToRename = files.filter(
-      (file) => !file.exclude && file.needsNormalization,
-    );
-
-    if (filesToRename.length === 0) {
-      console.error('No files selected for renaming.');
-      return;
-    }
-
-    this.isLoading = true;
-
-    this.fileService.renameTheFilesToNormalize(filesToRename).subscribe({
-      next: (response) => {
-        this.isLoading = false;
-        // Close the modal
-        this.modalService.dismissAll();
-        // Show the new button
-        this.showDatabaseOperationsButton = true;
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.cdr.markForCheck();
-        console.error('Error renaming files:', error);
-        alert('Failed to rename files. See console for details.');
-      },
-    });
+    const onModalClosed = () => {
+      this.showDatabaseOperationsButton = true;
+      this.cdr.markForCheck();
+    };
+    modalRef.result.then(onModalClosed, onModalClosed);
   }
 
   public processingComplete: boolean = false;

@@ -1,81 +1,244 @@
 <div class="modal-header">
-  <h5 class="modal-title">Files to Normalize</h5>
+  <h5 class="modal-title">File Normalization</h5>
   <button
     type="button"
     class="btn-close"
     aria-label="Close"
     (click)="activeModal.dismiss('Cross click')"
   ></button>
+
+  <!-- Tabs live in the header so body content scrolls behind an opaque bar -->
+  <ul class="nav nav-tabs modal-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button
+        type="button"
+        class="nav-link"
+        role="tab"
+        [class.active]="activeTab === 'normalize'"
+        [attr.aria-selected]="activeTab === 'normalize'"
+        (click)="activeTab = 'normalize'"
+      >
+        Files to Normalize
+        <span class="badge rounded-pill text-bg-secondary ms-1">{{
+          files.length
+        }}</span>
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        type="button"
+        class="nav-link"
+        role="tab"
+        [class.active]="activeTab === 'cast'"
+        [attr.aria-selected]="activeTab === 'cast'"
+        (click)="activeTab = 'cast'"
+      >
+        Add Cast
+        <span class="badge rounded-pill text-bg-secondary ms-1">{{
+          castFiles.length
+        }}</span>
+      </button>
+    </li>
+  </ul>
 </div>
 
 <div class="modal-body">
-  <ng-container *ngIf="files.length > 0; else noFiles">
-    <table class="table table-bordered table-striped normalize-table">
-      <colgroup>
-        <col class="col-check" />
-        <col class="col-working" />
-        <col class="col-new" />
-      </colgroup>
-      <thead>
-        <tr>
-          <th>
-            <input
-              type="checkbox"
-              [(ngModel)]="allSelected"
-              (change)="toggleAllCheckboxes()"
-              title="Select/Deselect All to rename"
-            />
-          </th>
-          <th>Working Name</th>
-          <th>New Filename</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let file of files; let i = index">
-          <td class="align-middle text-center">
-            <input
-              type="checkbox"
-              [ngModel]="!files[i].exclude"
-              (ngModelChange)="files[i].exclude = !$event"
-              title="Rename this file"
-            />
-          </td>
+  <!-- Files to Normalize tab -->
+  <ng-container *ngIf="activeTab === 'normalize'">
+    <ng-container *ngIf="files.length > 0; else noFiles">
+      <table class="table table-bordered table-striped normalize-table">
+        <colgroup>
+          <col class="col-check" />
+          <col class="col-working" />
+          <col class="col-new" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>
+              <input
+                type="checkbox"
+                [(ngModel)]="allSelected"
+                (change)="toggleAllCheckboxes()"
+                title="Select/Deselect All to rename"
+              />
+            </th>
+            <th>Working Name</th>
+            <th>New Filename</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let file of files; let i = index">
+            <td class="align-middle text-center">
+              <input
+                type="checkbox"
+                [ngModel]="!files[i].exclude"
+                (ngModelChange)="files[i].exclude = !$event"
+                title="Rename this file"
+              />
+            </td>
 
-          <!-- LEFT: working base -->
-          <td class="working-name-cell">
-            <textarea
-              class="form-control form-control-sm working-name-input"
-              rows="1"
-              [(ngModel)]="file.workingBaseName"
-              (ngModelChange)="onWorkingNameChange(file)"
-              (input)="autoResize($event)"
-            ></textarea>
-          </td>
+            <!-- LEFT: working base -->
+            <td class="working-name-cell">
+              <textarea
+                class="form-control form-control-sm working-name-input"
+                rows="1"
+                [(ngModel)]="file.workingBaseName"
+                (ngModelChange)="onWorkingNameChange(file)"
+                (focus)="onNameFocus(file)"
+                (blur)="onNameBlur(file)"
+                (input)="autoResize($event)"
+              ></textarea>
+            </td>
 
-          <!-- RIGHT: only shown when it actually differs -->
-          <td class="align-middle">
-            <ng-container *ngIf="file.showNormalizedPreview">
-              {{ file.newFileName }}
-            </ng-container>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <!-- RIGHT: only shown when it actually differs -->
+            <td class="align-middle">
+              <ng-container *ngIf="file.needsNormalization">
+                {{ previewBaseName(file) }}
+              </ng-container>
+              <div *ngIf="file.renameError" class="text-danger small">
+                {{ file.renameError }}
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </ng-container>
+
+    <ng-template #noFiles>
+      <p>No files require normalization.</p>
+    </ng-template>
   </ng-container>
 
-  <ng-template #noFiles>
-    <p>No files require normalization.</p>
-  </ng-template>
+  <!-- Add Cast tab -->
+  <ng-container *ngIf="activeTab === 'cast'">
+    <ng-container *ngIf="castFiles.length > 0; else noCastFiles">
+      <p class="text-muted small mb-2">
+        Scene files with no cast named yet — type the cast onto the end of a
+        name, then click “Rename Files”.
+        <span *ngIf="hasPendingCastRenames"
+          >Names shown include pending renames.</span
+        >
+      </p>
+      <!-- Live suggestions for the cast being typed (kept small on purpose) -->
+      <datalist id="castNameOptions">
+        <option *ngFor="let name of castSuggestions" [value]="name"></option>
+      </datalist>
+
+      <table class="table table-bordered table-striped cast-table">
+        <colgroup>
+          <col class="col-check" />
+          <col class="col-scene" />
+          <col class="col-cast" />
+          <col class="col-new" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Filename</th>
+            <th>Cast</th>
+            <th>New Filename</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container
+            *ngFor="let group of castFileGroups; trackBy: trackGroup"
+          >
+            <!-- One header per movie: search once, fill every scene below -->
+            <tr class="cast-group-row">
+              <td colspan="4">
+                <span class="cast-group-title">{{ group.title }}</span>
+                <span class="lookup-links">
+                  <a
+                    *ngFor="let site of lookupSites"
+                    [href]="lookupUrlForTitle(site, group.title)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="lookup-link"
+                    [title]="'Search ' + site.label + ' for “' + group.title + '”'"
+                    >{{ site.label }}</a
+                  >
+                </span>
+              </td>
+            </tr>
+
+            <tr *ngFor="let file of group.files; trackBy: trackFile">
+              <td class="align-middle text-center">
+                <input
+                  type="checkbox"
+                  [ngModel]="!file.exclude"
+                  (ngModelChange)="file.exclude = !$event"
+                  title="Rename this file"
+                />
+              </td>
+
+              <td class="working-name-cell">
+                <textarea
+                  class="form-control form-control-sm working-name-input"
+                  rows="1"
+                  [(ngModel)]="file.workingBaseName"
+                  (ngModelChange)="onCastNameChange(file)"
+                  (focus)="onNameFocus(file)"
+                  (blur)="onNameBlur(file)"
+                  (input)="autoResize($event)"
+                ></textarea>
+              </td>
+
+              <td class="cast-cell">
+                <input
+                  type="text"
+                  class="form-control form-control-sm cast-input"
+                  list="castNameOptions"
+                  placeholder="paste or type cast…"
+                  [ngModel]="castOf(file)"
+                  (ngModelChange)="setCast(file, $event)"
+                  (focus)="onNameFocus(file)"
+                  (blur)="onNameBlur(file)"
+                />
+              </td>
+
+              <td class="align-middle">
+                <ng-container *ngIf="file.needsNormalization">
+                  {{ previewBaseName(file) }}
+                </ng-container>
+                <div *ngIf="file.renameError" class="text-danger small">
+                  {{ file.renameError }}
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </ng-container>
+
+    <ng-template #noCastFiles>
+      <p>No scene files are waiting for a cast name.</p>
+    </ng-template>
+  </ng-container>
 </div>
 
 <div class="modal-footer">
+  <div *ngIf="renameSummary" class="me-auto small rename-summary">
+    <span class="text-success"
+      >{{ renameSummary.renamed }}
+      {{ renameSummary.renamed === 1 ? "file" : "files" }} renamed</span
+    >
+    <span *ngIf="renameSummary.failed > 0" class="text-danger ms-2"
+      >{{ renameSummary.failed }} failed</span
+    >
+  </div>
   <button
     type="button"
     class="btn btn-success"
     (click)="renameFiles()"
-    [disabled]="files.length === 0 || !hasFilesToRename"
+    [disabled]="isRenaming || files.length === 0 || !hasFilesToRename"
   >
-    Rename Files
+    <span
+      *ngIf="isRenaming"
+      class="spinner-border spinner-border-sm me-2"
+      role="status"
+      aria-hidden="true"
+    ></span>
+    {{ isRenaming ? "Renaming…" : "Rename Files" }}
   </button>
   <button
     type="button"

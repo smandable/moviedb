@@ -20,7 +20,7 @@ export interface NormalizedFile {
   // client-side only
   workingBaseName?: string;
   userEdited?: boolean;
-  showNormalizedPreview?: boolean;
+  renameError?: string;
 }
 
 export interface RenameResult {
@@ -71,6 +71,7 @@ export class FileService {
   private updateRowUrl = `${this.baseUrl}editCurrentRow.php`;
   private openExternalDriveSearchUrl = `${this.baseUrl}openExternalDriveSearch.php`;
   private normalizeNameUrl = `${this.baseUrl}normalizeName.php`;
+  private castNamesUrl = `${this.baseUrl}castNames.php`;
 
   constructor(private http: HttpClient) {}
 
@@ -149,6 +150,20 @@ export class FileService {
         { name, respectUserCasing },
         { headers },
       )
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * Cast-name vocabulary for the Add Cast tab's autocomplete: names already used
+   * in the scanned directory's filenames, unioned with a persisted store so the
+   * list survives a batch moving off the staging drive.
+   * @param directory Scan this directory's filenames for names already in use.
+   * @param add Names newly used, to merge into the store.
+   */
+  getCastNames(directory?: string, add?: string[]): Observable<{ names: string[] }> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http
+      .post<{ names: string[] }>(this.castNamesUrl, { directory, add }, { headers })
       .pipe(catchError(this.handleError));
   }
 

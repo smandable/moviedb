@@ -1,15 +1,53 @@
 import {
+  ChangeDetectorRef,
   Component,
   Input,
-  Output,
-  EventEmitter,
   OnInit,
   OnDestroy,
 } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { FileService, NormalizedFile } from '@services/file.service';
+import {
+  FileService,
+  NormalizedFile,
+  RenameResult,
+} from '@services/file.service';
+import { endsWithSceneNumber, getBaseTitle } from '@helpers/title';
+
+// Status string emitted by server/renameTheFilesToNormalize.php
+const RENAME_SUCCESS_STATUS = 'Renamed successfully';
+
+// The characters finalCleanup() strips off the end of a name server-side —
+// see the rtrim in server/normalize_helpers.php.
+const DANGLING_TAIL = /[ \t\n\r\0\x0B\-._]+$/;
+
+// Splits a base name into everything up to and including the scene number, and
+// whatever cast follows it: "Ass Man - Scene_1 - Angel Long" -> both halves.
+const SCENE_SPLIT = /^(.*?Scene_\d{1,3})(?:\s*-\s*(.*))?$/i;
+
+/**
+ * Search URLs for the two metadata sites Sean uses. These open in HIS browser —
+ * a person browsing, which both sites allow. Nothing here is ever fetched by the
+ * app or by an agent: iafd.com's robots.txt disallows ClaudeBot and friends
+ * outright, and adultdvdempire.com disallows its /search paths to crawlers.
+ * NOTE: these URL shapes are unverified by me for that reason; if either site
+ * changes its search route, it is a one-line fix here.
+ */
+const LOOKUP_SITES: ReadonlyArray<{ label: string; url: (q: string) => string }> = [
+  {
+    label: 'IAFD',
+    url: (q) =>
+      `https://www.iafd.com/results.asp?searchtype=comprehensive&searchstring=${encodeURIComponent(q)}`,
+  },
+  {
+    label: 'ADE',
+    url: (q) =>
+      `https://www.adultdvdempire.com/allsearch/search?q=${encodeURIComponent(q)}`,
+  },
+];
+
+export type NormalizationModalTab = 'normalize' | 'cast';
 
 @Component({
   selector: 'app-file-normalization-modal',
@@ -21,9 +59,26 @@ import { FileService, NormalizedFile } from '@services/file.service';
 export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   @Input() files: NormalizedFile[] = [];
   @Input() directory: string = '';
-  @Output() renameFilesEvent = new EventEmitter<NormalizedFile[]>();
 
   allSelected: boolean = true;
+
+  // Tabs are freely navigable; a rename always lands on "Add Cast".
+  activeTab: NormalizationModalTab = 'normalize';
+
+  isRenaming: boolean = false;
+  renameSummary: { renamed: number; failed: number } | null = null;
+
+  /**
+   * Rows the user has started editing on the Add Cast tab. Typing a cast name
+   * makes a row stop qualifying for the list, so without this it would vanish
+   * mid-keystroke. Cleared once the row is successfully renamed.
+   */
+  private castEdited = new Set<NormalizedFile>();
+
+  private destroyed = false;
+
+  /** The row whose name input currently has focus, if any. */
+  private focusedFile: NormalizedFile | null = null;
 
   // Per-file debounce timers for the live (server-driven) preview.
   private previewTimers = new Map<
@@ -34,6 +89,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   constructor(
     public activeModal: NgbActiveModal,
     private fileService: FileService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -41,13 +97,13 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       f.exclude = false;
       f.userEdited = false;
 
-      // Show the *actual* on-disk name (without extension) in the left input
-      f.workingBaseName = this.stripExtension(f.originalFileName);
-
+      // Show the *actual* on-disk name (without extension) in the left input.
       // checkFileNamesToNormalize already normalized each name server-side, so
       // the initial preview comes straight from its response — no extra calls.
-      f.showNormalizedPreview = !!f.needsNormalization;
+      f.workingBaseName = this.stripExtension(f.originalFileName);
     });
+
+    this.loadCastNames();
 
     // Sort ascending by the name we’re going to rename TO (or working name)
     this.files.sort((a, b) =>
@@ -60,6 +116,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.previewTimers.forEach((t) => clearTimeout(t));
     this.previewTimers.clear();
   }
@@ -82,6 +139,19 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
         this.recomputePreview(file);
       }, 250),
     );
+  }
+
+  /**
+   * Repaints this modal's view. The app runs zoneless, so an async callback has
+   * to do this itself. detectChanges() rather than markForCheck() because the
+   * latter only queues work for the scheduler, whose tick rides on
+   * requestAnimationFrame — which does not fire while the tab is hidden, so a
+   * preview could sit unrendered until the next user event.
+   */
+  private refreshView(): void {
+    if (!this.destroyed) {
+      this.cdr.detectChanges();
+    }
   }
 
   /**
@@ -119,12 +189,17 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
         if (!requiresRename) {
           file.needsNormalization = false;
           file.newFileName = '';
-          file.showNormalizedPreview = false;
         } else {
           file.needsNormalization = true;
+          // The column shows the name the file WILL get, so it must be filled
+          // whenever a rename is pending — including when the user has already
+          // typed the normalized form (targetFull === workingFull). Gating it on
+          // "normalization changed the text" made the column blank out on every
+          // ordinary keystroke and only reappear on a space or dangling dash,
+          // which normalization strips.
           file.newFileName = normalizationChangesName ? targetFull : workingFull;
-          file.showNormalizedPreview = normalizationChangesName;
         }
+        this.refreshView();
       },
       error: () => {
         // Leave the previous preview in place on error.
@@ -145,7 +220,254 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     return this.files.some((file) => file.needsNormalization);
   }
 
+  /**
+   * The name a file will have once "Rename Files" runs: the pending new name
+   * for included files, otherwise the current on-disk name. Extension-free —
+   * the UI only ever shows base names.
+   */
+  effectiveBaseName(file: NormalizedFile): string {
+    const name =
+      !file.exclude && file.newFileName
+        ? file.newFileName
+        : file.originalFileName;
+    return this.stripExtension(name);
+  }
+
+  /**
+   * The pending rename target, extension stripped, for the preview column.
+   *
+   * While the row's input has focus, a trailing separator the server strips
+   * ("Scene_1 - ") is put back for display only, so the preview doesn't look
+   * like it swallowed the " - " you just typed. Blur snaps it to the true
+   * normalized form. `newFileName` — what a rename actually uses — is never
+   * touched by this.
+   */
+  previewBaseName(file: NormalizedFile): string {
+    const base = this.stripExtension(file.newFileName);
+    if (!base || file !== this.focusedFile) {
+      return base;
+    }
+    const tail = (file.workingBaseName ?? '').match(DANGLING_TAIL)?.[0] ?? '';
+    return tail && !base.endsWith(tail) ? base + tail : base;
+  }
+
+  onNameFocus(file: NormalizedFile): void {
+    this.focusedFile = file;
+  }
+
+  onNameBlur(file: NormalizedFile): void {
+    if (this.focusedFile === file) {
+      this.focusedFile = null;
+    }
+  }
+
+  /**
+   * Scene files that still need a cast: the base name ends in a scene number
+   * ("Ass Man - Scene_1") with nothing named after it. Anything already
+   * carrying a cast ("… - Scene_1 - Kissa Sins") is done and drops off.
+   *
+   * Judged on the effective name so pending renames count, and sorted by the
+   * on-disk name — a key that can't change under the user's cursor, so rows
+   * never reorder mid-edit.
+   */
+  get castFiles(): NormalizedFile[] {
+    return this.files
+      .filter(
+        (file) =>
+          this.castEdited.has(file) ||
+          endsWithSceneNumber(this.effectiveBaseName(file)),
+      )
+      .sort((a, b) =>
+        a.originalFileName.localeCompare(b.originalFileName, undefined, {
+          sensitivity: 'base',
+        }),
+      );
+  }
+
+  get hasPendingCastRenames(): boolean {
+    return this.castFiles.some((file) => !file.exclude && !!file.newFileName);
+  }
+
+  private castGroupsCache: {
+    fingerprint: string;
+    groups: Array<{ title: string; files: NormalizedFile[] }>;
+  } | null = null;
+
+  /**
+   * castFiles grouped by movie title, so related scenes (Ass Man - Scene_1,
+   * Scene_2, …) sit under one header carrying a single set of lookup links —
+   * one search covers the whole collection. Sean clicks the link; the search
+   * happens in his browser, as himself.
+   *
+   * Memoized: this getter runs on every change-detection pass, and handing
+   * *ngFor a fresh array of fresh group objects each time made it tear down
+   * and rebuild every row — 60+ datalist-linked inputs — per pass, which froze
+   * the page outright the first time the tab was opened against a real batch.
+   * The template's trackBy is the second half of the same defense.
+   */
+  get castFileGroups(): Array<{ title: string; files: NormalizedFile[] }> {
+    const files = this.castFiles;
+    const fingerprint = files
+      .map((f) => `${f.originalFileName} ${f.workingBaseName ?? ''} ${f.exclude ? 1 : 0}`)
+      .join('');
+    if (this.castGroupsCache?.fingerprint === fingerprint) {
+      return this.castGroupsCache.groups;
+    }
+
+    const groups = new Map<string, { title: string; files: NormalizedFile[] }>();
+    for (const file of files) {
+      const title = this.lookupQuery(file);
+      const key = title.toLowerCase();
+      const group = groups.get(key);
+      if (group) {
+        group.files.push(file);
+      } else {
+        groups.set(key, { title, files: [file] });
+      }
+    }
+    this.castGroupsCache = { fingerprint, groups: [...groups.values()] };
+    return this.castGroupsCache.groups;
+  }
+
+  trackGroup(_index: number, group: { title: string }): string {
+    return group.title;
+  }
+
+  trackFile(_index: number, file: NormalizedFile): NormalizedFile {
+    return file;
+  }
+
+  lookupUrlForTitle(site: { url: (q: string) => string }, title: string): string {
+    return site.url(title);
+  }
+
+  /**
+   * Edit from the Add Cast tab. Feeds the same server-side normalize preview
+   * as the other tab, so "Rename Files" applies cast names too.
+   */
+  onCastNameChange(file: NormalizedFile): void {
+    this.castEdited.add(file);
+    this.onWorkingNameChange(file);
+  }
+
+  readonly lookupSites = LOOKUP_SITES;
+
+  /** Known performer names, for the Add Cast autocomplete. */
+  castNames: string[] = [];
+
+  /**
+   * The datalist options currently offered (max 12). The full vocabulary is
+   * ~3k names; rendering them all as static <option>s meant every row rebuild
+   * relinked a 3k-node list — part of the tab-open freeze. Instead the list
+   * holds only matches for what's being typed, recomputed per keystroke.
+   */
+  castSuggestions: string[] = [];
+
+  /** The part of the name up to and including "Scene_N". */
+  sceneBaseOf(file: NormalizedFile): string {
+    const working = file.workingBaseName ?? '';
+    return working.match(SCENE_SPLIT)?.[1] ?? working;
+  }
+
+  /** Whatever cast has been typed after the scene number ('' when none yet). */
+  castOf(file: NormalizedFile): string {
+    return (file.workingBaseName ?? '').match(SCENE_SPLIT)?.[2] ?? '';
+  }
+
+  /**
+   * The title to search for on IAFD/ADE — the scene number and any cast are
+   * noise to those sites, so search the movie title alone.
+   */
+  lookupQuery(file: NormalizedFile): string {
+    const base = this.sceneBaseOf(file).replace(/\s*-\s*Scene_\d{1,3}\s*$/i, '');
+    return getBaseTitle(base) || base;
+  }
+
+  lookupUrl(site: { url: (q: string) => string }, file: NormalizedFile): string {
+    return site.url(this.lookupQuery(file));
+  }
+
+  /**
+   * Sets the cast half of the name, leaving "<title> - Scene_N" alone. Typing,
+   * pasting a copied cast list, or picking an autocomplete suggestion all land
+   * here, then flow through the same normalize preview as everything else.
+   */
+  setCast(file: NormalizedFile, cast: string): void {
+    this.updateCastSuggestions(cast);
+    const tidied = this.tidyCastInput(cast);
+    const base = this.sceneBaseOf(file);
+    file.workingBaseName = tidied ? `${base} - ${tidied}` : base;
+    this.onCastNameChange(file);
+  }
+
+  /**
+   * Recompute the (small) suggestion list for the text being typed. Matches
+   * the segment after the last comma, but each option carries the full
+   * composed value ("Angel Long, Jane Wilde") because the browser filters
+   * datalist options against the input's ENTIRE value — a bare "Jane Wilde"
+   * option would never surface while "Angel Long, Ja" is in the field.
+   */
+  private updateCastSuggestions(text: string): void {
+    const parts = (text ?? '').split(',');
+    const segment = (parts.pop() ?? '').trim().toLowerCase();
+    const prefix = parts.length ? parts.map((p) => p.trim()).join(', ') + ', ' : '';
+    if (segment.length < 2) {
+      this.castSuggestions = [];
+      return;
+    }
+    const startsWith: string[] = [];
+    const contains: string[] = [];
+    for (const name of this.castNames) {
+      const lower = name.toLowerCase();
+      if (lower.startsWith(segment)) {
+        startsWith.push(prefix + name);
+        if (startsWith.length >= 12) {
+          break;
+        }
+      } else if (contains.length < 12 && lower.includes(segment)) {
+        contains.push(prefix + name);
+      }
+    }
+    this.castSuggestions = [...startsWith, ...contains].slice(0, 12);
+  }
+
+  /**
+   * Cleans a pasted cast list into "Name, Name": collapses whitespace, accepts
+   * the separators these sites use (&, "and", newlines, semicolons), and drops
+   * wrapping punctuation. Deliberately does NOT title-case — the PHP pipeline
+   * owns casing, same as every other name in this modal.
+   */
+  private tidyCastInput(raw: string): string {
+    return (raw ?? '')
+      .split(/\s*(?:,|&|;|\/|\n|\r|\band\b)\s*/i)
+      .map((part) => part.replace(/\s+/g, ' ').trim())
+      .map((part) => part.replace(/^[-_.,;:|'"()[\]]+|[-_.,;:|'"()[\]]+$/g, '').trim())
+      .filter((part) => /\p{L}/u.test(part))
+      .join(', ');
+  }
+
+  /** Pull the autocomplete vocabulary, and feed newly-used names back into it. */
+  private loadCastNames(add?: string[]): void {
+    this.fileService.getCastNames(this.directory, add).subscribe({
+      next: ({ names }) => {
+        this.castNames = names ?? [];
+        this.refreshView();
+      },
+      error: () => {
+        // Autocomplete is a convenience — a failure here must not break the modal.
+      },
+    });
+  }
+
+  /**
+   * Renames the included files on the server, then always lands on the
+   * "Add Cast" tab. The modal stays open so scene files can be worked on.
+   */
   renameFiles(): void {
+    if (this.isRenaming) {
+      return;
+    }
+
     const filesToRename = this.files.filter(
       (file) =>
         !file.exclude &&
@@ -153,8 +475,75 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
         file.newFileName !== file.originalFileName,
     );
 
-    this.renameFilesEvent.emit(filesToRename);
-    this.activeModal.close();
+    if (filesToRename.length === 0) {
+      this.activeTab = 'cast';
+      return;
+    }
+
+    this.isRenaming = true;
+    this.fileService.renameTheFilesToNormalize(filesToRename).subscribe({
+      next: ({ results }) => {
+        this.isRenaming = false;
+        this.applyRenameResults(results ?? []);
+        this.activeTab = 'cast';
+        this.refreshView();
+      },
+      error: (error) => {
+        this.isRenaming = false;
+        this.refreshView();
+        console.error('Error renaming files:', error);
+        alert('Failed to rename files. See console for details.');
+      },
+    });
+  }
+
+  /**
+   * Folds the server's per-file results back into the list: successes become
+   * the new on-disk name; failures keep their pending rename (retryable) and
+   * show the server's status.
+   */
+  private applyRenameResults(results: RenameResult[]): void {
+    const byOriginalName = new Map(results.map((r) => [r.originalFileName, r]));
+    const castLanded: string[] = [];
+    let renamed = 0;
+    let failed = 0;
+
+    this.files.forEach((file) => {
+      const result = byOriginalName.get(file.originalFileName);
+      if (!result) {
+        return;
+      }
+
+      file.status = result.status;
+      if (result.status === RENAME_SUCCESS_STATUS) {
+        renamed++;
+        file.originalFileName = result.newFileName;
+        file.workingBaseName = this.stripExtension(result.newFileName);
+        file.newFileName = '';
+        file.needsNormalization = false;
+        file.userEdited = false;
+        file.renameError = undefined;
+        // Remember any cast that actually landed on disk, so it autocompletes
+        // next time — including after this batch leaves the staging drive.
+        // Read AFTER workingBaseName is updated, so it reflects the new name.
+        const cast = this.castOf(file);
+        if (cast) {
+          castLanded.push(cast);
+        }
+        // The edit landed on disk; let the row leave the Add Cast list if it
+        // now carries a cast name.
+        this.castEdited.delete(file);
+      } else {
+        failed++;
+        file.renameError = result.status;
+      }
+    });
+
+    this.renameSummary = { renamed, failed };
+
+    if (castLanded.length) {
+      this.loadCastNames(castLanded);
+    }
   }
 
   autoResize(event: Event): void {

@@ -3,8 +3,88 @@
     width: 100%;
     table-layout: fixed; // let widths come from col/percentages
   }
+  // The tab bar sits inside the (non-scrolling) header, so body content
+  // scrolls behind an opaque bar instead of showing through around it.
   .modal-header {
     background-color: silver;
+    flex-wrap: wrap;
+    row-gap: 0.75rem;
+    padding-bottom: 0;
+  }
+
+  .modal-tabs {
+    width: 100%;
+    border-bottom: none;
+    margin-bottom: -1px; // close the seam with the body below
+  }
+
+  .modal-tabs .nav-link {
+    color: inherit;
+  }
+
+  // Active tab reads as continuous with the white body beneath it
+  .modal-tabs .nav-link.active {
+    background-color: var(--bs-modal-bg, #fff);
+    border-bottom-color: var(--bs-modal-bg, #fff);
+  }
+
+  .cast-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .cast-table col.col-check {
+    width: 40px;
+  }
+
+  // Filename needs the most room; cast and preview split the rest
+  .cast-table col.col-scene {
+    width: calc((100% - 40px) * 0.4);
+  }
+
+  .cast-table col.col-cast,
+  .cast-table col.col-new {
+    width: calc((100% - 40px) * 0.3);
+  }
+
+  .cast-cell {
+    padding: 0.25rem 0.5rem;
+    vertical-align: middle;
+  }
+
+  .cast-input {
+    width: 100%;
+  }
+
+  .cast-group-row td {
+    background-color: #eef2f7;
+    font-weight: 600;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .cast-group-title {
+    margin-right: 0.75rem;
+  }
+
+  .lookup-links {
+    display: inline-flex;
+    gap: 0.5rem;
+    vertical-align: baseline;
+  }
+
+  .lookup-link {
+    font-size: 0.75rem;
+    text-decoration: none;
+    color: #0d6efd;
+    border: 1px solid rgba(13, 110, 253, 0.35);
+    border-radius: 3px;
+    padding: 0 0.35rem;
+    line-height: 1.4;
+  }
+
+  .lookup-link:hover {
+    background-color: #0d6efd;
+    color: #fff;
   }
   // Small checkbox column
   .normalize-table col.col-check {

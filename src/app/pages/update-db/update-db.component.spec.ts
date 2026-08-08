@@ -245,24 +245,4 @@ describe('UpdateDbComponent', () => {
     });
   });
 
-  describe('renameFiles', () => {
-    it('should not call service if no files need renaming', () => {
-      spyOn(fileService, 'renameTheFilesToNormalize');
-      spyOn(console, 'log');
-
-      component.renameFiles([
-        {
-          path: '/test',
-          originalFileName: 'file.mp4',
-          newFileName: '',
-          fileExtension: 'mp4',
-          fileNameNoExtension: 'file',
-          needsNormalization: false,
-          status: '',
-        },
-      ]);
-
-      expect(fileService.renameTheFilesToNormalize).not.toHaveBeenCalled();
-    });
-  });
 });
