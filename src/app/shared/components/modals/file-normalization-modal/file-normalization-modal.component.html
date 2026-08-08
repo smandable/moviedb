@@ -189,7 +189,7 @@
                   class="form-control form-control-sm cast-input"
                   list="castNameOptions"
                   placeholder="paste or type cast…"
-                  [ngModel]="castOf(file)"
+                  [ngModel]="castInputValue(file)"
                   (ngModelChange)="setCast(file, $event)"
                   (focus)="onNameFocus(file)"
                   (blur)="onNameBlur(file)"

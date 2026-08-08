@@ -381,6 +381,84 @@ describe('FileNormalizationModalComponent', () => {
       expect(groups.find((g) => g.title === 'Anal Massage')!.files).toEqual([other]);
     });
 
+    // Regression: binding the tidied value straight back into the input ate a
+    // trailing comma the moment it was typed — you could never type "X, Y".
+    it('keeps an in-progress trailing comma in the input while typing', fakeAsync(() => {
+      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+      const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
+      component.files = [file];
+
+      component.setCast(file, 'Angel Long, ');
+
+      // the visible input keeps the comma; the filename is tidied
+      expect(component.castInputValue(file)).toBe('Angel Long, ');
+      expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Angel Long');
+
+      // blur snaps the input to the tidied form
+      component.onNameBlur(file);
+      expect(component.castInputValue(file)).toBe('Angel Long');
+      tick(250);
+    }));
+
+    it('segments a pasted run of unseparated names using the vocabulary', fakeAsync(() => {
+      spyOn(fileService, 'getCastNames').and.returnValue(
+        of({ names: ['Angel Long', 'Paige Owens', 'Anna Claire Clouds'] }),
+      );
+      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+      // ngOnInit re-derives workingBaseName from originalFileName, so the
+      // fixture needs its scene marker there, not just in workingBaseName.
+      const file = makeFile({ originalFileName: 'Ass Man - Scene_1.mp4' });
+      component.files = [file];
+      component.ngOnInit();
+
+      // two known 2-word names, no separator
+      component.setCast(file, 'angel long paige owens');
+      expect(component.castOf(file)).toBe('angel long, paige owens');
+
+      // a known 3-word name is not chopped at two
+      component.setCast(file, 'anna claire clouds paige owens');
+      expect(component.castOf(file)).toBe('anna claire clouds, paige owens');
+
+      // unknown names fall back to pairs
+      component.setCast(file, 'zz aa bb cc');
+      expect(component.castOf(file)).toBe('zz aa, bb cc');
+      tick(250);
+    }));
+
+    // Regression: SCENE_SPLIT only knew canonical "Scene_N", so on a raw name
+    // ("test movie.scene 1") sceneBaseOf fell back to the whole name and each
+    // keystroke APPENDED the cast again: "... - Angel Long - Angel Long - ...".
+    it('replaces, never accumulates, cast on a raw un-normalized scene name', fakeAsync(() => {
+      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+      const file = makeFile({
+        originalFileName: 'test movie.scene 1.mp4',
+        workingBaseName: 'test movie.scene 1',
+      });
+      component.files = [file];
+
+      component.setCast(file, 'Angel Long');
+      component.setCast(file, 'Angel Long, Pai');
+      component.setCast(file, 'Angel Long, Paige Owens');
+
+      expect(file.workingBaseName).toBe(
+        'test movie.scene 1 - Angel Long, Paige Owens',
+      );
+      expect(component.castOf(file)).toBe('Angel Long, Paige Owens');
+      expect(component.sceneBaseOf(file)).toBe('test movie.scene 1');
+      tick(250);
+    }));
+
+    it('does not segment while a short name is being typed', fakeAsync(() => {
+      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+      const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
+      component.files = [file];
+
+      // 3 words stay whole — could be one name still being typed
+      component.setCast(file, 'anna claire clouds');
+      expect(component.castOf(file)).toBe('anna claire clouds');
+      tick(250);
+    }));
+
     it('searches the movie title only, without scene number or cast', () => {
       const file = makeFile({
         workingBaseName: 'Ass Man # 03 - Scene_1 - Angel Long',

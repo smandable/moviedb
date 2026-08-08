@@ -24,7 +24,11 @@ const DANGLING_TAIL = /[ \t\n\r\0\x0B\-._]+$/;
 
 // Splits a base name into everything up to and including the scene number, and
 // whatever cast follows it: "Ass Man - Scene_1 - Angel Long" -> both halves.
-const SCENE_SPLIT = /^(.*?Scene_\d{1,3})(?:\s*-\s*(.*))?$/i;
+// Accepts the raw spellings too ("scene 1", "scene.2") — before the normalize
+// rename runs, the working name is still un-canonical, and matching only
+// "Scene_N" made sceneBaseOf() fall back to the WHOLE name (old cast included),
+// so each keystroke in the cast field appended instead of replaced.
+const SCENE_SPLIT = /^(.*?\bscene[\s._-]*\d{1,3})(?:\s*-\s*(.*))?$/i;
 
 /**
  * Search URLs for the two metadata sites Sean uses. These open in HIS browser —
@@ -259,6 +263,8 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     if (this.focusedFile === file) {
       this.focusedFile = null;
     }
+    // Snap the cast field from what was typed to the tidied form.
+    this.castDrafts.delete(file);
   }
 
   /**
@@ -355,6 +361,23 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   /** Known performer names, for the Add Cast autocomplete. */
   castNames: string[] = [];
 
+  /** Lowercased vocabulary for segmenting pasted runs of unseparated names. */
+  private castNameSet = new Set<string>();
+  private castNameMaxWords = 2;
+
+  /**
+   * Raw text as typed into a row's cast field, kept while the user works so
+   * the input never rewrites itself mid-keystroke — binding the tidied value
+   * straight back would eat a trailing comma the moment it was typed. Cleared
+   * on blur (the field then snaps to the tidied form) and on rename success.
+   */
+  private castDrafts = new Map<NormalizedFile, string>();
+
+  /** What the row's cast input displays: the in-progress draft, else truth. */
+  castInputValue(file: NormalizedFile): string {
+    return this.castDrafts.get(file) ?? this.castOf(file);
+  }
+
   /**
    * The datalist options currently offered (max 12). The full vocabulary is
    * ~3k names; rendering them all as static <option>s meant every row rebuild
@@ -393,6 +416,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * here, then flow through the same normalize preview as everything else.
    */
   setCast(file: NormalizedFile, cast: string): void {
+    this.castDrafts.set(file, cast);
     this.updateCastSuggestions(cast);
     const tidied = this.tidyCastInput(cast);
     const base = this.sceneBaseOf(file);
@@ -434,8 +458,10 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   /**
    * Cleans a pasted cast list into "Name, Name": collapses whitespace, accepts
    * the separators these sites use (&, "and", newlines, semicolons), and drops
-   * wrapping punctuation. Deliberately does NOT title-case — the PHP pipeline
-   * owns casing, same as every other name in this modal.
+   * wrapping punctuation. A part with no separators but 4+ words is a pasted
+   * run of unseparated names ("angel long paige owens") and gets segmented.
+   * Deliberately does NOT title-case — the PHP pipeline owns casing, same as
+   * every other name in this modal.
    */
   private tidyCastInput(raw: string): string {
     return (raw ?? '')
@@ -443,7 +469,43 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       .map((part) => part.replace(/\s+/g, ' ').trim())
       .map((part) => part.replace(/^[-_.,;:|'"()[\]]+|[-_.,;:|'"()[\]]+$/g, '').trim())
       .filter((part) => /\p{L}/u.test(part))
+      .flatMap((part) => {
+        const words = part.split(' ');
+        return words.length >= 4 ? this.segmentCastRun(words) : [part];
+      })
       .join(', ');
+  }
+
+  /**
+   * Split a run of unseparated names on name boundaries: greedy longest match
+   * against the known vocabulary first (so "anna claire clouds" stays one
+   * name), pairs of words as the fallback, and a single leftover word joins
+   * the name before it rather than standing alone.
+   */
+  private segmentCastRun(words: string[]): string[] {
+    const out: string[] = [];
+    let i = 0;
+    while (i < words.length) {
+      const remaining = words.length - i;
+      let take = 0;
+      for (let len = Math.min(this.castNameMaxWords, remaining); len >= 2; len--) {
+        if (this.castNameSet.has(words.slice(i, i + len).join(' ').toLowerCase())) {
+          take = len;
+          break;
+        }
+      }
+      if (!take) {
+        if (remaining === 1 && out.length) {
+          out[out.length - 1] += ` ${words[i]}`;
+          i++;
+          continue;
+        }
+        take = Math.min(2, remaining);
+      }
+      out.push(words.slice(i, i + take).join(' '));
+      i += take;
+    }
+    return out;
   }
 
   /** Pull the autocomplete vocabulary, and feed newly-used names back into it. */
@@ -451,6 +513,11 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     this.fileService.getCastNames(this.directory, add).subscribe({
       next: ({ names }) => {
         this.castNames = names ?? [];
+        this.castNameSet = new Set(this.castNames.map((n) => n.toLowerCase()));
+        this.castNameMaxWords = this.castNames.reduce(
+          (max, n) => Math.max(max, n.split(' ').length),
+          2,
+        );
         this.refreshView();
       },
       error: () => {
@@ -531,8 +598,9 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
           castLanded.push(cast);
         }
         // The edit landed on disk; let the row leave the Add Cast list if it
-        // now carries a cast name.
+        // now carries a cast name, and let its input show the on-disk truth.
         this.castEdited.delete(file);
+        this.castDrafts.delete(file);
       } else {
         failed++;
         file.renameError = result.status;
