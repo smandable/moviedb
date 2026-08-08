@@ -139,73 +139,72 @@
             <th>New Filename</th>
           </tr>
         </thead>
-        <tbody>
-          <ng-container
-            *ngFor="let group of castFileGroups; trackBy: trackGroup"
-          >
-            <!-- One header per movie: search once, fill every scene below -->
-            <tr class="cast-group-row">
-              <td colspan="4">
-                <span class="cast-group-title">{{ group.title }}</span>
-                <span class="lookup-links">
-                  <a
-                    *ngFor="let site of lookupSites"
-                    [href]="lookupUrlForTitle(site, group.title)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="lookup-link"
-                    [title]="'Search ' + site.label + ' for “' + group.title + '”'"
-                    >{{ site.label }}</a
-                  >
-                </span>
-              </td>
-            </tr>
+        <!-- One tbody per movie: Bootstrap stripes by nth-of-type *within* a
+             tbody, so header/scene shading can't drift with the number of
+             rows in earlier groups -->
+        <tbody *ngFor="let group of castFileGroups; trackBy: trackGroup">
+          <!-- One header per movie: search once, fill every scene below -->
+          <tr class="cast-group-row">
+            <td colspan="4">
+              <span class="cast-group-title">{{ group.title }}</span>
+              <span class="lookup-links">
+                <a
+                  *ngFor="let site of lookupSites"
+                  [href]="lookupUrlForTitle(site, group.title)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="lookup-link"
+                  [title]="'Search ' + site.label + ' for “' + group.title + '”'"
+                  >{{ site.label }}</a
+                >
+              </span>
+            </td>
+          </tr>
 
-            <tr *ngFor="let file of group.files; trackBy: trackFile">
-              <td class="align-middle text-center">
-                <input
-                  type="checkbox"
-                  [ngModel]="!file.exclude"
-                  (ngModelChange)="file.exclude = !$event"
-                  title="Rename this file"
-                />
-              </td>
+          <tr *ngFor="let file of group.files; trackBy: trackFile">
+            <td class="align-middle text-center">
+              <input
+                type="checkbox"
+                [ngModel]="!file.exclude"
+                (ngModelChange)="file.exclude = !$event"
+                title="Rename this file"
+              />
+            </td>
 
-              <td class="working-name-cell">
-                <textarea
-                  class="form-control form-control-sm working-name-input"
-                  rows="1"
-                  [(ngModel)]="file.workingBaseName"
-                  (ngModelChange)="onCastNameChange(file)"
-                  (focus)="onNameFocus(file)"
-                  (blur)="onNameBlur(file)"
-                  (input)="autoResize($event)"
-                ></textarea>
-              </td>
+            <td class="working-name-cell">
+              <textarea
+                class="form-control form-control-sm working-name-input"
+                rows="1"
+                [(ngModel)]="file.workingBaseName"
+                (ngModelChange)="onCastNameChange(file)"
+                (focus)="onNameFocus(file)"
+                (blur)="onNameBlur(file)"
+                (input)="autoResize($event)"
+              ></textarea>
+            </td>
 
-              <td class="cast-cell">
-                <input
-                  type="text"
-                  class="form-control form-control-sm cast-input"
-                  list="castNameOptions"
-                  placeholder="paste or type cast…"
-                  [ngModel]="castInputValue(file)"
-                  (ngModelChange)="setCast(file, $event)"
-                  (focus)="onNameFocus(file)"
-                  (blur)="onNameBlur(file)"
-                />
-              </td>
+            <td class="cast-cell">
+              <input
+                type="text"
+                class="form-control form-control-sm cast-input"
+                list="castNameOptions"
+                placeholder="paste or type cast…"
+                [ngModel]="castInputValue(file)"
+                (ngModelChange)="setCast(file, $event)"
+                (focus)="onNameFocus(file)"
+                (blur)="onNameBlur(file)"
+              />
+            </td>
 
-              <td class="align-middle">
-                <ng-container *ngIf="file.needsNormalization">
-                  {{ previewBaseName(file) }}
-                </ng-container>
-                <div *ngIf="file.renameError" class="text-danger small">
-                  {{ file.renameError }}
-                </div>
-              </td>
-            </tr>
-          </ng-container>
+            <td class="align-middle">
+              <ng-container *ngIf="file.needsNormalization">
+                {{ previewBaseName(file) }}
+              </ng-container>
+              <div *ngIf="file.renameError" class="text-danger small">
+                {{ file.renameError }}
+              </div>
+            </td>
+          </tr>
         </tbody>
       </table>
     </ng-container>

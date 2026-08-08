@@ -57,9 +57,13 @@
   }
 
   .cast-group-row td {
-    background-color: #eef2f7;
+    background-color: #dde4ee;
     font-weight: 600;
     padding: 0.35rem 0.5rem;
+    // Bootstrap paints .table-striped shading as an inset box-shadow on the
+    // cell; the header is nth-of-type(1) in its tbody (= striped), so drop
+    // the overlay to keep the designed color
+    box-shadow: none;
   }
 
   .cast-group-title {
