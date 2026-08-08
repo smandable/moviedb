@@ -527,8 +527,10 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Renames the included files on the server, then always lands on the
-   * "Add Cast" tab. The modal stays open so scene files can be worked on.
+   * Renames the included files on the server, then lands on the "Add Cast"
+   * tab so scene files can be worked on — unless nothing needs normalizing
+   * AND no scene file is waiting for a cast, in which case the work is done
+   * and the modal closes itself.
    */
   renameFiles(): void {
     if (this.isRenaming) {
@@ -543,7 +545,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     );
 
     if (filesToRename.length === 0) {
-      this.activeTab = 'cast';
+      this.finishRenamePass();
       return;
     }
 
@@ -552,7 +554,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       next: ({ results }) => {
         this.isRenaming = false;
         this.applyRenameResults(results ?? []);
-        this.activeTab = 'cast';
+        this.finishRenamePass();
         this.refreshView();
       },
       error: (error) => {
@@ -562,6 +564,20 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
         alert('Failed to rename files. See console for details.');
       },
     });
+  }
+
+  /**
+   * Where "Rename Files" lands: the Add Cast tab while any work remains —
+   * pending normalizations (failed renames keep theirs, so errors stay
+   * visible) or scene files without a cast. With both lists empty the modal
+   * closes; the parent page re-enables Update Database on close.
+   */
+  private finishRenamePass(): void {
+    if (!this.hasFilesToRename && this.castFiles.length === 0) {
+      this.activeModal.close('all-done');
+      return;
+    }
+    this.activeTab = 'cast';
   }
 
   /**

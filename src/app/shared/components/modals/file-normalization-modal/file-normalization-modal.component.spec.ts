@@ -282,6 +282,47 @@ describe('FileNormalizationModalComponent', () => {
       expect(component.activeTab).toBe('cast');
       expect(component.renameSummary).toBeNull();
     });
+
+    it('closes the modal when the rename leaves nothing to normalize and no cast work', () => {
+      const a = makeFile({
+        originalFileName: 'a.mp4',
+        newFileName: 'A.mp4', // renamed name has no scene suffix -> no cast row
+        exclude: false,
+      });
+      component.files = [a];
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({
+          results: [
+            {
+              originalFileName: 'a.mp4',
+              newFileName: 'A.mp4',
+              status: 'Renamed successfully',
+            },
+          ],
+        }),
+      );
+      const close = spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      expect(close).toHaveBeenCalledWith('all-done');
+    });
+
+    it('closes immediately when nothing needs renaming and no cast work remains', () => {
+      const a = makeFile({
+        originalFileName: 'Done Movie.mp4',
+        newFileName: '',
+        needsNormalization: false,
+      });
+      component.files = [a];
+      const spy = spyOn(fileService, 'renameTheFilesToNormalize');
+      const close = spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(close).toHaveBeenCalledWith('all-done');
+    });
   });
 
   describe('cast column', () => {
