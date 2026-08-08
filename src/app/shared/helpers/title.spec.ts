@@ -1,4 +1,8 @@
-import { stripTrailingNumber, getBaseTitle } from './title';
+import {
+  stripTrailingNumber,
+  getBaseTitle,
+  endsWithSceneNumber,
+} from './title';
 
 describe('stripTrailingNumber', () => {
   it('strips a trailing " # NN" sequence number', () => {
@@ -48,5 +52,44 @@ describe('getBaseTitle', () => {
   it('handles empty/nullish input', () => {
     expect(getBaseTitle('')).toBe('');
     expect(getBaseTitle(undefined as unknown as string)).toBe('');
+  });
+});
+
+describe('endsWithSceneNumber', () => {
+  it('matches a base name ending in a canonical "Scene_N"', () => {
+    expect(endsWithSceneNumber('Ass Man - Scene_1')).toBeTrue();
+    expect(endsWithSceneNumber('Some Title - Scene_12')).toBeTrue();
+    expect(endsWithSceneNumber('Some Title - Scene_3 ')).toBeTrue();
+  });
+
+  it('matches un-normalized scene spellings', () => {
+    expect(endsWithSceneNumber('some.title.scene 2')).toBeTrue();
+    expect(endsWithSceneNumber('Some Title Scene-3')).toBeTrue();
+    expect(endsWithSceneNumber('some.title.scene.4')).toBeTrue();
+    expect(endsWithSceneNumber('some title scene5')).toBeTrue();
+  });
+
+  it('rejects names that already have a cast after the scene', () => {
+    expect(
+      endsWithSceneNumber('Ass Worship # 17 - Scene_1 - Kissa Sins'),
+    ).toBeFalse();
+    expect(endsWithSceneNumber('Some Title - Scene_2 - Jane Doe')).toBeFalse();
+  });
+
+  it('rejects names with no scene number', () => {
+    expect(endsWithSceneNumber('Some Title')).toBeFalse();
+    expect(endsWithSceneNumber('Behind the Scenes')).toBeFalse();
+    expect(endsWithSceneNumber('Obscene_1')).toBeFalse();
+  });
+
+  it('treats 4-digit numbers as years, not scene numbers', () => {
+    expect(endsWithSceneNumber('Crime Scene 1999')).toBeFalse();
+    // ...but a real trailing scene still counts
+    expect(endsWithSceneNumber('Crime Scene 1999 - Scene_2')).toBeTrue();
+  });
+
+  it('handles empty/nullish input', () => {
+    expect(endsWithSceneNumber('')).toBeFalse();
+    expect(endsWithSceneNumber(undefined as unknown as string)).toBeFalse();
   });
 });
