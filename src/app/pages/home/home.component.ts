@@ -141,6 +141,12 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     },
 
+    // Re-fit when the window/grid resizes so Title keeps absorbing the
+    // spare width (every other column is pinned by min/maxWidth)
+    onGridSizeChanged: (params) => {
+      params.api.sizeColumnsToFit();
+    },
+
     // Event fired when the grid is ready
     onGridReady: (params: GridReadyEvent<Movie>) => {
       this.gridApi = params.api as ClientSideGridApi<Movie>;
@@ -226,7 +232,10 @@ export class HomeComponent implements OnInit, OnDestroy {
       field: 'title',
       colId: 'title', // Explicitly set colId to match field
       headerName: 'Title',
-      width: 600,
+      // Title soaks up all spare grid width: it is the only column
+      // sizeColumnsToFit can grow, since every other column is capped
+      // by min/maxWidth
+      minWidth: 300,
       editable: true,
       filter: 'agTextColumnFilter', // Use a text filter
       floatingFilter: true,
@@ -338,14 +347,18 @@ export class HomeComponent implements OnInit, OnDestroy {
       field: 'dimensions',
       colId: 'dimensions',
       headerName: 'Dimensions',
-      width: 150,
+      width: 120,
+      minWidth: 120,
+      maxWidth: 120,
       editable: true,
     },
     {
       field: 'duration',
       colId: 'duration',
       headerName: 'Duration',
-      width: 150,
+      width: 100,
+      minWidth: 100,
+      maxWidth: 100,
       valueFormatter: durationFormatter,
       editable: true,
     },
@@ -353,7 +366,9 @@ export class HomeComponent implements OnInit, OnDestroy {
       field: 'filesize',
       colId: 'filesize',
       headerName: 'File Size',
-      width: 150,
+      width: 110,
+      minWidth: 110,
+      maxWidth: 110,
       valueFormatter: fileSizeFormatter,
       editable: true,
     },
@@ -361,12 +376,17 @@ export class HomeComponent implements OnInit, OnDestroy {
       field: 'date_created',
       colId: 'date_created',
       headerName: 'Date Created',
-      width: 175,
+      // Widest header text plus the sort arrow need ~160
+      width: 160,
+      minWidth: 160,
+      maxWidth: 160,
     },
     {
       headerName: '', // No heading
       colId: 'actions', // Optional: set a colId for clarity
-      width: 120, // Narrow column
+      width: 80, // Narrow column: trash + search icons
+      minWidth: 80,
+      maxWidth: 80,
       filter: false, // Disable filter
       sortable: false, // Disable sorting
 

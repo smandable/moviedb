@@ -73,7 +73,10 @@ export class UpdateDbComponent implements OnInit {
       {
         field: 'title',
         headerName: 'Title',
-        width: 300,
+        // Title soaks up all spare grid width: it is the only column
+        // sizeColumnsToFit can grow, since every data column is capped
+        // by min/maxWidth below (flex:1 sat at minWidth under ag-grid 33.0.3)
+        minWidth: 300,
         editable: true,
         cellRenderer: (params: ICellRendererParams) => {
           const container = document.createElement('div');
@@ -126,23 +129,35 @@ export class UpdateDbComponent implements OnInit {
           return container;
         },
       },
-      { field: 'titleDimensions', headerName: 'Dimensions', width: 150 },
+      {
+        field: 'titleDimensions',
+        headerName: 'Dimensions',
+        width: 120,
+        minWidth: 120,
+        maxWidth: 120,
+      },
       {
         field: 'titleDuration',
         headerName: 'Duration',
-        width: 150,
+        width: 100,
+        minWidth: 100,
+        maxWidth: 100,
         valueFormatter: durationFormatter,
       },
       {
         field: 'titleSize',
         headerName: 'File Size',
-        width: 150,
+        width: 110,
+        minWidth: 110,
+        maxWidth: 110,
         valueFormatter: fileSizeFormatter,
       },
       {
         field: 'duplicate',
         headerName: 'Duplicate',
-        width: 150,
+        width: 110,
+        minWidth: 110,
+        maxWidth: 110,
         sortable: true,
         valueGetter: (params) => (params.data.duplicate ? 'Yes' : 'No'), // Return 'Yes' for duplicate, 'No' otherwise
         cellRenderer: (params: { value: string }) => {
@@ -168,7 +183,10 @@ export class UpdateDbComponent implements OnInit {
       {
         headerName: 'Date Created',
         field: 'dateCreatedInDB',
-        width: 180,
+        // Widest header text plus a sort arrow need ~160
+        width: 160,
+        minWidth: 160,
+        maxWidth: 160,
         valueGetter: (params: any) => {
           const { duplicate, dateCreatedInDB } = params.data || {};
           if (!duplicate || !dateCreatedInDB) {
@@ -224,12 +242,16 @@ export class UpdateDbComponent implements OnInit {
         },
         sortable: true,
         filter: false,
-        width: 150,
+        width: 120,
+        minWidth: 120,
+        maxWidth: 120,
       },
       {
         headerName: '',
         colId: 'externalSearch',
         width: 55,
+        minWidth: 55,
+        maxWidth: 55,
         sortable: false,
         filter: false,
         resizable: false,
@@ -279,6 +301,11 @@ export class UpdateDbComponent implements OnInit {
 
     onGridReady: (params) => {
       this.gridApi = params.api;
+      params.api.sizeColumnsToFit();
+    },
+    // Re-fit when the window/grid resizes so Title keeps absorbing the
+    // spare width (every other column is pinned by min/maxWidth)
+    onGridSizeChanged: (params) => {
       params.api.sizeColumnsToFit();
     },
   };
