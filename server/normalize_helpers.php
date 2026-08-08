@@ -236,8 +236,11 @@ if (!function_exists('cleanupFunctions')) {
         // Remaining formatting (run on whatever survives the truncation)
         $patterns = [
             '/(\s+)vs(\s+)/i',  // normalize spacing around "vs"
-            '/disc/i',
-            '/disk(\s*)/i',
+            // (?![a-z]) keeps words that merely start with disc/disk intact
+            // ("Disco Nights", "Diskette") while still matching glued digits
+            // ("Disc1")
+            '/\bdisc(?![a-z])/i',
+            '/\bdisk(?![a-z])/i',
             '/\bcd\b/i',
             '/\b(\s|\.)cd/i',
         ];
@@ -254,6 +257,16 @@ if (!function_exists('cleanupFunctions')) {
 
         $name = preg_replace($patterns, $replacements, $name);
         $name = trim($name);
+
+        // Canonical disc form is " - CD<n>" glued, leading zeros stripped
+        // ("Disc 1" → " - CD1") — run before the volume-number rules below so
+        // the disc number is never rewritten to "# 01". Also self-heals names
+        // a previous pass mangled ("CD # 01" → "CD1").
+        $name = preg_replace_callback(
+            '/(?:\s*-\s*)?\bCD\s*[.#]?\s*0*(\d{1,2})\b/',
+            fn($m) => ' - CD' . $m[1],
+            $name
+        );
 
         // "#07" or "#   07" → "# 07"; "#1" → "# 01"
         $name = preg_replace_callback('/#\s*(\d+)/', function ($matches) {

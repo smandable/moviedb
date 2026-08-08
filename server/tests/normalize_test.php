@@ -345,6 +345,48 @@ check(
     'Adventures in XXX'
 );
 
+echo "disc / CD canonicalization:\n";
+check(
+    'Disc N becomes glued CD form',
+    normalizeFileBaseName("Cherry's Anal Beauties Disc 1"),
+    "Cherry's Anal Beauties - CD1"
+);
+check(
+    'dotted glued disc',
+    normalizeFileBaseName('Movie.Disc2'),
+    'Movie - CD2'
+);
+check(
+    'CD with leading zero',
+    normalizeFileBaseName('Movie CD 01'),
+    'Movie - CD1'
+);
+check(
+    'self-heals the old mangled form',
+    normalizeFileBaseName('Movie - CD # 01'),
+    'Movie - CD1'
+);
+check(
+    'fixed point: canonical CD form is stable',
+    normalizeFileBaseName('Movie - CD1'),
+    'Movie - CD1'
+);
+check(
+    'two-digit disc number',
+    normalizeFileBaseName('Movie Disc 12'),
+    'Movie - CD12'
+);
+check(
+    'words starting with disc are left alone',
+    normalizeFileBaseName('Disco Nights'),
+    'Disco Nights'
+);
+check(
+    'discipline title is left alone',
+    normalizeFileBaseName('Strict Discipline 4'),
+    'Strict Discipline # 04'
+);
+
 echo "castDesquash (store-backed missing-space fix, injected vocab):\n";
 $vocab = [
     'Jane Fauxheart',
