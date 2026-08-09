@@ -54,6 +54,12 @@ Thumbs.db
 # Generated: drive index built by scripts/build_drive_index.php (local library data)
 /server/drive_index.json
 /server/drive_index.json.*
+
+# Generated: consolidation runtime artifacts (endpoint-spawned runs)
+/server/consolidate_progress.json
+/server/consolidate_progress.json.*
+/server/consolidate_last_run.tsv
+/server/consolidate_spawn.log
 IMPROVEMENTS.md
 .claude/
 

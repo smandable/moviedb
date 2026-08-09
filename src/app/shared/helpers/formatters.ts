@@ -71,6 +71,27 @@ export function durationFormatter(params: ValueFormatterParams): string {
   return formatSeconds(totalSeconds);
 }
 
+/**
+ * Formats a duration in seconds for prose ("42s", "2m 41s", "1h 5m 3s"),
+ * where the grid's clock style ("2:41") would read as a time of day.
+ * @param totalSeconds - The duration in whole seconds.
+ * @returns A formatted string such as "2m 41s".
+ */
+export function formatDurationHuman(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const seconds = s % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
+}
+
 function formatSeconds(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);

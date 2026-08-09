@@ -8,7 +8,7 @@
 
 // The vocabulary runs ~3k names; keep the list in its own scroll area
 .cast-name-list ul {
-  max-height: 28vh;
+  max-height: 21vh;
   overflow-y: auto;
 }
 
@@ -33,4 +33,46 @@
 // Drive-index roots editor
 .root-row .remove-root {
   white-space: nowrap;
+}
+
+// Collapsed-by-default section headers (roots editor, consolidation
+// options, run log): a plain toggle row with a text chevron
+.accordion-toggle {
+  cursor: pointer;
+  user-select: none;
+
+  .chevron {
+    width: 1em;
+    display: inline-block;
+    text-align: center;
+  }
+}
+
+// Consolidation drives editor
+.drive-row .remove-drive {
+  white-space: nowrap;
+}
+
+// Consolidation run-log tail, parsed into a compact table
+.consolidate-log .log-table-wrap {
+  max-height: 34vh;
+  overflow: auto;
+  margin-bottom: 0.5rem;
+}
+
+.consolidate-log {
+  .log-action {
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+
+  .log-group,
+  .log-file {
+    max-width: 26ch;
+    overflow-wrap: anywhere;
+  }
+
+  .log-message {
+    font-size: 0.72rem;
+  }
 }

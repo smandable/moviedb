@@ -173,54 +173,66 @@
         </p>
 
         <div
-          class="d-flex align-items-center mb-2 root-row"
-          *ngFor="
-            let root of driveIndexRoots;
-            let i = index;
-            trackBy: trackByIndex
-          "
+          class="accordion-toggle d-flex align-items-center mb-2 roots-toggle"
+          role="button"
+          [attr.aria-expanded]="rootsExpanded"
+          (click)="rootsExpanded = !rootsExpanded"
         >
-          <input
-            type="text"
-            class="form-control me-2 root-input"
-            placeholder="/Volumes/…"
-            [(ngModel)]="driveIndexRoots[i]"
-            (ngModelChange)="rootsStatus = 'idle'"
-          />
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-danger remove-root"
-            title="Remove this root"
-            aria-label="Remove this root"
-            (click)="removeRoot(i)"
-          >
-            ✕
-          </button>
+          <span class="chevron me-2">{{ rootsExpanded ? "▾" : "▸" }}</span>
+          <span>Library roots ({{ driveIndexRoots.length }})</span>
         </div>
 
-        <div class="d-flex align-items-center mb-2">
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-secondary me-2"
-            (click)="addRoot()"
+        <ng-container *ngIf="rootsExpanded">
+          <div
+            class="d-flex align-items-center mb-2 root-row"
+            *ngFor="
+              let root of driveIndexRoots;
+              let i = index;
+              trackBy: trackByIndex
+            "
           >
-            Add root
-          </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-primary"
-            (click)="saveRoots()"
-            [disabled]="rootsStatus === 'saving'"
-          >
-            {{ rootsStatus === "saving" ? "Saving…" : "Save" }}
-          </button>
-        </div>
-        <div *ngIf="rootsStatus === 'saved'" class="small mb-2 text-success">
-          {{ rootsMessage }}
-        </div>
-        <div *ngIf="rootsStatus === 'error'" class="small mb-2 text-danger">
-          {{ rootsMessage }}
-        </div>
+            <input
+              type="text"
+              class="form-control me-2 root-input"
+              placeholder="/Volumes/…"
+              [(ngModel)]="driveIndexRoots[i]"
+              (ngModelChange)="rootsStatus = 'idle'"
+            />
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger remove-root"
+              title="Remove this root"
+              aria-label="Remove this root"
+              (click)="removeRoot(i)"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center mb-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary me-2"
+              (click)="addRoot()"
+            >
+              Add root
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              (click)="saveRoots()"
+              [disabled]="rootsStatus === 'saving'"
+            >
+              {{ rootsStatus === "saving" ? "Saving…" : "Save" }}
+            </button>
+          </div>
+          <div *ngIf="rootsStatus === 'saved'" class="small mb-2 text-success">
+            {{ rootsMessage }}
+          </div>
+          <div *ngIf="rootsStatus === 'error'" class="small mb-2 text-danger">
+            {{ rootsMessage }}
+          </div>
+        </ng-container>
 
         <hr />
 
@@ -247,17 +259,352 @@
               </span>
             </ng-container>
           </div>
+          <span
+            *ngIf="isRebuilding"
+            class="small text-info me-2 ms-auto rebuild-progress"
+          >
+            <span
+              class="spinner-border spinner-border-sm me-1"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            {{ rebuildProgressLine || "Starting scan…" }}
+          </span>
+          <!-- A consolidation rebuilds the index itself; a second writer would
+               queue on the same lock and fight over the progress sidecar -->
+          <span
+            *ngIf="isConsolidating && !isRebuilding"
+            class="small text-muted me-2 ms-auto consolidation-owns-index"
+          >
+            The running consolidation rebuilds this itself.
+          </span>
           <button
             type="button"
-            class="btn btn-sm btn-secondary ms-auto"
+            class="btn btn-sm btn-secondary"
+            [class.ms-auto]="!isRebuilding && !isConsolidating"
             (click)="rebuildIndex()"
-            [disabled]="isRebuilding"
+            [disabled]="isRebuilding || isConsolidating"
           >
             {{ isRebuilding ? "Rebuilding…" : "Rebuild Index" }}
           </button>
         </div>
         <div *ngIf="rebuildError" class="small mt-2 text-danger">
           {{ rebuildError }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Consolidation -->
+    <div class="card mb-4">
+      <div class="card-header">Consolidation</div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">
+          Consolidates each title's scattered episodes onto one drive, shelving
+          duplicates under &lt;drive&gt;/duplicates/.
+        </p>
+
+        <div *ngIf="consolidateStatusError" class="small mb-2 text-danger">
+          {{ consolidateStatusError }}
+        </div>
+
+        <div
+          class="accordion-toggle d-flex align-items-center mb-2 consolidate-options-toggle"
+          role="button"
+          [attr.aria-expanded]="consolidateOptionsExpanded"
+          (click)="consolidateOptionsExpanded = !consolidateOptionsExpanded"
+        >
+          <span class="chevron me-2">{{
+            consolidateOptionsExpanded ? "▾" : "▸"
+          }}</span>
+          <span>Paths &amp; options</span>
+        </div>
+
+        <ng-container *ngIf="consolidateOptionsExpanded">
+          <div
+            class="d-flex align-items-center mb-2 drive-row"
+            *ngFor="
+              let drive of consolidateDrives;
+              let i = index;
+              trackBy: trackByIndex
+            "
+          >
+            <input
+              type="text"
+              class="form-control me-2 drive-input"
+              placeholder="/Volumes/…"
+              [(ngModel)]="consolidateDrives[i]"
+              (ngModelChange)="consolidateSaveStatus = 'idle'"
+            />
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger remove-drive"
+              title="Remove this drive"
+              aria-label="Remove this drive"
+              (click)="removeDrive(i)"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div class="mb-3">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              (click)="addDrive()"
+            >
+              Add drive
+            </button>
+          </div>
+
+          <div class="row g-2 mb-2">
+            <div class="col-md-6">
+              <label class="form-label small mb-1" for="consolidateBalanceTo">
+                Balance-to drive (free-space sink)
+              </label>
+              <select
+                id="consolidateBalanceTo"
+                class="form-select form-select-sm"
+                [(ngModel)]="consolidateBalanceTo"
+                (ngModelChange)="consolidateSaveStatus = 'idle'"
+              >
+                <option *ngFor="let drive of consolidateDrives" [value]="drive">
+                  {{ drive }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1" for="consolidateTargetFree">
+                Target free (GB)
+              </label>
+              <input
+                id="consolidateTargetFree"
+                type="number"
+                min="0"
+                class="form-control form-control-sm"
+                [(ngModel)]="consolidateTargetFreeGb"
+                (ngModelChange)="consolidateSaveStatus = 'idle'"
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small mb-1" for="consolidateReserve">
+                Reserve (GB)
+              </label>
+              <input
+                id="consolidateReserve"
+                type="number"
+                min="0"
+                class="form-control form-control-sm"
+                [(ngModel)]="consolidateReserveGb"
+                (ngModelChange)="consolidateSaveStatus = 'idle'"
+              />
+            </div>
+          </div>
+
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="consolidateBalance"
+              [(ngModel)]="consolidateBalance"
+              (ngModelChange)="consolidateSaveStatus = 'idle'"
+            />
+            <label class="form-check-label small" for="consolidateBalance">
+              Balance free space after consolidating
+            </label>
+          </div>
+          <div class="form-check mb-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="consolidateRecursive"
+              [(ngModel)]="consolidateRecursive"
+              (ngModelChange)="consolidateSaveStatus = 'idle'"
+            />
+            <label class="form-check-label small" for="consolidateRecursive">
+              Scan subdirectories
+            </label>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            (click)="saveConsolidateSettings()"
+            [disabled]="consolidateSaveStatus === 'saving'"
+          >
+            {{ consolidateSaveStatus === "saving" ? "Saving…" : "Save" }}
+          </button>
+          <div
+            *ngIf="consolidateSaveStatus === 'saved'"
+            class="small mt-2 text-success"
+          >
+            {{ consolidateSaveMessage }}
+          </div>
+          <div
+            *ngIf="consolidateSaveStatus === 'error'"
+            class="small mt-2 text-danger"
+          >
+            {{ consolidateSaveMessage }}
+          </div>
+        </ng-container>
+
+        <hr />
+
+        <div class="form-check mb-2">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="consolidateDryRun"
+            [(ngModel)]="dryRun"
+          />
+          <label class="form-check-label" for="consolidateDryRun">
+            Dry run (plan only, move nothing)
+          </label>
+        </div>
+
+        <div class="d-flex align-items-center mb-2">
+          <button
+            type="button"
+            class="btn btn-sm consolidate-run"
+            [class.btn-secondary]="dryRun"
+            [class.btn-primary]="!dryRun"
+            (click)="runConsolidate()"
+            [disabled]="isConsolidating || consolidateFormDirty"
+          >
+            {{
+              isConsolidating
+                ? "Running…"
+                : dryRun
+                  ? "Run Dry Run"
+                  : "Consolidate Files"
+            }}
+          </button>
+          <span
+            *ngIf="consolidateFormDirty && !isConsolidating"
+            class="small text-warning ms-2"
+          >
+            Unsaved changes — a run uses the saved settings. Save first.
+          </span>
+        </div>
+
+        <div *ngIf="consolidateRunError" class="small mb-2 text-danger">
+          {{ consolidateRunError }}
+        </div>
+
+        <div
+          *ngIf="isConsolidating"
+          class="small text-info mb-2 consolidate-progress"
+        >
+          <span
+            class="spinner-border spinner-border-sm me-1"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <span
+            *ngIf="consolidateProgress?.dryRun"
+            class="badge text-bg-info me-1 dry-run-badge"
+            >DRY RUN</span
+          >
+          {{ consolidateProgressLine || "Starting…" }}
+          <span *ngIf="consolidateCountsLine" class="ms-2">
+            {{ consolidateCountsLine }}
+          </span>
+        </div>
+
+        <div
+          *ngIf="!isConsolidating && consolidateLastRunLine"
+          class="small text-muted mb-2 last-run-line"
+        >
+          {{ consolidateLastRunLine }}
+        </div>
+
+        <div
+          class="accordion-toggle d-flex align-items-center mb-1 consolidate-log-toggle"
+          role="button"
+          [attr.aria-expanded]="consolidateLogExpanded"
+          (click)="toggleConsolidateLog()"
+        >
+          <span class="chevron me-2">{{
+            consolidateLogExpanded ? "▾" : "▸"
+          }}</span>
+          <span>Last run log</span>
+        </div>
+        <div *ngIf="consolidateLogExpanded" class="consolidate-log">
+          <div *ngIf="consolidateLogLoading" class="small text-muted">
+            Loading log…
+          </div>
+          <div *ngIf="consolidateLogError" class="small text-danger">
+            {{ consolidateLogError }}
+          </div>
+          <ng-container *ngIf="!consolidateLogLoading && !consolidateLogError">
+            <div
+              *ngIf="consolidateLogRows.length === 0"
+              class="small text-muted"
+            >
+              No log yet.
+            </div>
+            <ng-container *ngIf="consolidateLogRows.length > 0">
+              <div class="form-check form-check-inline mb-1">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="logShowAll"
+                  [(ngModel)]="logShowAll"
+                  (ngModelChange)="refreshConsolidateLog()"
+                />
+                <label class="form-check-label small" for="logShowAll">
+                  Raw tail (include bookkeeping rows)
+                </label>
+              </div>
+              <div class="log-table-wrap">
+                <table class="table table-sm small mb-1 align-middle">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Action</th>
+                      <th>Group</th>
+                      <th>File</th>
+                      <th>Route</th>
+                      <th class="text-end">Size</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of visibleLogRows">
+                      <td class="text-nowrap text-muted">{{ row.time }}</td>
+                      <td class="text-nowrap">
+                        <span class="log-action">{{ row.action }}</span>
+                      </td>
+                      <td class="log-group">{{ row.group }}</td>
+                      <td class="log-file" [title]="row.message || row.srcName">
+                        {{ row.srcName }}
+                        <div
+                          *ngIf="row.message"
+                          class="text-muted log-message"
+                        >
+                          {{ row.message }}
+                        </div>
+                      </td>
+                      <td class="text-nowrap text-muted">
+                        <ng-container *ngIf="row.srcDrive && row.destDrive">
+                          {{ row.srcDrive }} → {{ row.destDrive }}
+                        </ng-container>
+                        <ng-container *ngIf="!row.srcDrive || !row.destDrive">
+                          {{ row.srcDrive || row.destDrive }}
+                        </ng-container>
+                      </td>
+                      <td class="text-end text-nowrap">{{ row.bytes }}</td>
+                      <td
+                        class="text-nowrap"
+                        [ngClass]="logStatusClass(row.status)"
+                      >
+                        {{ row.status }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </ng-container>
+          </ng-container>
         </div>
       </div>
     </div>

@@ -8,11 +8,14 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 import { environment } from 'src/environments/environment';
+import { ConsolidateSettings } from './consolidate.service';
 
 export interface AppSettings {
   defaultDirectory?: string;
   /** Library roots the drive index walks (Settings page, driveIndex.php). */
   driveIndexRoots?: string[];
+  /** Consolidation options (Settings page, consolidateMovies.php). */
+  consolidate?: ConsolidateSettings;
 }
 
 export interface SaveSettingsResponse {

@@ -7,16 +7,20 @@
  * GET                          -> { settings: {...} }
  * POST { defaultDirectory }    -> { settings: {...}, directoryExists: bool }
  * POST { driveIndexRoots }     -> { settings: {...} }
+ * POST { consolidate }         -> { settings: {...} }
  *
- * Only whitelisted keys are stored. defaultDirectory and each driveIndexRoots
- * entry must pass the ALLOWED_BASE_PATH guard (whose realpath check means the
- * path must exist while the guard is on — so mount a volume before saving a
- * root on it). directoryExists is informational only. driveIndexRoots
- * overrides the drive-index build roots (see server/drive_index_lib.php).
+ * Only whitelisted keys are stored. defaultDirectory, each driveIndexRoots
+ * entry, and each consolidate drive must pass the ALLOWED_BASE_PATH guard
+ * (whose realpath check means the path must exist while the guard is on — so
+ * mount a volume before saving a root on it). directoryExists is
+ * informational only. driveIndexRoots overrides the drive-index build roots
+ * (see server/drive_index_lib.php); consolidate configures
+ * scripts/consolidate_movies.php (see server/consolidate_lib.php).
  */
 
 require_once __DIR__ . '/path_guard.php';
 require_once __DIR__ . '/drive_index_lib.php';
+require_once __DIR__ . '/consolidate_lib.php';
 
 ini_set('display_errors', '0');
 header('Content-Type: application/json');
@@ -123,6 +127,18 @@ if (array_key_exists('driveIndexRoots', $data)) {
         $cleanRoots[] = $root;
     }
     $settings['driveIndexRoots'] = $cleanRoots;
+}
+
+if (array_key_exists('consolidate', $data)) {
+    // Exactly six keys; drives validated like driveIndexRoots; balanceTo must
+    // be one of drives; GB values ints 0..20000; balance/recursive booleans.
+    $check = moviedb_validate_consolidate_settings($data['consolidate']);
+    if (!$check['ok']) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $check['error']]);
+        exit();
+    }
+    $settings['consolidate'] = $check['clean'];
 }
 
 if (!moviedb_save_settings($settings)) {
