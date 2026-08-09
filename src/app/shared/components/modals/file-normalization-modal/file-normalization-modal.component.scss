@@ -33,15 +33,9 @@
     table-layout: fixed;
   }
 
-  .cast-table col.col-check {
-    width: 40px;
-  }
-
   // Filename and New Filename match; cast names are short, so that column
   // stays the narrowest. Plain percentages only: Chrome ignores calc() on
-  // <col> in fixed table layout (falls back to equal distribution). The
-  // 40px check col over-constrains the sum; the browser absorbs it
-  // proportionally, so the ratios hold.
+  // <col> in fixed table layout (falls back to equal distribution).
   .cast-table col.col-scene,
   .cast-table col.col-new {
     width: 40%;

@@ -280,14 +280,28 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     return this.files
       .filter(
         (file) =>
-          this.castEdited.has(file) ||
-          endsWithSceneNumber(this.effectiveBaseName(file)),
+          (this.castEdited.has(file) ||
+            endsWithSceneNumber(this.effectiveBaseName(file))) &&
+          !this.dismissedTitles.has(this.lookupQuery(file).toLowerCase()),
       )
       .sort((a, b) =>
         a.originalFileName.localeCompare(b.originalFileName, undefined, {
           sensitivity: 'base',
         }),
       );
+  }
+
+  /**
+   * Titles set aside via the group-header checkbox — cast info couldn't be
+   * found, so the whole group leaves the Add Cast list (and stops counting
+   * as remaining work for the close-on-done logic). View-state only, per
+   * modal session: it never touches `exclude`, so a dismissed file keeps any
+   * pending *normalization* rename on the other tab.
+   */
+  readonly dismissedTitles = new Set<string>();
+
+  dismissGroup(group: { title: string }): void {
+    this.dismissedTitles.add(group.title.toLowerCase());
   }
 
   get hasPendingCastRenames(): boolean {

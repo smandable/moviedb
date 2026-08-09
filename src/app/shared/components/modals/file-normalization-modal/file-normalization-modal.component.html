@@ -126,14 +126,12 @@
 
       <table class="table table-bordered table-striped cast-table">
         <colgroup>
-          <col class="col-check" />
           <col class="col-scene" />
           <col class="col-cast" />
           <col class="col-new" />
         </colgroup>
         <thead>
           <tr>
-            <th></th>
             <th>Filename</th>
             <th>Cast</th>
             <th>New Filename</th>
@@ -143,9 +141,19 @@
              tbody, so header/scene shading can't drift with the number of
              rows in earlier groups -->
         <tbody *ngFor="let group of castFileGroups; trackBy: trackGroup">
-          <!-- One header per movie: search once, fill every scene below -->
+          <!-- One header per movie: search once, fill every scene below.
+               Unchecking sets the whole title aside (cast unfindable): the
+               group leaves this list; nothing else changes -->
           <tr class="cast-group-row">
-            <td colspan="4">
+            <td colspan="3">
+              <input
+                type="checkbox"
+                class="form-check-input group-dismiss me-2"
+                checked
+                [attr.aria-label]="'Keep “' + group.title + '” in this list'"
+                title="Uncheck to set this title aside"
+                (change)="dismissGroup(group)"
+              />
               <span class="cast-group-title">{{ group.title }}</span>
               <span class="lookup-links">
                 <a
@@ -162,15 +170,6 @@
           </tr>
 
           <tr *ngFor="let file of group.files; trackBy: trackFile">
-            <td class="align-middle text-center">
-              <input
-                type="checkbox"
-                [ngModel]="!file.exclude"
-                (ngModelChange)="file.exclude = !$event"
-                title="Rename this file"
-              />
-            </td>
-
             <td class="working-name-cell">
               <textarea
                 class="form-control form-control-sm working-name-input"

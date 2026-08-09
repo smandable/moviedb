@@ -325,6 +325,83 @@ describe('FileNormalizationModalComponent', () => {
     });
   });
 
+  describe('group dismissal', () => {
+    const sceneFile = (base: string) =>
+      makeFile({
+        originalFileName: `${base}.mp4`,
+        workingBaseName: base,
+        newFileName: '',
+        needsNormalization: false,
+      });
+
+    it('removes the group from the cast lists without touching exclude', () => {
+      const a = sceneFile('Ass Man - Scene_1');
+      const b = sceneFile('Other Movie - Scene_1');
+      component.files = [a, b];
+
+      const group = component.castFileGroups.find((g) => g.title === 'Ass Man');
+      expect(group).toBeDefined();
+      component.dismissGroup(group!);
+
+      expect(component.castFiles).not.toContain(a);
+      expect(component.castFiles).toContain(b);
+      expect(
+        component.castFileGroups.some((g) => g.title === 'Ass Man'),
+      ).toBeFalse();
+      // View-state only: a dismissed file keeps its rename inclusion
+      expect(a.exclude).toBeUndefined();
+    });
+
+    it('dismissed groups no longer hold the modal open after a rename pass', () => {
+      const a = sceneFile('Ass Man - Scene_1');
+      component.files = [a];
+      component.dismissGroup({ title: 'Ass Man' });
+      const spy = spyOn(fileService, 'renameTheFilesToNormalize');
+      const close = spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(close).toHaveBeenCalledWith('all-done');
+    });
+
+    it('renders the dismiss checkbox on headers and no checkbox on scene rows', () => {
+      component.files = [
+        sceneFile('Ass Man - Scene_1'),
+        sceneFile('Ass Man - Scene_2'),
+      ];
+      component.activeTab = 'cast';
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(
+        el.querySelectorAll('.cast-group-row input.group-dismiss').length,
+      ).toBe(1);
+      expect(
+        el.querySelectorAll('tbody tr:not(.cast-group-row) input[type="checkbox"]')
+          .length,
+      ).toBe(0);
+    });
+
+    it('unchecking the header checkbox removes the group from the DOM', () => {
+      component.files = [sceneFile('Ass Man - Scene_1')];
+      component.activeTab = 'cast';
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      const checkbox = el.querySelector(
+        '.cast-group-row input.group-dismiss',
+      ) as HTMLInputElement;
+      checkbox.click();
+      fixture.detectChanges();
+
+      expect(el.querySelector('.cast-group-row')).toBeNull();
+      expect(el.textContent).toContain(
+        'No scene files are waiting for a cast name.',
+      );
+    });
+  });
+
   describe('cast column', () => {
     it('splits the name into scene base and cast', () => {
       const file = makeFile({
