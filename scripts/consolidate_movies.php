@@ -1629,8 +1629,14 @@ if ($REBUILD_INDEX && !$DRY_RUN && $DISK_TOUCHED) {
         }
     }
 } elseif ($REBUILD_INDEX && !$DRY_RUN) {
+    // Log the skip too. A run that moves nothing leaves the index's paths
+    // perfectly valid, so NOT rebuilding is correct — but with no row for it
+    // the log couldn't answer "did it reindex?", which is the first thing
+    // you ask after a no-op run.
+    $why = 'nothing moved, renamed or shelved — the index\'s paths are still accurate';
     out("");
-    out("Drive index rebuild skipped: nothing moved, renamed, or shelved.");
+    out("Drive index rebuild skipped: $why");
+    logLine($logFp, [date('c'), $modeStr, '', 'INDEX_REBUILD', '', '', 0, 'SKIP', $why]);
 }
 
 fclose($logFp);

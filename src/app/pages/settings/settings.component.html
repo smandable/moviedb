@@ -556,25 +556,27 @@
             {{ consolidateLogError }}
           </div>
           <ng-container *ngIf="!consolidateLogLoading && !consolidateLogError">
+            <!-- The toggle stays available when the filtered view is empty —
+                 otherwise a run with only bookkeeping rows is a dead end -->
+            <div class="form-check form-check-inline mb-1">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="logShowAll"
+                [(ngModel)]="logShowAll"
+                (ngModelChange)="refreshConsolidateLog()"
+              />
+              <label class="form-check-label small" for="logShowAll">
+                Raw tail (include bookkeeping rows)
+              </label>
+            </div>
             <div
               *ngIf="consolidateLogRows.length === 0"
-              class="small text-muted"
+              class="small text-muted log-empty"
             >
-              No log yet.
+              {{ consolidateLogEmptyMessage }}
             </div>
             <ng-container *ngIf="consolidateLogRows.length > 0">
-              <div class="form-check form-check-inline mb-1">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="logShowAll"
-                  [(ngModel)]="logShowAll"
-                  (ngModelChange)="refreshConsolidateLog()"
-                />
-                <label class="form-check-label small" for="logShowAll">
-                  Raw tail (include bookkeeping rows)
-                </label>
-              </div>
               <div class="log-table-wrap">
                 <table class="table table-sm small mb-1 align-middle">
                   <thead>

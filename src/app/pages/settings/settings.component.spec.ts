@@ -946,6 +946,41 @@ describe('SettingsComponent', () => {
       expect(component.visibleLogRows.length).toBe(1);
     });
 
+    it('an all-bookkeeping log explains itself instead of saying "No log yet"', () => {
+      flushInit();
+      // No run has happened yet
+      expect(component.consolidateLogEmptyMessage).toContain('No log yet');
+
+      // A finished run whose rows are all GROUP_DONE: the actions view filters
+      // them out, so the table is empty while the log is not
+      component.consolidateStatus = {
+        running: false,
+        pid: null,
+        lastRun: {
+          finishedAt: '2026-08-09T19:24:41Z',
+          durationSeconds: 56,
+          dryRun: false,
+          exitCode: 0,
+          moved: 0,
+          duped: 0,
+          skipped: 0,
+          failed: 0,
+          movedBytes: 0,
+        },
+        settings: fixtureConsolidateSettings,
+      };
+      component.consolidateLogLines = [
+        ['2026-08-09T19:24:41-04:00', 'EXEC', 'Some Title', 'GROUP_DONE', '', '', '0', 'OK', ''].join('\t'),
+      ];
+      expect(component.visibleLogRows.length).toBe(0);
+      expect(component.consolidateLogEmptyMessage).toContain('no file actions');
+      expect(component.consolidateLogEmptyMessage).toContain('Raw tail');
+
+      // With the raw tail on, those rows are visible again
+      component.logShowAll = true;
+      expect(component.visibleLogRows.length).toBe(1);
+    });
+
     it('unsaved consolidate edits disable Run until saved', () => {
       flushInit();
 

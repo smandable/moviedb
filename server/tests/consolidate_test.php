@@ -1018,12 +1018,17 @@ check('a refused rebuild reports indexRebuilt null', indexRebuiltOf("$dNo/progre
 check('the REAL server/drive_index.json is STILL untouched',
     is_file($realIndex) ? [filemtime($realIndex), filesize($realIndex)] : null, $realBefore);
 
-// (d) a second execute with nothing left to move => no rebuild (skipped)
+// (d) a second execute with nothing left to move => no rebuild, but SAY SO
 $idxMtimeBefore = filemtime($fixtureIndex);
 [$code, ] = runScript(["--settings=$settings", "--progress-file=$d/progress.json", '--execute', '--rebuild-index']);
 check('S15 no-op execute exits 0', $code, 0);
 check('a run that changed nothing skips the rebuild', indexRebuiltOf("$d/progress.json"), null);
 check('the existing index file was left alone', filemtime($fixtureIndex), $idxMtimeBefore);
+// The skip must be VISIBLE: with no row, the log can't answer "did it reindex?"
+check('the skip is logged rather than silent',
+    tsvCount("$d/consolidate_last_run.tsv", 'INDEX_REBUILD', 'SKIP'), 1);
+check('the skipped-rebuild row survives the actions-only tail',
+    (bool) preg_grep('/\tINDEX_REBUILD\t/', moviedb_consolidate_action_tail("$d/consolidate_last_run.tsv", 50)), true);
 
 echo "S14: unnumbered base becomes '# 01' when numbered siblings exist (app convention):\n";
 $d = "$fx/S14";

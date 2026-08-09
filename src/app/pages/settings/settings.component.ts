@@ -784,6 +784,21 @@ export class SettingsComponent implements OnInit, OnDestroy {
   /** Show bookkeeping rows (GROUP_DONE, mkdir) too, not just the actions. */
   logShowAll = false;
 
+  /**
+   * Why the log table is empty. A run that moved nothing still writes one
+   * GROUP_DONE row per group, all of which the actions view filters out — so
+   * "No log yet" was wrong and left no hint that the raw tail has content.
+   */
+  get consolidateLogEmptyMessage(): string {
+    if (!this.consolidateStatus?.lastRun) {
+      return 'No log yet — run a consolidation to produce one.';
+    }
+    if (!this.logShowAll) {
+      return 'That run performed no file actions. Tick “Raw tail” to see its bookkeeping rows.';
+    }
+    return 'The last run wrote no log rows at all.';
+  }
+
   private logRowsCache: {
     source: string[];
     rows: ConsolidateLogRow[];
