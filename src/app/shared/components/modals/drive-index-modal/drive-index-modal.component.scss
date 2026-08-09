@@ -61,11 +61,4 @@
     cursor: pointer;
     flex-shrink: 0;
   }
-
-  // Emoji can't recolor like the grid's fa icon, so "already copied" reads
-  // as a highlight chip instead of a blue glyph
-  .action-icon.copied {
-    background-color: rgba(33, 150, 243, 0.25);
-    border-radius: 3px;
-  }
 }

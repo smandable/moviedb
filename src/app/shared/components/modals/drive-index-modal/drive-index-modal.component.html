@@ -105,15 +105,6 @@
         <span
           class="action-icon me-2"
           role="button"
-          [class.copied]="copiedPaths.has(file.path)"
-          title="Copy full path"
-          aria-label="Copy full path"
-          (click)="copyPath(file)"
-          >📋</span
-        >
-        <span
-          class="action-icon me-2"
-          role="button"
           title="Reveal in Finder"
           aria-label="Reveal in Finder"
           (click)="reveal(file)"

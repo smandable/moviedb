@@ -20,8 +20,8 @@ import { formatBytes } from '@helpers/formatters';
 
 /**
  * Searches the drive index (server/drive_index.json) and acts on the results:
- * copy a file's full path, reveal it in Finder, or move it to the volume's
- * Trash. Opened from the update-db grid with the row's base title prefilled.
+ * reveal a file in Finder, or move it to the volume's Trash. Opened from the
+ * update-db grid with the row's base title prefilled.
  */
 @Component({
   selector: 'app-drive-index-modal',
@@ -49,9 +49,6 @@ export class DriveIndexModalComponent implements OnInit, OnDestroy {
   /** Short status line after a reveal/trash ("Moved 2 files to the Trash."). */
   actionMessage = '';
   actionError = '';
-
-  /** Paths whose copy icon should stay highlighted (home-grid copy idiom). */
-  readonly copiedPaths = new Set<string>();
 
   /** Per-file inline errors from reveal/trash, keyed by path. */
   readonly fileErrors = new Map<string, string>();
@@ -178,23 +175,6 @@ export class DriveIndexModalComponent implements OnInit, OnDestroy {
     }
     const d = new Date(builtAt);
     return isNaN(d.getTime()) ? builtAt : d.toLocaleString();
-  }
-
-  /** Same approach as the home grid's copy icon; stays highlighted once used. */
-  copyPath(file: DriveIndexFile): void {
-    if (!navigator.clipboard) {
-      console.warn('Clipboard API not available');
-      return;
-    }
-    navigator.clipboard
-      .writeText(file.path)
-      .then(() => {
-        this.copiedPaths.add(file.path);
-        this.cdr.markForCheck();
-      })
-      .catch((err) => {
-        console.error('Failed to copy path:', err);
-      });
   }
 
   reveal(file: DriveIndexFile): void {
