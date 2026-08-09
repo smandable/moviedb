@@ -1,0 +1,71 @@
+:host {
+  // Match the normalization modal's opaque header bar
+  .modal-header {
+    background-color: silver;
+  }
+
+  // The ✕ that clears the search field (same pattern as the Settings page)
+  .clear-filter {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+  }
+
+  .index-group {
+    margin-bottom: 0.75rem;
+  }
+
+  // Group headers echo the normalization modal's cast-group rows
+  .group-header {
+    background-color: #dde4ee;
+    font-weight: 600;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid #ccd4e0;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .group-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .file-row {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid #dee2e6;
+    border-top: none;
+  }
+
+  .file-row:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+
+  .file-main {
+    min-width: 0;
+  }
+
+  .file-name {
+    overflow-wrap: anywhere;
+  }
+
+  .file-dir {
+    overflow-wrap: anywhere;
+  }
+
+  .file-size {
+    white-space: nowrap;
+  }
+
+  .action-icon {
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  // Emoji can't recolor like the grid's fa icon, so "already copied" reads
+  // as a highlight chip instead of a blue glyph
+  .action-icon.copied {
+    background-color: rgba(33, 150, 243, 0.25);
+    border-radius: 3px;
+  }
+}

@@ -1,0 +1,158 @@
+<div class="modal-header">
+  <h5 class="modal-title">Drive Index Search</h5>
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    (click)="activeModal.dismiss('Cross click')"
+  ></button>
+</div>
+
+<div class="modal-body">
+  <!-- Search input with the Settings page's clear-X pattern -->
+  <div class="position-relative mb-3">
+    <input
+      type="text"
+      class="form-control pe-5 search-input"
+      placeholder="Search the drive index…"
+      [(ngModel)]="query"
+      (ngModelChange)="onQueryChange()"
+      (keydown.enter)="searchNow()"
+    />
+    <button
+      *ngIf="query"
+      type="button"
+      class="btn-close clear-filter"
+      aria-label="Clear search"
+      title="Clear search"
+      (click)="clearQuery()"
+    ></button>
+  </div>
+
+  <div *ngIf="statusError" class="text-danger small mb-2">
+    {{ statusError }}
+  </div>
+  <div *ngIf="searchError" class="text-danger small mb-2">
+    {{ searchError }}
+  </div>
+  <div *ngIf="actionMessage" class="text-success small mb-2 action-status">
+    {{ actionMessage }}
+  </div>
+  <div *ngIf="actionError" class="text-danger small mb-2">
+    {{ actionError }}
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="isSearching" class="text-muted small my-3">
+    <span
+      class="spinner-border spinner-border-sm me-2"
+      role="status"
+      aria-hidden="true"
+    ></span>
+    Searching…
+  </div>
+
+  <ng-container *ngIf="!isSearching && hasSearched && !searchError">
+    <!-- Empty state -->
+    <p *ngIf="groups.length === 0" class="text-muted my-3 empty-state">
+      No indexed files match<span *ngIf="query.trim()"> “{{ query.trim() }}”</span>.
+    </p>
+
+    <div *ngIf="groups.length > 0" class="small text-muted mb-2 result-totals">
+      {{ totalGroups }} {{ totalGroups === 1 ? "title" : "titles" }},
+      {{ totalFiles }} {{ totalFiles === 1 ? "file" : "files" }}
+      <span *ngIf="totalGroups > groups.length">
+        — showing the first {{ groups.length }} titles</span
+      >
+    </div>
+
+    <div
+      class="index-group"
+      *ngFor="let group of groups; trackBy: trackGroup"
+    >
+      <div class="group-header d-flex align-items-center">
+        <span class="group-title flex-grow-1">{{ group.base }}</span>
+        <span class="text-muted small me-3">
+          {{ group.files.length }}
+          {{ group.files.length === 1 ? "file" : "files" }},
+          {{ formatSize(groupSize(group)) }}
+        </span>
+        <!-- Same emoji-action idiom as the Settings page's list rows -->
+        <span
+          class="action-icon"
+          role="button"
+          [attr.aria-label]="'Move all files of ' + group.base + ' to the Trash'"
+          [title]="'Move all files of “' + group.base + '” to the Trash'"
+          (click)="trashGroup(group)"
+          >🗑️</span
+        >
+      </div>
+
+      <div
+        class="file-row d-flex align-items-center"
+        *ngFor="let file of group.files; trackBy: trackFile"
+      >
+        <div class="file-main flex-grow-1">
+          <div class="file-name">{{ file.file }}</div>
+          <div class="file-dir text-muted small">{{ file.dir }}</div>
+          <div *ngIf="fileErrors.get(file.path)" class="text-danger small">
+            {{ fileErrors.get(file.path) }}
+          </div>
+        </div>
+        <span class="file-size text-muted small me-3">{{
+          formatSize(file.size)
+        }}</span>
+        <span
+          class="action-icon me-2"
+          role="button"
+          [class.copied]="copiedPaths.has(file.path)"
+          title="Copy full path"
+          aria-label="Copy full path"
+          (click)="copyPath(file)"
+          >📋</span
+        >
+        <span
+          class="action-icon me-2"
+          role="button"
+          title="Reveal in Finder"
+          aria-label="Reveal in Finder"
+          (click)="reveal(file)"
+          >📂</span
+        >
+        <span
+          class="action-icon"
+          role="button"
+          [title]="'Move “' + file.file + '” to the Trash'"
+          aria-label="Move to the Trash"
+          (click)="trashFile(file)"
+          >🗑️</span
+        >
+      </div>
+    </div>
+  </ng-container>
+</div>
+
+<div class="modal-footer">
+  <!-- Index status line -->
+  <div class="me-auto small index-status">
+    <ng-container *ngIf="status">
+      <span *ngIf="status.exists">
+        Indexed {{ status.fileCount }} files, built {{ builtAtDisplay }}.
+      </span>
+      <span *ngIf="!status.exists" class="text-warning">
+        The drive index has not been built yet — build it from the Settings
+        page.
+      </span>
+      <span *ngIf="status.missingRoots.length" class="text-warning ms-2">
+        Missing roots: {{ status.missingRoots.join(", ") }}
+      </span>
+    </ng-container>
+  </div>
+  <button
+    type="button"
+    class="btn btn-secondary"
+    (click)="activeModal.dismiss('close')"
+  >
+    Close
+  </button>
+</div>

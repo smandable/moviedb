@@ -1,5 +1,7 @@
 .scrollable-container {
-  height: 100vh;
+  // min-, not fixed: a page taller than the viewport (Settings) must keep
+  // painting black past the first screenful instead of exposing white body
+  min-height: 100vh;
   display: block;
   background-color: black;
   .layout {

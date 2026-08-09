@@ -11,6 +11,8 @@ import { environment } from 'src/environments/environment';
 
 export interface AppSettings {
   defaultDirectory?: string;
+  /** Library roots the drive index walks (Settings page, driveIndex.php). */
+  driveIndexRoots?: string[];
 }
 
 export interface SaveSettingsResponse {
@@ -45,7 +47,12 @@ export class SettingsService {
   }
 
   saveSettings(settings: AppSettings): Observable<SaveSettingsResponse> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      // CSRF gate — the server refuses settings writes without this header
+      // (X-Requested-With: already in httpd.conf's CORS allow-list)
+      'X-Requested-With': 'XMLHttpRequest',
+    });
     return this.http
       .post<SaveSettingsResponse>(this.settingsUrl, settings, { headers })
       .pipe(catchError(this.handleError));

@@ -22,6 +22,7 @@ import {
 } from 'ag-grid-community';
 import { NgbModal, NgbModalRef, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FileNormalizationModalComponent } from '@modals/file-normalization-modal/file-normalization-modal.component';
+import { DriveIndexModalComponent } from '@modals/drive-index-modal/drive-index-modal.component';
 import { CommonModule } from '@angular/common';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -250,15 +251,21 @@ export class UpdateDbComponent implements OnInit {
       {
         headerName: '',
         colId: 'externalSearch',
-        width: 55,
-        minWidth: 55,
-        maxWidth: 55,
+        // Two icons (Finder search + drive index) need more room than one
+        width: 85,
+        minWidth: 85,
+        maxWidth: 85,
         sortable: false,
         filter: false,
         resizable: false,
         cellRenderer: (params: ICellRendererParams) => {
           if (!(params.data?.needsExternalSearch || params.data?.duplicate))
             return '';
+
+          const container = document.createElement('div');
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.gap = '10px';
 
           const icon = document.createElement('i');
           icon.classList.add(
@@ -293,7 +300,31 @@ export class UpdateDbComponent implements OnInit {
             icon.classList.add('is-clicked');
           });
 
-          return icon;
+          container.appendChild(icon);
+
+          // Second icon: search the drive index (opens the in-app modal)
+          const driveIcon = document.createElement('i');
+          driveIcon.classList.add(
+            'fa-solid',
+            'fa-hard-drive',
+            'external-search-icon',
+            'is-pending',
+          );
+          driveIcon.setAttribute('role', 'button');
+          driveIcon.setAttribute('aria-label', 'Search the drive index');
+          driveIcon.title = 'Search the drive index';
+
+          driveIcon.addEventListener('click', (event) => {
+            event.stopPropagation();
+
+            const rawTitle: string = params.data?.title || '';
+            const baseTitle = getBaseTitle(rawTitle);
+            params.context.componentParent.openDriveIndexModal(baseTitle);
+          });
+
+          container.appendChild(driveIcon);
+
+          return container;
         },
       },
 
@@ -501,6 +532,21 @@ export class UpdateDbComponent implements OnInit {
         console.error('Error performing database operations:', error);
       },
     });
+  }
+
+  /**
+   * Click action for the hard-drive icon: opens the drive-index search modal
+   * prefilled with the row's base title.
+   */
+  public openDriveIndexModal(baseTitle: string): void {
+    const modalRef: NgbModalRef = this.modalService.open(
+      DriveIndexModalComponent,
+      {
+        size: 'xl',
+        scrollable: true,
+      },
+    );
+    modalRef.componentInstance.initialQuery = baseTitle;
   }
 
   /**

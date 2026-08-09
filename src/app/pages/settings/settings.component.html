@@ -162,5 +162,104 @@
         </div>
       </div>
     </div>
+
+    <!-- Drive index -->
+    <div class="card mb-4">
+      <div class="card-header">Drive Index</div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">
+          Library roots indexed for drive-wide search
+          (server/drive_index.json).
+        </p>
+
+        <div
+          class="d-flex align-items-center mb-2 root-row"
+          *ngFor="
+            let root of driveIndexRoots;
+            let i = index;
+            trackBy: trackByIndex
+          "
+        >
+          <input
+            type="text"
+            class="form-control me-2 root-input"
+            placeholder="/Volumes/…"
+            [(ngModel)]="driveIndexRoots[i]"
+            (ngModelChange)="rootsStatus = 'idle'"
+          />
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger remove-root"
+            title="Remove this root"
+            aria-label="Remove this root"
+            (click)="removeRoot(i)"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center mb-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-secondary me-2"
+            (click)="addRoot()"
+          >
+            Add root
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            (click)="saveRoots()"
+            [disabled]="rootsStatus === 'saving'"
+          >
+            {{ rootsStatus === "saving" ? "Saving…" : "Save" }}
+          </button>
+        </div>
+        <div *ngIf="rootsStatus === 'saved'" class="small mb-2 text-success">
+          {{ rootsMessage }}
+        </div>
+        <div *ngIf="rootsStatus === 'error'" class="small mb-2 text-danger">
+          {{ rootsMessage }}
+        </div>
+
+        <hr />
+
+        <div class="d-flex align-items-center">
+          <div class="small index-status-line me-3">
+            <span *ngIf="indexStatusError" class="text-danger">
+              {{ indexStatusError }}
+            </span>
+            <ng-container *ngIf="!indexStatusError">
+              <span *ngIf="!indexStatus" class="text-muted">
+                Checking index…
+              </span>
+              <span
+                *ngIf="indexStatus"
+                [class.text-warning]="!indexStatus.exists"
+              >
+                {{ indexStatusLine }}
+              </span>
+              <span
+                *ngIf="indexStatus && indexStatus.missingRoots.length"
+                class="text-warning ms-2"
+              >
+                Missing: {{ indexStatus.missingRoots.join(", ") }}
+              </span>
+            </ng-container>
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-secondary ms-auto"
+            (click)="rebuildIndex()"
+            [disabled]="isRebuilding"
+          >
+            {{ isRebuilding ? "Rebuilding…" : "Rebuild Index" }}
+          </button>
+        </div>
+        <div *ngIf="rebuildError" class="small mt-2 text-danger">
+          {{ rebuildError }}
+        </div>
+      </div>
+    </div>
   </div>
 </app-page-layout>
