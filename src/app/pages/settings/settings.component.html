@@ -256,7 +256,8 @@
                 *ngIf="indexStatus && indexStatus.missingRoots.length"
                 class="text-warning ms-2"
               >
-                Missing: {{ indexStatus.missingRoots.join(", ") }}
+                Missing at last build:
+                {{ indexStatus.missingRoots.join(", ") }}
               </span>
             </ng-container>
           </div>
@@ -288,6 +289,13 @@
           >
             {{ isRebuilding ? "Rebuilding…" : "Rebuild Index" }}
           </button>
+        </div>
+        <div
+          *ngIf="unmountedRoots.length"
+          class="small mt-2 text-warning not-mounted-roots"
+        >
+          Not mounted right now: {{ unmountedRoots.join(", ") }} — a rebuild
+          keeps their existing entries rather than re-scanning them.
         </div>
         <div *ngIf="rebuildError" class="small mt-2 text-danger">
           {{ rebuildError }}
@@ -466,6 +474,13 @@
           </label>
         </div>
 
+        <div
+          *ngIf="unmountedDrives.length"
+          class="small mb-2 text-warning not-mounted-drives"
+        >
+          Not mounted right now: {{ unmountedDrives.join(", ") }} — a run will
+          refuse to start until every drive is available.
+        </div>
         <div class="d-flex align-items-center mb-2">
           <button
             type="button"

@@ -5,7 +5,7 @@
  * (the episodic-file consolidator). All logic lives in consolidate_lib.php
  * and the script; this file is transport plus the detached spawn.
  *
- * POST { action: 'status' }                  -> { running, pid, lastRun, settings }
+ * POST { action: 'status' }                  -> { running, pid, lastRun, settings, unmountedDrives }
  * POST { action: 'run', execute: bool }      -> { started, pid?, message? }
  * POST { action: 'progress' }                -> { active, ...progress fields }
  * POST { action: 'logTail', lines?: number } -> { lines: string[] }
@@ -85,11 +85,15 @@ switch ($action) {
         [$running, $pid] = moviedb_consolidate_running();
         $lastRaw = @file_get_contents(MOVIEDB_CONSOLIDATE_PROGRESS_FILE . '.last');
         $lastRun = $lastRaw === false ? null : json_decode($lastRaw, true);
+        $settings = moviedb_consolidate_settings(MOVIEDB_CONSOLIDATE_SETTINGS_FILE);
         echo json_encode([
             'running'  => $running,
             'pid'      => $pid,
             'lastRun'  => is_array($lastRun) ? $lastRun : null,
-            'settings' => moviedb_consolidate_settings(MOVIEDB_CONSOLIDATE_SETTINGS_FILE),
+            'settings' => $settings,
+            // A run refuses to start against an unmounted drive; say so on the
+            // page instead of only at the moment Run is pressed.
+            'unmountedDrives' => moviedb_unmounted_paths($settings['drives'] ?? []),
         ]);
         break;
 

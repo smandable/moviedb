@@ -496,3 +496,32 @@ if (!function_exists('moviedb_consolidate_move_into_place')) {
         return ['outcome' => 'failed', 'finalPath' => null, 'bytes' => 0, 'quarantined' => $quarantined];
     }
 }
+
+if (!function_exists('moviedb_unmounted_paths')) {
+    /**
+     * Which of these configured paths are not directories RIGHT NOW.
+     *
+     * Sean keeps the external drives unmounted between sessions, so a saved
+     * root routinely points at nothing. Both the consolidation and the drive
+     * index need to say so up front rather than at the moment a run fails —
+     * and the drive index's stored "missingRoots" can't answer it, since that
+     * records what was missing when the index was last BUILT.
+     *
+     * @param string[] $paths
+     * @return string[] the subset that isn't currently mounted/readable
+     */
+    function moviedb_unmounted_paths(array $paths): array
+    {
+        $missing = [];
+        foreach ($paths as $p) {
+            if (!is_string($p) || trim($p) === '') {
+                continue;
+            }
+            $p = rtrim(trim($p), '/');
+            if ($p !== '' && !is_dir($p)) {
+                $missing[] = $p;
+            }
+        }
+        return array_values(array_unique($missing));
+    }
+}

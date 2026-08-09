@@ -5,7 +5,7 @@
  * (reveal in Finder, move to volume trash). All logic lives in
  * drive_index_lib.php; this file is transport only.
  *
- * POST { action: 'status' }                  -> { exists, builtAt, fileCount, roots, missingRoots }
+ * POST { action: 'status' }                  -> { exists, builtAt, fileCount, roots, missingRoots, unmountedRoots }
  * POST { action: 'search', query, offset? }  -> { groups, totalGroups, totalFiles, offset, pageSize }
  * POST { action: 'rebuild' }                 -> { success, builtAt, fileCount, roots, missingRoots }
  * POST { action: 'reveal', path }            -> { success, error? }
@@ -16,6 +16,7 @@
  */
 
 require_once __DIR__ . '/drive_index_lib.php';
+require_once __DIR__ . '/consolidate_lib.php'; // moviedb_unmounted_paths()
 
 ini_set('display_errors', '0');
 header('Content-Type: application/json');
@@ -48,12 +49,18 @@ switch ($action) {
 
     case 'status':
         $index = moviedb_load_drive_index();
+        $configuredRoots = moviedb_drive_index_roots();
         echo json_encode([
             'exists'       => $index !== null,
             'builtAt'      => $index['builtAt'] ?? null,
             'fileCount'    => (int) ($index['fileCount'] ?? 0),
-            'roots'        => $index['roots'] ?? moviedb_drive_index_roots(),
+            'roots'        => $index['roots'] ?? $configuredRoots,
+            // Historical: roots absent when the index was last BUILT
             'missingRoots' => $index['missingRoots'] ?? [],
+            // Live: roots not mounted right now. The drives are usually
+            // unmounted between sessions, so a rebuild would quietly carry
+            // their stale entries forward — worth saying before you press it.
+            'unmountedRoots' => moviedb_unmounted_paths($configuredRoots),
         ]);
         break;
 

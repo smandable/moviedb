@@ -44,6 +44,8 @@ export interface ConsolidateStatus {
   lastRun: ConsolidateLastRun | null;
   /** Effective settings (stored overrides merged over server defaults). */
   settings: ConsolidateSettings;
+  /** Configured drives that are not mounted right now — a run would refuse. */
+  unmountedDrives?: string[];
 }
 
 export interface ConsolidateRunResponse {

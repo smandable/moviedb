@@ -15,6 +15,9 @@ export interface DriveIndexStatus {
   fileCount: number;
   roots: string[];
   missingRoots: string[];
+  /** Roots not mounted right now (live), unlike missingRoots which is
+   *  whatever was absent when the index was last built. */
+  unmountedRoots?: string[];
 }
 
 export interface DriveIndexFile {

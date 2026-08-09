@@ -981,6 +981,45 @@ describe('SettingsComponent', () => {
       expect(component.visibleLogRows.length).toBe(1);
     });
 
+    it('warns about drives that are not mounted right now', () => {
+      flushInit(
+        {},
+        undefined,
+        {
+          ...neverBuiltStatus,
+          roots: ['/Volumes/Recorded 1/recorded', '/Volumes/Etc/Extra'],
+          unmountedRoots: ['/Volumes/Etc/Extra'],
+        },
+        {
+          ...idleConsolidateStatus,
+          unmountedDrives: ['/Volumes/Recorded 4/recorded'],
+        },
+      );
+      fixture.detectChanges();
+
+      expect(component.unmountedRoots).toEqual(['/Volumes/Etc/Extra']);
+      expect(component.unmountedDrives).toEqual(['/Volumes/Recorded 4/recorded']);
+
+      const el = fixture.nativeElement as HTMLElement;
+      const rootsWarning = el.querySelector('.not-mounted-roots');
+      const drivesWarning = el.querySelector('.not-mounted-drives');
+      expect(rootsWarning?.textContent).toContain('/Volumes/Etc/Extra');
+      // Says what the consequence is, not just that it is missing
+      expect(rootsWarning?.textContent).toContain('keeps their existing entries');
+      expect(drivesWarning?.textContent).toContain('/Volumes/Recorded 4/recorded');
+      expect(drivesWarning?.textContent).toContain('refuse to start');
+    });
+
+    it('says nothing when every configured path is mounted', () => {
+      flushInit();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(component.unmountedRoots).toEqual([]);
+      expect(component.unmountedDrives).toEqual([]);
+      expect(el.querySelector('.not-mounted-roots')).toBeNull();
+      expect(el.querySelector('.not-mounted-drives')).toBeNull();
+    });
+
     it('unsaved consolidate edits disable Run until saved', () => {
       flushInit();
 

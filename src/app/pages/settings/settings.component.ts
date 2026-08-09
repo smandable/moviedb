@@ -76,6 +76,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   rootsMessage = '';
   indexStatus: DriveIndexStatus | null = null;
   indexStatusError = '';
+  /** Configured index roots not mounted right now (live, from the server). */
+  get unmountedRoots(): string[] {
+    return this.indexStatus?.unmountedRoots ?? [];
+  }
   isRebuilding = false;
   rebuildProgress: DriveIndexProgress | null = null;
   private progressTimer: ReturnType<typeof setInterval> | undefined;
@@ -96,6 +100,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
   consolidateSaveMessage = '';
   consolidateStatus: ConsolidateStatus | null = null;
   consolidateStatusError = '';
+  /** Configured consolidation drives not mounted right now (live). */
+  get unmountedDrives(): string[] {
+    return this.consolidateStatus?.unmountedDrives ?? [];
+  }
   isConsolidating = false;
   consolidateProgress: ConsolidateProgress | null = null;
   private consolidateTimer: ReturnType<typeof setInterval> | undefined;

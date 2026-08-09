@@ -755,6 +755,22 @@ foreach ([['targetFreeGb', 20001], ['targetFreeGb', -1], ['reserveGb', '5'], ['b
 }
 putenv('ALLOWED_BASE_PATH');
 
+echo "S10: unmounted paths (lib):\n";
+$mounted = "$fx/S1/A/recorded"; // exists from S1
+check('an existing dir is not reported', moviedb_unmounted_paths([$mounted]), []);
+check('a missing dir is reported', moviedb_unmounted_paths(["$fx/nope/recorded"]), ["$fx/nope/recorded"]);
+check('mixed: only the missing one', moviedb_unmounted_paths([$mounted, "$fx/gone"]), ["$fx/gone"]);
+check('trailing slashes are trimmed in the report',
+    moviedb_unmounted_paths(["$fx/gone/"]), ["$fx/gone"]);
+check('duplicates collapse', moviedb_unmounted_paths(["$fx/gone", "$fx/gone/"]), ["$fx/gone"]);
+check('blank and non-string entries are ignored',
+    moviedb_unmounted_paths(['', '   ', 42, null, $mounted]), []);
+check('an empty list yields an empty report', moviedb_unmounted_paths([]), []);
+// A FILE is not a mounted directory
+mkfile("$fx/not_a_dir.txt", 'x');
+check('a regular file counts as not mounted',
+    moviedb_unmounted_paths(["$fx/not_a_dir.txt"]), ["$fx/not_a_dir.txt"]);
+
 echo "S10: log tail (lib):\n";
 check('missing file tails to []', moviedb_consolidate_tail_lines("$fx/nope.tsv", 5), []);
 $tailFile = "$fx/tail.txt";
