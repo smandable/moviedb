@@ -176,6 +176,7 @@
           class="accordion-toggle d-flex align-items-center mb-2 roots-toggle"
           role="button"
           [attr.aria-expanded]="rootsExpanded"
+          [title]="(rootsExpanded ? 'Hide' : 'Show') + ' the indexed library roots'"
           (click)="rootsExpanded = !rootsExpanded"
         >
           <span class="chevron me-2">{{ rootsExpanded ? "▾" : "▸" }}</span>
@@ -311,6 +312,10 @@
           class="accordion-toggle d-flex align-items-center mb-2 consolidate-options-toggle"
           role="button"
           [attr.aria-expanded]="consolidateOptionsExpanded"
+          [title]="
+            (consolidateOptionsExpanded ? 'Hide' : 'Show') +
+            ' the drives, targets and options a run uses'
+          "
           (click)="consolidateOptionsExpanded = !consolidateOptionsExpanded"
         >
           <span class="chevron me-2">{{
@@ -532,6 +537,10 @@
           class="accordion-toggle d-flex align-items-center mb-1 consolidate-log-toggle"
           role="button"
           [attr.aria-expanded]="consolidateLogExpanded"
+          [title]="
+            (consolidateLogExpanded ? 'Hide' : 'Show') +
+            ' the log of the last consolidation run'
+          "
           (click)="toggleConsolidateLog()"
         >
           <span class="chevron me-2">{{

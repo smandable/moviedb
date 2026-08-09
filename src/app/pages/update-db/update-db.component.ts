@@ -94,7 +94,8 @@ export class UpdateDbComponent implements OnInit {
           const icon = document.createElement('i');
           icon.classList.add('fa-regular', 'fa-copy', 'copy-title-icon');
           icon.setAttribute('role', 'button');
-          icon.setAttribute('aria-label', 'Copy title');
+          icon.title = 'Copy title to the clipboard';
+          icon.setAttribute('aria-label', 'Copy title to the clipboard');
 
           // If this row was copied before, keep it blue
           if (params.data?.titleCopied) {

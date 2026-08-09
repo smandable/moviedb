@@ -269,7 +269,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         const icon = document.createElement('i');
         icon.classList.add('fa-regular', 'fa-copy', 'home-title-copy-icon');
         icon.setAttribute('role', 'button');
-        icon.setAttribute('aria-label', 'Copy title');
+        icon.title = 'Copy title to the clipboard';
+        icon.setAttribute('aria-label', 'Copy title to the clipboard');
 
         // Reference back to component
         const comp = this as HomeComponent;
