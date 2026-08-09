@@ -494,20 +494,31 @@
           *ngIf="isConsolidating"
           class="small text-info mb-2 consolidate-progress"
         >
-          <span
-            class="spinner-border spinner-border-sm me-1"
-            role="status"
-            aria-hidden="true"
-          ></span>
-          <span
-            *ngIf="consolidateProgress?.dryRun"
-            class="badge text-bg-info me-1 dry-run-badge"
-            >DRY RUN</span
-          >
-          {{ consolidateProgressLine || "Starting…" }}
-          <span *ngIf="consolidateCountsLine" class="ms-2">
+          <div class="d-flex align-items-center">
+            <span
+              class="spinner-border spinner-border-sm me-1"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            <span
+              *ngIf="consolidateProgress?.dryRun"
+              class="badge text-bg-info me-1 dry-run-badge"
+              >DRY RUN</span
+            >
+            {{ consolidatePhaseLine || "Starting…" }}
+          </div>
+          <div *ngIf="consolidateGroupLine" class="progress-detail">
+            {{ consolidateGroupLine }}
+          </div>
+          <div *ngIf="consolidateCountsLine" class="progress-detail">
             {{ consolidateCountsLine }}
-          </span>
+          </div>
+          <div
+            *ngIf="consolidateStalledNote"
+            class="progress-detail text-muted"
+          >
+            {{ consolidateStalledNote }}
+          </div>
         </div>
 
         <div

@@ -452,11 +452,14 @@ describe('SettingsComponent', () => {
         });
       fixture.detectChanges();
 
-      expect(component.consolidateProgressLine).toContain('group 3 of 10');
-      expect(component.consolidateProgressLine).toContain(
-        'Imaginary Serial Adventures',
+      // Three short lines, not one that wraps several times mid-run
+      expect(component.consolidatePhaseLine).toBe(
+        'Consolidating groups — group 3 of 10:',
       );
-      expect(component.consolidateProgressLine).toContain('# 03.mp4');
+      expect(component.consolidateGroupLine).toBe(
+        'Imaginary Serial Adventures — Imaginary Serial Adventures # 03.mp4',
+      );
+      expect(component.consolidateStalledNote).toBe('');
       expect(component.consolidateCountsLine).toContain('3 moved');
       expect(component.consolidateCountsLine).toContain('1.50');
 
@@ -567,7 +570,9 @@ describe('SettingsComponent', () => {
           failed: 0,
           dryRun: false,
         });
-      expect(component.consolidateProgressLine).toContain('still copying');
+      expect(component.consolidateStalledNote).toContain('Still copying');
+      // …and it is its own line, not appended to the phase line
+      expect(component.consolidatePhaseLine).not.toContain('Still copying');
 
       component.ngOnDestroy();
     }));
@@ -692,11 +697,10 @@ describe('SettingsComponent', () => {
           failed: 0,
         });
 
-      const line = component.consolidateProgressLine;
-      expect(line).toContain('Rebuilding the drive index');
-      expect(line).not.toContain('still copying');
-      expect(line).not.toContain('whatever.mp4');
-      expect(line).not.toContain('group 10 of 10');
+      expect(component.consolidatePhaseLine).toBe('Rebuilding the drive index');
+      // Stale move-phase detail must not resurface during the rebuild
+      expect(component.consolidateGroupLine).toBe('');
+      expect(component.consolidateStalledNote).toBe('This can take a minute.');
 
       component.ngOnDestroy();
     }));
@@ -976,7 +980,7 @@ describe('SettingsComponent', () => {
           (r) => r.url === consolidateUrl && r.body.action === 'progress',
         )
         .flush({ active: true, phase: 'scan', dryRun: false });
-      expect(component.consolidateProgressLine).toContain('Scanning drives');
+      expect(component.consolidatePhaseLine).toContain('Scanning drives');
 
       // Leaving the page stops the poll (see the dry-run test's note)
       component.ngOnDestroy();

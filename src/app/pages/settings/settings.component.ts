@@ -662,34 +662,49 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** "Consolidating groups — group 3 of 10: Title — file.mp4" */
-  get consolidateProgressLine(): string {
+  // The readout is deliberately three short lines rather than one long one —
+  // as a single string it wrapped several times mid-run and was hard to read.
+
+  /** Line 1: "Consolidating groups — group 1255 of 8055:" (the trailing colon
+   *  leads into the group line below it). */
+  get consolidatePhaseLine(): string {
     const p = this.consolidateProgress;
     if (!p?.active) {
       return '';
     }
     let line = this.consolidatePhaseLabel;
-    // The index rebuild walks every root without touching the consolidation
-    // sidecar, so the group/file detail below is from the finished move phase
-    // and the stale-sidecar wording would wrongly claim a copy is in flight.
-    if (p.phase === 'index') {
-      return p.stalled ? `${line} — this can take a minute` : line;
-    }
-    if (p.groupsTotal) {
+    if (p.phase !== 'index' && p.groupsTotal) {
       const current = Math.min((p.groupsDone ?? 0) + 1, p.groupsTotal);
       line += ` — group ${current} of ${p.groupsTotal}`;
     }
-    if (p.group) {
-      line += `: ${p.group}`;
+    // Only when something actually follows on the next line
+    return this.consolidateGroupLine ? `${line}:` : line;
+  }
+
+  /** Line 2: "Black Owned — Black Owned # 08.mp4". */
+  get consolidateGroupLine(): string {
+    const p = this.consolidateProgress;
+    // The index rebuild walks every root without touching this sidecar, so any
+    // group/file here is left over from the finished move phase.
+    if (!p?.active || p.phase === 'index') {
+      return '';
     }
     const file = (p.currentSrc ?? '').split('/').filter(Boolean).pop() ?? '';
-    if (file) {
-      line += ` — ${file}`;
+    if (p.group && file) {
+      return `${p.group} — ${file}`;
     }
-    if (p.stalled) {
-      line += ' (still copying — a large file can take minutes between updates)';
+    return p.group || file;
+  }
+
+  /** Its own line when the sidecar is quiet but the run provably lives. */
+  get consolidateStalledNote(): string {
+    const p = this.consolidateProgress;
+    if (!p?.active || !p.stalled) {
+      return '';
     }
-    return line;
+    return p.phase === 'index'
+      ? 'This can take a minute.'
+      : 'Still copying — a large file can take minutes between updates.';
   }
 
   /** "3 moved (1.50 GB), 1 duplicate, 0 failed" while a run is active. */

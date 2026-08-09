@@ -76,3 +76,11 @@
     font-size: 0.72rem;
   }
 }
+
+.consolidate-progress {
+  // Continuation lines hang under the text, clear of the spinner
+  .progress-detail {
+    padding-left: 1.4rem;
+    overflow-wrap: anywhere;
+  }
+}
