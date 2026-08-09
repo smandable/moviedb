@@ -1,4 +1,9 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import {
   HttpClientTestingModule,
   HttpTestingController,
@@ -101,6 +106,7 @@ describe('DriveIndexModalComponent', () => {
     expect(searchReq.request.body).toEqual({
       action: 'search',
       query: 'Galaxy Quest Chronicles',
+      offset: 0,
     });
     searchReq.flush(searchResponse);
     fixture.detectChanges();
@@ -120,6 +126,138 @@ describe('DriveIndexModalComponent', () => {
     expect(el.textContent).toContain('/Volumes/Fixture A/recorded');
     // Index-status footer line
     expect(el.textContent).toContain('Indexed 1234 files');
+  });
+
+  it('pages through results, keeping the query and totals', () => {
+    component.initialQuery = 'Bush';
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'status')
+      .flush(statusResponse);
+    const page1 = httpMock.expectOne(
+      (r) => r.url === driveIndexUrl && r.body.action === 'search',
+    );
+    expect(page1.request.body.offset).toBe(0);
+    page1.flush({
+      groups: [{ base: 'Bush', files: [] }],
+      totalGroups: 79,
+      totalFiles: 138,
+      offset: 0,
+      pageSize: 50,
+    });
+    fixture.detectChanges();
+
+    // The range names its unit, and 138 is flagged as the whole match set
+    expect(component.resultSummary).toBe('Titles 1–50 of 79 — 138 files matched');
+    expect(component.currentPage).toBe(1);
+    expect(component.pageCount).toBe(2);
+    expect(component.hasPrevPage).toBeFalse();
+    expect(component.hasNextPage).toBeTrue();
+    expect(component.pageRangeEnd).toBe(50);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.index-pager'),
+    ).toBeTruthy();
+
+    component.nextPage();
+    const page2 = httpMock.expectOne(
+      (r) => r.url === driveIndexUrl && r.body.action === 'search',
+    );
+    // The query must survive paging; only the offset moves
+    expect(page2.request.body).toEqual({
+      action: 'search',
+      query: 'Bush',
+      offset: 50,
+    });
+    page2.flush({
+      groups: [{ base: 'Bush # 10', files: [] }],
+      totalGroups: 79,
+      totalFiles: 138,
+      offset: 50,
+      pageSize: 50,
+    });
+    fixture.detectChanges();
+
+    expect(component.resultSummary).toBe('Titles 51–79 of 79 — 138 files matched');
+    expect(component.currentPage).toBe(2);
+    expect(component.hasNextPage).toBeFalse();
+    // "51-79 of 79", not "51-100"
+    expect(component.pageRangeEnd).toBe(79);
+  });
+
+  it('a new query resets to page 1', fakeAsync(() => {
+    component.initialQuery = 'Bush';
+    fixture.detectChanges();
+    flushInit(statusResponse, {
+      groups: [{ base: 'Bush', files: [] }],
+      totalGroups: 79,
+      totalFiles: 138,
+      offset: 0,
+      pageSize: 50,
+    } as DriveIndexSearchResponse);
+
+    component.nextPage();
+    httpMock
+      .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'search')
+      .flush({
+        groups: [],
+        totalGroups: 79,
+        totalFiles: 138,
+        offset: 50,
+        pageSize: 50,
+      });
+    expect(component.offset).toBe(50);
+
+    // Typing a different query must not ask the server for page 2 of it
+    component.query = 'Something Else';
+    component.onQueryChange();
+    tick(300);
+    const req = httpMock.expectOne(
+      (r) => r.url === driveIndexUrl && r.body.action === 'search',
+    );
+    expect(req.request.body.offset).toBe(0);
+    req.flush({ groups: [], totalGroups: 0, totalFiles: 0, offset: 0, pageSize: 50 });
+    expect(component.offset).toBe(0);
+
+    component.ngOnDestroy();
+  }));
+
+  it('a page response that lands after the user paged again is ignored', () => {
+    component.initialQuery = 'Bush';
+    fixture.detectChanges();
+    flushInit(statusResponse, {
+      groups: [{ base: 'page one', files: [] }],
+      totalGroups: 200,
+      totalFiles: 200,
+      offset: 0,
+      pageSize: 50,
+    } as DriveIndexSearchResponse);
+
+    component.nextPage(); // offset 50
+    const slow = httpMock.expectOne(
+      (r) => r.url === driveIndexUrl && r.body.action === 'search',
+    );
+    component.nextPage(); // offset 100 — issued before page 2 answers
+    const fast = httpMock.expectOne(
+      (r) => r.url === driveIndexUrl && r.body.action === 'search',
+    );
+    fast.flush({
+      groups: [{ base: 'page three', files: [] }],
+      totalGroups: 200,
+      totalFiles: 200,
+      offset: 100,
+      pageSize: 50,
+    });
+    // The stale page-2 response must not overwrite page 3
+    slow.flush({
+      groups: [{ base: 'page two', files: [] }],
+      totalGroups: 200,
+      totalFiles: 200,
+      offset: 50,
+      pageSize: 50,
+    });
+
+    expect(component.groups[0].base).toBe('page three');
+    expect(component.currentPage).toBe(3);
   });
 
   it('shows the empty state without a server call when the query is empty', () => {

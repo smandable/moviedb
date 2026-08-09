@@ -416,12 +416,13 @@ if (!function_exists('moviedb_search_drive_index')) {
      * Returns ['groups' => [...], 'totalGroups' => N, 'totalFiles' => N] or
      * ['error' => '...'] when the query is unusable / no index exists.
      */
-    function moviedb_search_drive_index(string $q, ?array $index = null): array
+    function moviedb_search_drive_index(string $q, ?array $index = null, int $offset = 0): array
     {
         $q = trim($q);
         if ($q === '' || mb_strlen($q) > 120) {
             return ['error' => 'Query must be 1-120 characters'];
         }
+        $offset = max(0, $offset);
         $index = $index ?? moviedb_load_drive_index();
         if ($index === null) {
             return ['error' => 'No drive index has been built yet'];
@@ -464,10 +465,15 @@ if (!function_exists('moviedb_search_drive_index')) {
             $totalFiles += count($group['files']);
         }
 
+        // An offset past the end yields no groups rather than clamping to the
+        // last page: the caller's page number is then provably wrong, which is
+        // easier to notice than silently re-showing page 1.
         return [
-            'groups'      => array_slice($groups, 0, MOVIEDB_DRIVE_INDEX_SEARCH_CAP),
+            'groups'      => array_slice($groups, $offset, MOVIEDB_DRIVE_INDEX_SEARCH_CAP),
             'totalGroups' => $totalGroups,
             'totalFiles'  => $totalFiles,
+            'offset'      => $offset,
+            'pageSize'    => MOVIEDB_DRIVE_INDEX_SEARCH_CAP,
         ];
     }
 }

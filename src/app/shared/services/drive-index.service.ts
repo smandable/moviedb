@@ -50,10 +50,13 @@ export interface DriveIndexProgress {
 }
 
 export interface DriveIndexSearchResponse {
-  /** Capped at 50 groups server-side; totals cover the full match set. */
+  /** One page of groups; totals cover the full match set. */
   groups: DriveIndexGroup[];
   totalGroups: number;
   totalFiles: number;
+  /** Echoed by the server so a late response can't be applied to a new page. */
+  offset?: number;
+  pageSize?: number;
 }
 
 export interface DriveIndexRevealResponse {
@@ -119,10 +122,11 @@ export class DriveIndexService {
     return this.driveIndexAction<DriveIndexStatus>({ action: 'status' });
   }
 
-  search(query: string): Observable<DriveIndexSearchResponse> {
+  search(query: string, offset = 0): Observable<DriveIndexSearchResponse> {
     return this.driveIndexAction<DriveIndexSearchResponse>({
       action: 'search',
       query,
+      offset,
     });
   }
 

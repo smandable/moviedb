@@ -4,6 +4,7 @@
     type="button"
     class="btn-close"
     aria-label="Close"
+    title="Close"
     (click)="activeModal.dismiss('Cross click')"
   ></button>
 </div>
@@ -59,11 +60,7 @@
     </p>
 
     <div *ngIf="groups.length > 0" class="small text-muted mb-2 result-totals">
-      {{ totalGroups }} {{ totalGroups === 1 ? "title" : "titles" }},
-      {{ totalFiles }} {{ totalFiles === 1 ? "file" : "files" }}
-      <span *ngIf="totalGroups > groups.length">
-        — showing the first {{ groups.length }} titles</span
-      >
+      {{ resultSummary }}
     </div>
 
     <div
@@ -114,12 +111,44 @@
           class="action-icon"
           role="button"
           [title]="'Move “' + file.file + '” to the Trash'"
-          aria-label="Move to the Trash"
+          [attr.aria-label]="'Move ' + file.file + ' to the Trash'"
           (click)="trashFile(file)"
           >🗑️</span
         >
       </div>
     </div>
+
+    <!-- Paging: the server returns one capped page, so the controls drive
+         the offset rather than slicing an already-truncated list -->
+    <nav
+      *ngIf="pageCount > 1"
+      class="index-pager d-flex align-items-center justify-content-center gap-2 mt-3"
+      aria-label="Result pages"
+    >
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        [disabled]="!hasPrevPage || isSearching"
+        (click)="prevPage()"
+        title="Previous page of titles"
+        aria-label="Previous page of titles"
+      >
+        ‹ Prev
+      </button>
+      <span class="small text-muted page-indicator">
+        Page {{ currentPage }} of {{ pageCount }}
+      </span>
+      <button
+        type="button"
+        class="btn btn-sm btn-secondary"
+        [disabled]="!hasNextPage || isSearching"
+        (click)="nextPage()"
+        title="Next page of titles"
+        aria-label="Next page of titles"
+      >
+        Next ›
+      </button>
+    </nav>
   </ng-container>
 </div>
 

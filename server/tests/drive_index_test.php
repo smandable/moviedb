@@ -161,6 +161,57 @@ check('empty query is an error', isset(moviedb_search_drive_index('', $index)['e
 check('whitespace-only query is an error', isset(moviedb_search_drive_index('   ', $index)['error']), true);
 check('121-char query is an error',
     isset(moviedb_search_drive_index(str_repeat('a', 121), $index)['error']), true);
+echo "search paging:\n";
+// A synthetic index of 120 distinct bases: more than the 50-group page cap,
+// so the offset has something to page through.
+$pagedEntries = [];
+for ($i = 1; $i <= 120; $i++) {
+    $base = sprintf('Paged Fixture %03d', $i);
+    $pagedEntries[] = [
+        'dir'   => '/fixture/root',
+        'file'  => $base . '.mp4',
+        'base'  => $base,
+        'size'  => 1000 + $i,
+        'mtime' => 1700000000,
+    ];
+}
+$pagedIndex = ['builtAt' => '2026-08-09T00:00:00+00:00', 'roots' => ['/fixture/root'],
+    'fileCount' => count($pagedEntries), 'entries' => $pagedEntries];
+
+$p1 = moviedb_search_drive_index('Paged Fixture', $pagedIndex);
+check('page 1 is capped at the page size', count($p1['groups']), 50);
+check('page 1 starts at the first group', $p1['groups'][0]['base'], 'Paged Fixture 001');
+check('totals cover the whole match set, not the page', $p1['totalGroups'], 120);
+check('offset echoed back', $p1['offset'], 0);
+check('pageSize echoed back', $p1['pageSize'], 50);
+
+$p2 = moviedb_search_drive_index('Paged Fixture', $pagedIndex, 50);
+check('page 2 is a full page', count($p2['groups']), 50);
+check('page 2 starts where page 1 ended', $p2['groups'][0]['base'], 'Paged Fixture 051');
+check('page 2 echoes its offset', $p2['offset'], 50);
+check('page 2 totals are unchanged', $p2['totalGroups'], 120);
+
+$p3 = moviedb_search_drive_index('Paged Fixture', $pagedIndex, 100);
+check('last page holds the remainder', count($p3['groups']), 20);
+check('last page ends on the last group', $p3['groups'][19]['base'], 'Paged Fixture 120');
+
+$pages = [$p1, $p2, $p3];
+$seen = [];
+foreach ($pages as $page) {
+    foreach ($page['groups'] as $g) {
+        $seen[] = $g['base'];
+    }
+}
+check('the three pages cover every group exactly once',
+    [count($seen), count(array_unique($seen))], [120, 120]);
+
+$past = moviedb_search_drive_index('Paged Fixture', $pagedIndex, 500);
+check('an offset past the end yields no groups (never wraps to page 1)', $past['groups'], []);
+check('...but still reports the true total', $past['totalGroups'], 120);
+$neg = moviedb_search_drive_index('Paged Fixture', $pagedIndex, -10);
+check('a negative offset clamps to the first page', $neg['groups'][0]['base'], 'Paged Fixture 001');
+check('a negative offset reports offset 0', $neg['offset'], 0);
+
 check('validation against a null (unbuilt) index is refused',
     moviedb_drive_index_validate_path('/anywhere/file.mp4', null)['ok'], false);
 

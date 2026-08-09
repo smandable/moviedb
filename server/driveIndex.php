@@ -6,7 +6,7 @@
  * drive_index_lib.php; this file is transport only.
  *
  * POST { action: 'status' }                  -> { exists, builtAt, fileCount, roots, missingRoots }
- * POST { action: 'search', query }           -> { groups, totalGroups, totalFiles }
+ * POST { action: 'search', query, offset? }  -> { groups, totalGroups, totalFiles, offset, pageSize }
  * POST { action: 'rebuild' }                 -> { success, builtAt, fileCount, roots, missingRoots }
  * POST { action: 'reveal', path }            -> { success, error? }
  * POST { action: 'trash', paths: string[] }  -> { success, results: [{path, trashed, to?, error?}] }
@@ -59,7 +59,8 @@ switch ($action) {
 
     case 'search':
         $query = is_string($data['query'] ?? null) ? $data['query'] : '';
-        $result = moviedb_search_drive_index($query);
+        $offset = is_numeric($data['offset'] ?? null) ? (int) $data['offset'] : 0;
+        $result = moviedb_search_drive_index($query, null, $offset);
         if (isset($result['error'])) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => $result['error']]);
