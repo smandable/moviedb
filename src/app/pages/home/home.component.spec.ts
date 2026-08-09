@@ -189,6 +189,30 @@ describe('HomeComponent', () => {
     });
   });
 
+  describe('actions column', () => {
+    const renderActions = (movie: object): HTMLElement => {
+      const col = component.columnDefs.find((c) => c.colId === 'actions')!;
+      return (col.cellRenderer as (p: unknown) => HTMLElement)({ data: movie });
+    };
+
+    it('renders trash, Finder search, and drive-index icons on every row', () => {
+      const el = renderActions({ id: 1, title: 'Galaxy Quest Chronicles # 03' });
+
+      expect(el.querySelectorAll('[role="button"]').length).toBe(3);
+      expect(el.querySelector('.fa-hard-drive')).toBeTruthy();
+      expect(el.querySelector('.fa-magnifying-glass')).toBeTruthy();
+    });
+
+    it('drive-index icon opens the modal with the base title', () => {
+      const spy = spyOn(component, 'openDriveIndexModal');
+      const el = renderActions({ id: 1, title: 'Galaxy Quest Chronicles # 03' });
+
+      (el.querySelector('.fa-hard-drive') as HTMLElement).click();
+
+      expect(spy).toHaveBeenCalledWith('Galaxy Quest Chronicles');
+    });
+  });
+
   describe('ngOnDestroy', () => {
     it('should clean up resources', () => {
       component.ngOnInit();

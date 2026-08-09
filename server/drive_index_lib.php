@@ -74,8 +74,12 @@ if (!function_exists('moviedb_drive_index_scan')) {
      * and collect video-file entries, sorted by base then file (natural,
      * case-insensitive). Returns ['entries' => [...], 'missingRoots' => [...]].
      * Shared by the real build and the CLI --dry-run.
+     *
+     * $onProgress, when given, is called with
+     * ['root' => ..., 'rootsDone' => n, 'rootsTotal' => n, 'entries' => n]
+     * at the start of each root and every ~1000 collected entries.
      */
-    function moviedb_drive_index_scan(array $roots): array
+    function moviedb_drive_index_scan(array $roots, ?callable $onProgress = null): array
     {
         $entries = [];
         $missingRoots = [];
@@ -103,7 +107,19 @@ if (!function_exists('moviedb_drive_index_scan')) {
             }
         }
 
-        $walk = function (string $dir, int $depth) use (&$walk, &$entries): void {
+        $progressState = [
+            'root' => '',
+            'rootsDone' => 0,
+            'rootsTotal' => count($kept),
+            'entries' => 0,
+        ];
+        $notify = function () use (&$progressState, $onProgress): void {
+            if ($onProgress !== null) {
+                $onProgress($progressState);
+            }
+        };
+
+        $walk = function (string $dir, int $depth) use (&$walk, &$entries, &$progressState, $notify): void {
             $items = @scandir($dir);
             if ($items === false) {
                 return;
@@ -125,6 +141,10 @@ if (!function_exists('moviedb_drive_index_scan')) {
                     if (
                         $item !== '.Trashes'
                         && $item !== '.moviedb_trash'
+                        // The consolidation shelf: files in duplicates/ are
+                        // set-aside copies awaiting review — indexing them
+                        // would misleadingly answer "you have this on drive X"
+                        && strcasecmp($item, 'duplicates') !== 0
                         && $depth < MOVIEDB_DRIVE_INDEX_MAX_DEPTH
                     ) {
                         $walk($path, $depth + 1);
@@ -142,6 +162,10 @@ if (!function_exists('moviedb_drive_index_scan')) {
                     'size'  => (int) @filesize($path),
                     'mtime' => (int) @filemtime($path),
                 ];
+                $progressState['entries'] = count($entries);
+                if (count($entries) % 1000 === 0) {
+                    $notify();
+                }
             }
         };
 
@@ -149,6 +173,7 @@ if (!function_exists('moviedb_drive_index_scan')) {
             $root = $k['root'];
             if (!is_dir($root)) {
                 $missingRoots[] = $root;
+                $progressState['rootsDone']++;
                 continue;
             }
             // A root that exists but can't be listed (the lost-Full-Disk-
@@ -156,9 +181,14 @@ if (!function_exists('moviedb_drive_index_scan')) {
             // a rebuild would overwrite a good index with a near-empty one.
             if (@scandir($root) === false) {
                 $unreadableRoots[] = $root;
+                $progressState['rootsDone']++;
                 continue;
             }
+            $progressState['root'] = $root;
+            $notify();
             $walk($root, 0);
+            $progressState['rootsDone']++;
+            $notify();
         }
 
         usort($entries, function (array $a, array $b): int {
@@ -269,9 +299,16 @@ if (!function_exists('moviedb_build_drive_index')) {
         $roots = $roots ?? moviedb_drive_index_roots();
         $indexPath = $indexPath ?? MOVIEDB_DRIVE_INDEX_FILE;
 
+        // Live progress for the Settings page: the build holds the writer
+        // lock, so a lock-free sidecar file is the reporting channel. Removed
+        // in finally — its absence means "no rebuild running".
+        $progressPath = $indexPath . '.progress';
+
         $lock = moviedb_drive_index_lock($indexPath);
         try {
-            $scan = moviedb_drive_index_scan($roots);
+            $scan = moviedb_drive_index_scan($roots, function (array $p) use ($progressPath): void {
+                @file_put_contents($progressPath, json_encode($p + ['at' => time()]));
+            });
             if ($scan['unreadableRoots'] !== []) {
                 return [
                     'error' => 'Root(s) exist but cannot be read (Full Disk Access?): '
@@ -323,8 +360,33 @@ if (!function_exists('moviedb_build_drive_index')) {
             }
             return $index;
         } finally {
+            @unlink($progressPath);
             moviedb_drive_index_unlock($lock);
         }
+    }
+}
+
+if (!function_exists('moviedb_drive_index_progress')) {
+    /**
+     * The in-flight rebuild's progress, or ['active' => false]. Reads the
+     * sidecar WITHOUT taking the index lock (the rebuild holds it for its
+     * whole duration). A stale file (crashed build) reads as inactive.
+     */
+    function moviedb_drive_index_progress(?string $indexPath = null): array
+    {
+        $indexPath = $indexPath ?? MOVIEDB_DRIVE_INDEX_FILE;
+        $raw = @file_get_contents($indexPath . '.progress');
+        $data = $raw === false ? null : json_decode($raw, true);
+        if (!is_array($data) || (time() - (int) ($data['at'] ?? 0)) > 120) {
+            return ['active' => false];
+        }
+        return [
+            'active'     => true,
+            'root'       => (string) ($data['root'] ?? ''),
+            'rootsDone'  => (int) ($data['rootsDone'] ?? 0),
+            'rootsTotal' => (int) ($data['rootsTotal'] ?? 0),
+            'entries'    => (int) ($data['entries'] ?? 0),
+        ];
     }
 }
 

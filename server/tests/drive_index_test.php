@@ -1,5 +1,13 @@
 <?php
 
+// CLI only: the whole repo sits under httpd's DocumentRoot, so without this
+// guard a bare GET to this file would execute it via mod_php.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit(1);
+}
+
+
 /**
  * Verification harness for server/drive_index_lib.php — build (skips,
  * depth cap, base derivation, sorting), search (ci substring, grouping,
@@ -274,6 +282,13 @@ foreach ($dupIndex['entries'] as $e) {
 }
 check('file under a nested root indexed exactly once', $nestedCount, 1);
 
+echo "duplicates shelf excluded from the index:\n";
+@mkdir($rootA . '/duplicates');
+mkfile($rootA . '/duplicates/Shelved Copy - Scene_1.mp4');
+$withShelf = moviedb_build_drive_index([$rootA], $indexPath);
+check('shelved duplicate not indexed',
+    in_array('Shelved Copy - Scene_1.mp4', array_column($withShelf['entries'], 'file'), true), false);
+
 echo "merge rebuild preserves entries of unmounted roots:\n";
 $rootB = $fx . '/root_b';
 @mkdir($rootB);
@@ -299,6 +314,34 @@ $dropped = moviedb_build_drive_index([$rootA], $indexPath);
 check('unconfigured root\'s entries are dropped',
     in_array('Offline Feature - Scene_1.mp4', array_column($dropped['entries'], 'file'), true), false);
 rename($rootB . '.away', $rootB);
+
+echo "rebuild progress reporting:\n";
+$progressCalls = [];
+moviedb_drive_index_scan([$rootA], function (array $p) use (&$progressCalls): void {
+    $progressCalls[] = $p;
+});
+check('scan reports progress at least at root boundaries', count($progressCalls) >= 2, true);
+check('progress carries the root being scanned', $progressCalls[0]['root'], $rootA);
+check('progress roots total', $progressCalls[0]['rootsTotal'], 1);
+check('final progress marks the root done', end($progressCalls)['rootsDone'], 1);
+check('final progress entry count matches the scan',
+    end($progressCalls)['entries'] > 0, true);
+
+$progressPath = $indexPath . '.progress';
+check('no sidecar while idle', moviedb_drive_index_progress($indexPath), ['active' => false]);
+file_put_contents($progressPath, json_encode([
+    'root' => $rootA, 'rootsDone' => 1, 'rootsTotal' => 5, 'entries' => 1234, 'at' => time(),
+]));
+$live = moviedb_drive_index_progress($indexPath);
+check('fresh sidecar reads active', $live['active'], true);
+check('fresh sidecar carries counts', [$live['rootsDone'], $live['rootsTotal'], $live['entries']], [1, 5, 1234]);
+file_put_contents($progressPath, json_encode([
+    'root' => $rootA, 'rootsDone' => 1, 'rootsTotal' => 5, 'entries' => 1234, 'at' => time() - 500,
+]));
+check('stale sidecar (crashed build) reads inactive',
+    moviedb_drive_index_progress($indexPath), ['active' => false]);
+moviedb_build_drive_index([$rootA], $indexPath);
+check('build removes the sidecar when done', file_exists($progressPath), false);
 
 echo "drive-root validation:\n";
 putenv('ALLOWED_BASE_PATH=/Volumes');

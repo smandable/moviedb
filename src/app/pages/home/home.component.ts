@@ -13,7 +13,7 @@ import { CustomFloatingFilterComponent } from '@components/grid/custom-floating-
 
 // Utilities
 import { fileSizeFormatter, durationFormatter } from '@helpers/formatters';
-import { stripTrailingNumber } from '@helpers/title';
+import { stripTrailingNumber, getBaseTitle } from '@helpers/title';
 import { myTheme } from '@helpers/grid-theme';
 
 // AG Grid Imports
@@ -28,6 +28,8 @@ import {
   IFilterComp,
 } from 'ag-grid-community';
 
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { DriveIndexModalComponent } from '@modals/drive-index-modal/drive-index-modal.component';
 import { Subscription } from 'rxjs';
 
 // Extend the standard GridApi with the client-side model
@@ -384,9 +386,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     {
       headerName: '', // No heading
       colId: 'actions', // Optional: set a colId for clarity
-      width: 80, // Narrow column: trash + search icons
-      minWidth: 80,
-      maxWidth: 80,
+      width: 106, // Narrow column: trash + Finder search + drive-index icons
+      minWidth: 106,
+      maxWidth: 106,
       filter: false, // Disable filter
       sortable: false, // Disable sorting
 
@@ -421,8 +423,23 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.searchExternalDrivesForRow(params.data as Movie);
         });
 
+        // Drive-index search: instant, index-backed — on every row, since
+        // "where does this title live?" applies to the whole catalog
+        const driveIndex = document.createElement('i');
+        driveIndex.classList.add('fa-solid', 'fa-hard-drive', 'home-action-icon');
+        driveIndex.style.cursor = 'pointer';
+        driveIndex.title = 'Search the drive index';
+        driveIndex.setAttribute('role', 'button');
+        driveIndex.setAttribute('aria-label', 'Search the drive index');
+
+        driveIndex.addEventListener('click', (event) => {
+          event.stopPropagation();
+          this.openDriveIndexModal(getBaseTitle(params.data?.title ?? ''));
+        });
+
         wrap.appendChild(trash);
         wrap.appendChild(search);
+        wrap.appendChild(driveIndex);
 
         return wrap;
       },
@@ -433,8 +450,24 @@ export class HomeComponent implements OnInit, OnDestroy {
     private movieService: MovieService,
     private fileService: FileService,
     private router: Router,
+    private modalService: NgbModal,
     private cdr: ChangeDetectorRef, // Inject ChangeDetectorRef for manual change detection
   ) {}
+
+  /**
+   * Click action for the hard-drive icon: opens the drive-index search modal
+   * prefilled with the row's base title (same modal as the update-db grid).
+   */
+  public openDriveIndexModal(baseTitle: string): void {
+    const modalRef: NgbModalRef = this.modalService.open(
+      DriveIndexModalComponent,
+      {
+        size: 'xl',
+        scrollable: true,
+      },
+    );
+    modalRef.componentInstance.initialQuery = baseTitle;
+  }
 
   ngOnInit(): void {
     this.routerSub = this.router.events.subscribe((event) => {

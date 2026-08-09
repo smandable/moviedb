@@ -42,6 +42,10 @@ if ($mutating && empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
 }
 
 switch ($action) {
+    case 'progress':
+        echo json_encode(moviedb_drive_index_progress());
+        break;
+
     case 'status':
         $index = moviedb_load_drive_index();
         echo json_encode([

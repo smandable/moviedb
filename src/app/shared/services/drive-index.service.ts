@@ -41,6 +41,14 @@ export interface DriveIndexRebuildResponse
   exists?: boolean;
 }
 
+export interface DriveIndexProgress {
+  active: boolean;
+  root?: string;
+  rootsDone?: number;
+  rootsTotal?: number;
+  entries?: number;
+}
+
 export interface DriveIndexSearchResponse {
   /** Capped at 50 groups server-side; totals cover the full match set. */
   groups: DriveIndexGroup[];
@@ -122,6 +130,11 @@ export class DriveIndexService {
     return this.driveIndexAction<DriveIndexRebuildResponse>({
       action: 'rebuild',
     });
+  }
+
+  /** The in-flight rebuild's progress ({active:false} when none is running). */
+  progress(): Observable<DriveIndexProgress> {
+    return this.driveIndexAction<DriveIndexProgress>({ action: 'progress' });
   }
 
   reveal(path: string): Observable<DriveIndexRevealResponse> {
