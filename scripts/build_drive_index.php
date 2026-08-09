@@ -1,5 +1,13 @@
 <?php
 
+// CLI only: the whole repo sits under httpd's DocumentRoot, so without this
+// guard a bare GET to this file would execute it via mod_php.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit(1);
+}
+
+
 /**
  * Build the drive index (server/drive_index.json): walk the configured
  * library roots (app_settings.json "driveIndexRoots", else the defaults) and

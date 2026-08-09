@@ -1,5 +1,13 @@
 <?php
 
+// CLI only: the whole repo sits under httpd's DocumentRoot, so without this
+// guard a bare GET to this file would execute it via mod_php.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit(1);
+}
+
+
 /**
  * Harness for server/cast_helpers.php — cleaning, splitting, homoglyph folding,
  * store round-trip excluded (filesystem). Run: php server/tests/cast_helpers_test.php

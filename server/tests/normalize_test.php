@@ -1,5 +1,13 @@
 <?php
 
+// CLI only: the whole repo sits under httpd's DocumentRoot, so without this
+// guard a bare GET to this file would execute it via mod_php.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit(1);
+}
+
+
 /**
  * Verification harness for server/normalize_helpers.php — covers the full
  * normalizeFileBaseName pipeline, with emphasis on Scene_N handling:
