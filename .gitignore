@@ -50,6 +50,10 @@ Thumbs.db
 
 # Generated: app settings edited on the Settings page (machine-local)
 /server/app_settings.json
+
+# Generated: drive index built by scripts/build_drive_index.php (local library data)
+/server/drive_index.json
+/server/drive_index.json.*
 IMPROVEMENTS.md
 .claude/
 
