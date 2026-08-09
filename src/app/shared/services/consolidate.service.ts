@@ -26,6 +26,8 @@ export interface ConsolidateLastRun {
   durationSeconds?: number;
   /** true/false once attempted; null when not attempted (dry run / no changes). */
   indexRebuilt?: boolean | null;
+  /** Unnumbered files left alone because volume 1 was ambiguous — needs a look. */
+  flagged?: number;
   dryRun: boolean;
   exitCode: number;
   moved: number;
@@ -67,6 +69,7 @@ export interface ConsolidateProgress {
   driveFree?: Record<string, number>;
   skipped?: number;
   renamed?: number;
+  flagged?: number;
   /** True while the sidecar is quiet but the run provably lives (long mv). */
   stalled?: boolean;
 }

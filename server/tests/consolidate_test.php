@@ -870,6 +870,49 @@ check('group consolidated onto its dominant drive',
 check('balance did NOT bounce the fresh group to the sink',
     file_exists("$SINK/Willow Creek # 03.mp4") || file_exists("$SINK/Willow Creek # 01.mp4"), false);
 
+echo "S17: a SUFFIXED '# 01' blocks the rename — the unnumbered file is flagged, not renumbered:\n";
+$d = "$fx/S17";
+$A = "$d/driveA";
+$B = "$d/driveB";
+// "# 01 - Honeymoon" is its own work (Sean's rule), so it does NOT make the
+// unnumbered file volume 1 — renaming would put two things in the # 01 slot.
+mkfile("$A/Twin Booking.mp4", 'unnumbered original');
+mkfile("$A/Twin Booking # 01 - Honeymoon.mp4", 'honeymoon cut');
+mkfile("$B/Twin Booking # 02 - Ranch.mp4", 'ranch cut');
+$settings = "$d/settings.json";
+writeSettings($settings, cset([$A, $B], $A));
+[$code, ] = runScript(["--settings=$settings", "--progress-file=$d/progress.json", '--execute']);
+$tsv = "$d/consolidate_last_run.tsv";
+check('S17 execute exits 0', $code, 0);
+check('the unnumbered file keeps its name',
+    @file_get_contents("$A/Twin Booking.mp4"), 'unnumbered original');
+check('no bare "# 01" was created', file_exists("$A/Twin Booking # 01.mp4"), false);
+check('the suffixed volume 1 is untouched',
+    @file_get_contents("$A/Twin Booking # 01 - Honeymoon.mp4"), 'honeymoon cut');
+check('nothing was shelved as a duplicate', is_dir("$A/duplicates"), false);
+check('the skip is LOGGED for review', tsvCount($tsv, 'RENAME_01_SKIP', 'SKIP'), 1);
+check('the log names the conflicting volume',
+    (bool) preg_match('/RENAME_01_SKIP.*Twin Booking # 01 - Honeymoon/', (string) @file_get_contents($tsv)), true);
+check('.last counts it as needing review', readLast("$d/progress.json")['flagged'] ?? null, 1);
+check('.last records no rename', readLast("$d/progress.json")['renamed'] ?? null, 0);
+check('the group still consolidated onto one drive',
+    @file_get_contents("$A/Twin Booking # 02 - Ranch.mp4"), 'ranch cut');
+
+// A BARE "# 01" is the opposite case: same item, best copy wins, still renamed
+$d = "$fx/S17b";
+$A = "$d/driveA";
+mkfile("$A/Twin Booking.mp4", 'bigger unnumbered copy');
+mkfile("$A/Twin Booking # 01.mp4", 'small');
+mkfile("$A/Twin Booking # 02.mp4", 'second');
+$settings = "$d/settings.json";
+writeSettings($settings, cset([$A], $A));
+[$code, ] = runScript(["--settings=$settings", "--progress-file=$d/progress.json", '--execute']);
+check('S17b execute exits 0', $code, 0);
+check('a BARE # 01 still dedupes and renames',
+    @file_get_contents("$A/Twin Booking # 01.mp4"), 'bigger unnumbered copy');
+check('S17b flagged nothing', readLast("$d/progress.json")['flagged'] ?? null, 0);
+check('S17b counted the rename', readLast("$d/progress.json")['renamed'] ?? null, 1);
+
 echo "S16: the balance pass is VISIBLE in the TSV log even when it moves nothing:\n";
 $d = "$fx/S16";
 $A = "$d/driveA";

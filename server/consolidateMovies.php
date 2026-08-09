@@ -242,6 +242,7 @@ switch ($action) {
             'failed'      => (int) ($p['failed'] ?? 0),
             'skipped'     => (int) ($p['skipped'] ?? 0),
             'renamed'     => (int) ($p['renamed'] ?? 0),
+            'flagged'     => (int) ($p['flagged'] ?? 0),
             'dryRun'      => (bool) ($p['dryRun'] ?? false),
             'driveFree'   => is_array($p['driveFree'] ?? null) ? $p['driveFree'] : (object) [],
             'stalled'     => (bool) ($p['stalled'] ?? false),

@@ -724,6 +724,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (p.skipped) {
       line += `, ${p.skipped} skipped`;
     }
+    if (p.flagged) {
+      line += `, ${p.flagged} to review`;
+    }
     return line;
   }
 
@@ -760,6 +763,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (run.skipped) {
       // An incomplete run must never read as a full success
       line += `, ${run.skipped} groups skipped (space)`;
+    }
+    if (run.flagged) {
+      // Must be visible: these files were deliberately NOT renamed
+      line +=
+        run.flagged === 1
+          ? '. 1 file needs review (see RENAME_01_SKIP in the log)'
+          : `. ${run.flagged} files need review (see RENAME_01_SKIP in the log)`;
     }
     // null/undefined = not attempted (dry run, or nothing changed) — say
     // nothing. A failed rebuild must be visible: the index is now stale.

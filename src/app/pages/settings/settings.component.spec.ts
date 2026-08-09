@@ -844,6 +844,53 @@ describe('SettingsComponent', () => {
       component.isConsolidating = false;
     });
 
+    it('files needing review are called out in both lines', fakeAsync(() => {
+      flushInit();
+      component.dryRun = true;
+      component.runConsolidate();
+      httpMock
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
+        .flush({ started: true, pid: 1 });
+      tick(1000);
+      httpMock
+        .expectOne(
+          (r) => r.url === consolidateUrl && r.body.action === 'progress',
+        )
+        .flush({
+          active: true,
+          phase: 'groups',
+          moved: 1,
+          movedBytes: 10,
+          duped: 0,
+          failed: 0,
+          flagged: 2,
+        });
+      expect(component.consolidateCountsLine).toContain('2 to review');
+      component.ngOnDestroy();
+
+      component.consolidateStatus = {
+        running: false,
+        pid: null,
+        lastRun: {
+          finishedAt: '2026-08-09T12:00:00Z',
+          flagged: 1,
+          dryRun: false,
+          exitCode: 0,
+          moved: 1,
+          duped: 0,
+          skipped: 0,
+          failed: 0,
+          movedBytes: 10,
+        },
+        settings: fixtureConsolidateSettings,
+      };
+      expect(component.consolidateLastRunLine).toContain('1 file needs review');
+      expect(component.consolidateLastRunLine).toContain('RENAME_01_SKIP');
+      // Silent when there is nothing to review
+      component.consolidateStatus.lastRun!.flagged = 0;
+      expect(component.consolidateLastRunLine).not.toContain('review');
+    }));
+
     it('a failed index rebuild is called out in the last-run line', () => {
       flushInit();
       component.consolidateStatus = {

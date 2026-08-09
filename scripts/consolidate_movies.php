@@ -323,6 +323,7 @@ $COUNTERS = [
     'duped'      => 0, // files shelved into duplicates/ (incl. SUSPECT_PARTIAL__ quarantines)
     'skipped'    => 0, // groups skipped for space (GROUP_SKIP with status SKIP)
     'renamed'    => 0, // unnumbered base files renamed to their canonical "# 01" name
+    'flagged'    => 0, // unnumbered files NOT renamed because volume 1 is ambiguous
     'failed'     => 0, // failed moves/shelves
     'movedBytes' => 0,
 ];
@@ -353,6 +354,7 @@ function progressWrite(?string $phase = null): void
         'failed'      => $COUNTERS['failed'],
         'skipped'     => $COUNTERS['skipped'],
         'renamed'     => $COUNTERS['renamed'],
+        'flagged'     => $COUNTERS['flagged'],
         'movedBytes'  => $COUNTERS['movedBytes'],
         'dryRun'      => $DRY_RUN,
         'driveFree'   => $driveFree,
@@ -375,6 +377,7 @@ function writeLastRun(int $exitCode): void
         'duped'      => $COUNTERS['duped'],
         'skipped'    => $COUNTERS['skipped'],
         'renamed'    => $COUNTERS['renamed'],
+        'flagged'    => $COUNTERS['flagged'],
         'failed'     => $COUNTERS['failed'],
         'movedBytes' => $COUNTERS['movedBytes'],
     ]));
@@ -1016,18 +1019,39 @@ foreach ($allGroups as $baseKey => $g) {
 
     // Build episode buckets and detect duplicates
     $hasNumberedEpisodes = false;
+    $bareEp1 = false;      // a plain "# 01"
+    $suffixedEp1 = null;   // a "# 01 - Something" (its display name, for the log)
     foreach ($files as $f) {
-        if ($f['ep'] !== null) {
-            $hasNumberedEpisodes = true;
-            break;
+        if ($f['ep'] === null) {
+            continue;
+        }
+        $hasNumberedEpisodes = true;
+        if ((int) $f['ep'] === 1) {
+            if (normVariantKey((string) ($f['variant'] ?? '')) === '') {
+                $bareEp1 = true;
+            } elseif ($suffixedEp1 === null) {
+                $suffixedEp1 = basename((string) $f['path']);
+            }
         }
     }
+    $flagged = []; // unnumbered files we refused to renumber — Sean reviews these
 
     $byItem = [];
     foreach ($files as $f) {
         $variantKey = normVariantKey((string) ($f['variant'] ?? ''));
 
-        if ($f['ep'] === null && $variantKey === '' && $hasNumberedEpisodes) {
+        if (
+            $f['ep'] === null && $variantKey === '' && $hasNumberedEpisodes
+            && $suffixedEp1 !== null && !$bareEp1
+        ) {
+            // Volume 1 already exists in a DISTINGUISHED form ("# 01 - Honeymoon"),
+            // which per Sean is its own work — so the unnumbered file is NOT that
+            // volume, and renaming it to a bare "# 01" would put two things in the
+            // volume-1 slot. Leave it alone and flag it for review rather than
+            // guessing (silently skipping would hide exactly the case worth seeing).
+            $flagged[] = ['file' => $f, 'conflict' => $suffixedEp1];
+            $itemKey = 'BASEONLY';
+        } elseif ($f['ep'] === null && $variantKey === '' && $hasNumberedEpisodes) {
             // App convention (mirrors handleNumberedTitle /
             // renameSessionFilesAddMissing01): once numbered volumes of a
             // base exist, the unnumbered file IS volume # 01 — it joins the
@@ -1044,6 +1068,15 @@ foreach ($allGroups as $baseKey => $g) {
         }
 
         $byItem[$itemKey][] = $f;
+    }
+
+    foreach ($flagged as $flag) {
+        $COUNTERS['flagged']++;
+        $msg = 'unnumbered file left as-is: volume 1 already exists as "'
+            . $flag['conflict'] . '" — renaming would claim the same volume';
+        err("  REVIEW: " . basename((string) $flag['file']['path']) . " — $msg");
+        logLine($logFp, [date('c'), $modeStr, $groupDisplay, 'RENAME_01_SKIP',
+            $flag['file']['path'], '', (int) $flag['file']['size'], 'SKIP', $msg]);
     }
 
     $primaryFiles = [];     // files we will consolidate
