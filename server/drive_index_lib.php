@@ -279,12 +279,44 @@ if (!function_exists('moviedb_build_drive_index')) {
                     'unreadableRoots' => $scan['unreadableRoots'],
                 ];
             }
+
+            // MERGE rebuild: the drives are usually unmounted and get mounted
+            // only for a work session, so a rebuild must never forget an
+            // offline drive — entries under a configured-but-missing root are
+            // carried forward from the previous index instead of dropped.
+            $entries = $scan['entries'];
+            if ($scan['missingRoots'] !== []) {
+                $old = moviedb_load_drive_index($indexPath);
+                if ($old !== null) {
+                    $carried = [];
+                    foreach ($old['entries'] as $entry) {
+                        if (!is_array($entry)) {
+                            continue;
+                        }
+                        $dir = ($entry['dir'] ?? '') . '/';
+                        foreach ($scan['missingRoots'] as $missing) {
+                            if (strpos($dir, rtrim($missing, '/') . '/') === 0) {
+                                $carried[] = $entry;
+                                break;
+                            }
+                        }
+                    }
+                    if ($carried) {
+                        $entries = array_merge($entries, $carried);
+                        usort($entries, function (array $a, array $b): int {
+                            return strnatcasecmp($a['base'], $b['base'])
+                                ?: strnatcasecmp($a['file'], $b['file']);
+                        });
+                    }
+                }
+            }
+
             $index = [
                 'builtAt'      => date('c'),
                 'roots'        => array_values($roots),
                 'missingRoots' => $scan['missingRoots'],
-                'fileCount'    => count($scan['entries']),
-                'entries'      => $scan['entries'],
+                'fileCount'    => count($entries),
+                'entries'      => $entries,
             ];
             if (!moviedb_write_drive_index($index, $indexPath)) {
                 return null;

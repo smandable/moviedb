@@ -274,6 +274,32 @@ foreach ($dupIndex['entries'] as $e) {
 }
 check('file under a nested root indexed exactly once', $nestedCount, 1);
 
+echo "merge rebuild preserves entries of unmounted roots:\n";
+$rootB = $fx . '/root_b';
+@mkdir($rootB);
+mkfile($rootB . '/Offline Feature - Scene_1.mp4');
+$withB = moviedb_build_drive_index([$rootA, $rootB], $indexPath);
+$countWithB = $withB['fileCount'];
+check('root B file indexed while mounted',
+    in_array('Offline Feature - Scene_1.mp4', array_column($withB['entries'], 'file'), true), true);
+// "Unmount" root B (rename it away) and rebuild: its entries must carry over
+rename($rootB, $rootB . '.away');
+$rebuilt = moviedb_build_drive_index([$rootA, $rootB], $indexPath);
+check('missing root reported', $rebuilt['missingRoots'], [$rootB]);
+check('offline entries carried forward',
+    in_array('Offline Feature - Scene_1.mp4', array_column($rebuilt['entries'], 'file'), true), true);
+check('file count includes carried entries', $rebuilt['fileCount'], $countWithB);
+check('carried entries stay sorted by base',
+    $rebuilt['entries'] === (function ($e) {
+        usort($e, fn($a, $b) => strnatcasecmp($a['base'], $b['base']) ?: strnatcasecmp($a['file'], $b['file']));
+        return $e;
+    })($rebuilt['entries']), true);
+// Root removed from CONFIG entirely -> its entries genuinely drop
+$dropped = moviedb_build_drive_index([$rootA], $indexPath);
+check('unconfigured root\'s entries are dropped',
+    in_array('Offline Feature - Scene_1.mp4', array_column($dropped['entries'], 'file'), true), false);
+rename($rootB . '.away', $rootB);
+
 echo "drive-root validation:\n";
 putenv('ALLOWED_BASE_PATH=/Volumes');
 check('the base itself is rejected',

@@ -290,6 +290,9 @@ export class DriveIndexModalComponent implements OnInit, OnDestroy {
         0,
         this.totalGroups - (groupsBefore - this.groups.length),
       );
+      // Trashing marks an active clean-up session: 30s after the last one,
+      // the index rebuilds itself to sweep up Finder-side moves too
+      this.driveIndexService.scheduleDebouncedRebuild();
     }
 
     const noun = trashedPaths.size === 1 ? 'file' : 'files';

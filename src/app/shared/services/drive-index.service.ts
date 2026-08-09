@@ -75,7 +75,37 @@ export class DriveIndexService {
 
   private driveIndexUrl = `${this.baseUrl}driveIndex.php`;
 
+  /** Pending auto-rebuild timer; reset by every new trash. */
+  private rebuildTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** 30s of quiet after the last trash before the index rebuilds itself. */
+  static readonly REBUILD_DEBOUNCE_MS = 30_000;
+
   constructor(private http: HttpClient) {}
+
+  /**
+   * Trashing files signals an active clean-up session (drives mounted, files
+   * moving in Finder too), so 30s after the LAST trash the index rebuilds
+   * itself and sweeps up whatever else changed. The app stays running in the
+   * background, so this root-provided service is a reliable place for the
+   * timer; the server serializes writers, and a rebuild while some drives
+   * are unmounted carries their entries forward (merge rebuild) — firing
+   * "too early" can never lose index data.
+   */
+  scheduleDebouncedRebuild(): void {
+    if (this.rebuildTimer) {
+      clearTimeout(this.rebuildTimer);
+    }
+    this.rebuildTimer = setTimeout(() => {
+      this.rebuildTimer = undefined;
+      this.rebuild().subscribe({
+        // Background maintenance: nothing to paint on success, and a failure
+        // here must never surface as a user-facing error
+        error: (err: Error) =>
+          console.warn('Background index rebuild failed:', err.message),
+      });
+    }, DriveIndexService.REBUILD_DEBOUNCE_MS);
+  }
 
   status(): Observable<DriveIndexStatus> {
     return this.driveIndexAction<DriveIndexStatus>({ action: 'status' });
