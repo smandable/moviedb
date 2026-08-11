@@ -256,6 +256,154 @@ check(
     'Alektra vs. Amy Reid'
 );
 
+echo "\"&\" as a cast separator (real names below come from the renamed corpus):\n";
+check(
+    '"&" between cast members becomes a comma',
+    normalizeFileBaseName('Girls Playing # 03 - Scene_1 - Hollie Morgan & Courtney Simpson'),
+    'Girls Playing # 03 - Scene_1 - Hollie Morgan, Courtney Simpson'
+);
+check(
+    'multi-way "&" chain collapses in one pass (and gains the missing dash)',
+    normalizeFileBaseName('Slippery When Wet # 03 - Scene_15 Aurora Snow & Felecia & Tanya Danielle'),
+    'Slippery When Wet # 03 - Scene_15 - Aurora Snow, Felecia, Tanya Danielle'
+);
+check(
+    'mixed "and"/"&" chain collapses in one pass',
+    normalizeFileBaseName('Movie - Scene_1 - Jane Fauxheart and Kira Mock & Lena Dupe'),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock, Lena Dupe'
+);
+check(
+    'comma before "&" is absorbed, not doubled',
+    normalizeFileBaseName('Movie - Scene_1 - Jane Fauxheart, & Kira Mock'),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'repeated "&" collapses to a single comma',
+    normalizeFileBaseName('Movie - Scene_1 - Jane Fauxheart & & Kira Mock'),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'period-separated "&" (dotted release name)',
+    normalizeFileBaseName('Movie.Scene.1.Jane.Fauxheart.&.Kira.Mock'),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'title "&" before the scene marker is untouched',
+    normalizeFileBaseName('The Busty & Bushy Cougar & Her Prey - Scene_1 - Chanel Preston'),
+    'The Busty & Bushy Cougar & Her Prey - Scene_1 - Chanel Preston'
+);
+check(
+    'title "and" is kept; only the cast tail becomes a comma',
+    normalizeFileBaseName('Serene Siren and Her Girlfriends # 02 - Scene_1 - Serene Siren and Danni Rivers'),
+    'Serene Siren and Her Girlfriends # 02 - Scene_1 - Serene Siren, Danni Rivers'
+);
+check(
+    'title "&" with no cast tail at all',
+    normalizeFileBaseName('18 & Creamed - Scene_1'),
+    '18 & Creamed - Scene_1'
+);
+check(
+    'no scene marker: "&" is not a cast separator',
+    normalizeFileBaseName('Jane Fauxheart & Kira Mock Compilation'),
+    'Jane Fauxheart & Kira Mock Compilation'
+);
+
+echo "trailing non-cast tags are dropped, not promoted to cast:\n";
+check(
+    'trailing "Lh" is dropped',
+    normalizeFileBaseName('Cum Oozing Holes # 01 - Scene_1 Lh'),
+    'Cum Oozing Holes # 01 - Scene_1'
+);
+check(
+    'trailing "Lh" in the period-separated form',
+    normalizeFileBaseName('Movie.Scene.1.Lh'),
+    'Movie - Scene_1'
+);
+check(
+    'a cast name merely starting with the tag is kept',
+    normalizeFileBaseName('Movie - Scene_1 Lhotse'),
+    'Movie - Scene_1 - Lhotse'
+);
+check(
+    'lowercase "lh" is the same tag',
+    normalizeFileBaseName('Movie - Scene_1 lh'),
+    'Movie - Scene_1'
+);
+check(
+    'all-caps "LH" is the same tag',
+    normalizeFileBaseName('Movie - Scene_1 LH'),
+    'Movie - Scene_1'
+);
+check(
+    'the all-lowercase dotted release form drops the tag too',
+    normalizeFileBaseName('cum.oozing.holes.01.scene.1.lh'),
+    'Cum Oozing Holes # 01 - Scene_1'
+);
+check(
+    'tag that is not the tail is kept',
+    normalizeFileBaseName('Movie - Scene_1 Lh - Jane Fauxheart'),
+    'Movie - Scene_1 - Lh - Jane Fauxheart'
+);
+check(
+    'tag already promoted to cast is left as the user has it',
+    normalizeFileBaseName('Movie - Scene_1 - Lh'),
+    'Movie - Scene_1 - Lh'
+);
+check(
+    'no scene marker: a trailing tag is just a word',
+    normalizeFileBaseName('Movie Lh'),
+    'Movie Lh'
+);
+// The tag is located against the release-junk-trimmed name, not the raw
+// string: incoming release names carry a quality tail, and cleanupFunctions
+// does not truncate it until after titleCase has destroyed the casing this
+// match depends on. Before that, every one of these promoted the tag to cast.
+check(
+    'tag behind a quality marker is still the tail',
+    normalizeFileBaseName('Movie - Scene_1 Lh 1080p'),
+    'Movie - Scene_1'
+);
+check(
+    'tag behind a bare trailing resolution',
+    normalizeFileBaseName('Movie - Scene_1 Lh 1080'),
+    'Movie - Scene_1'
+);
+check(
+    'tag behind a full release tail',
+    normalizeFileBaseName('Movie - Scene_1 Lh.1080p.x264-KTR'),
+    'Movie - Scene_1'
+);
+check(
+    'tag behind an "XXX"-anchored quality marker',
+    normalizeFileBaseName('Movie - Scene_1 Lh XXX 1080p'),
+    'Movie - Scene_1'
+);
+check(
+    'tag behind a dangling separator',
+    normalizeFileBaseName('Movie - Scene_1 Lh -'),
+    'Movie - Scene_1'
+);
+check(
+    'lowercase "lh" behind a quality tail is still the tag',
+    normalizeFileBaseName('Movie - Scene_1 lh 1080p'),
+    'Movie - Scene_1'
+);
+check(
+    'junk trimming does not make a longer name a tag',
+    normalizeFileBaseName('Movie - Scene_1 Lhotse 1080p'),
+    'Movie - Scene_1 - Lhotse'
+);
+check(
+    'junk trimming does not drop a non-tail tag',
+    normalizeFileBaseName('Movie - Scene_1 Lh - Jane Fauxheart 1080p'),
+    'Movie - Scene_1 - Lh - Jane Fauxheart'
+);
+check(
+    'a name that merely ends in the tag word keeps its quality trimming',
+    normalizeFileBaseName('Movie - Scene_1 - Jane Fauxheart 1080p'),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+
 echo "mid-title XXX becomes a subtitle break:\n";
 check(
     'XXX mid-title gets " - " after it, next small word capitalized',
@@ -314,6 +462,9 @@ $fixedPoints = [
     'Title - Scene_2 - With Kira Noir',
     'Movie - Scene_1 - And # 02',
     'The Crime Scene 1999',
+    'Cum Oozing Holes # 01 - Scene_1',
+    'The Busty & Bushy Cougar & Her Prey - Scene_1 - Chanel Preston',
+    '18 & Creamed - Scene_1',
 ];
 // Raw inputs whose FIRST normalization must already be a fixed point
 // (otherwise the rename tool re-flags files it just renamed).
@@ -336,6 +487,12 @@ $rawInputs = [
     'evilangel-scene-12-adriana-chechik',
     'Backstage (Scene 2) Jane',
     'Title - XXX An Axel Braun Parody',
+    'Cum Oozing Holes # 01 - Scene_1 Lh',
+    'Cum.Oozing.Holes.01.Scene.1.Lh.1080p.x264-KTR',
+    'Movie - Scene_1 lh 1080p',
+    'Movie - Scene_1 Lhotse',
+    'Girls Playing # 03 - Scene_1 - Hollie Morgan & Courtney Simpson',
+    'Movie.Scene.1.Jane.Fauxheart.&.Kira.Mock',
 ];
 foreach ($rawInputs as $raw) {
     $n1 = normalizeFileBaseName($raw);

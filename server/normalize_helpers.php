@@ -22,6 +22,11 @@ if (!function_exists('normalizeFileBaseName')) {
         $base = basicFunctions($base);
         $base = titleCase($base, $respectUserCasing);
         $base = cleanupFunctions($base);
+        // After cleanupFunctions, so the quality tail is already truncated and a
+        // tag hidden behind it ("Scene_1 Lh 1080p") is at the real end of the
+        // name; before sceneNormalization, which would otherwise promote the tag
+        // into the cast position.
+        $base = dropNonCastTags($base);
         $base = sceneNormalization($base);
         $base = castSeparator($base);
         // Store-backed fix for cast names missing their spaces
@@ -92,6 +97,69 @@ if (!function_exists('basicFunctions')) {
         $name = preg_replace('/^\.+/', '', $name);
 
         return trim($name);
+    }
+}
+
+if (!function_exists('trimReleaseJunk')) {
+    /**
+     * Truncate the release-junk tail (quality/codec markers, bare trailing
+     * resolutions, and the separator they dangle). Extracted from
+     * cleanupFunctions so dropNonCastTags can ask the same question it does —
+     * "where does the real name end?" — without duplicating the marker list.
+     *
+     * Always returns a PREFIX of its input; dropNonCastTags relies on that to
+     * splice the untouched tail back on.
+     */
+    function trimReleaseJunk(string $name): string
+    {
+        // Truncate at the first quality/codec/release-type marker — anything
+        // past these (e.g. release-group tags like "-P0RNL0V3R", "-KTR") is junk.
+        // Optionally consumes " XXX " when it appears as the junk-anchor right
+        // before a quality marker, so titles that legitimately contain "XXX"
+        // (e.g. "XXX Adventures", "Adventures in XXX") are preserved when no
+        // quality marker follows.
+        $name = preg_replace(
+            '/(?:\s*\bXXX\b\s+)?\b(?:2160p|4k|1080p|720p|480p|360p|DVDRip|h264|x264|WEBRip|MP4|xvid)\b.*/i',
+            '',
+            $name
+        );
+        // Bare trailing resolution numbers ("..._1080", "... 720") are junk
+        // too — the quality list above only catches the "p"-suffixed forms.
+        // \s*$ tolerates the trailing space the truncation above leaves, and
+        // (?<!#) keeps "# 720"-style series indexes intact.
+        $name = preg_replace('/(?<!#)(?:\s+(?:2160|1080|720|480|360))+\s*$/', '', $name);
+
+        // Drop dangling separators that the truncation may leave behind.
+        return rtrim($name, " \t\n\r\0\x0B-._");
+    }
+}
+
+if (!function_exists('dropNonCastTags')) {
+    /**
+     * Drop a known non-cast tag trailing the scene number ("Scene_1 Lh" →
+     * "Scene_1"). Left in place it reaches sceneNormalization, which promotes
+     * it into the cast position ("Scene_1 - Lh") — worse than leaving it,
+     * because the Add Cast tab then counts the file as already having cast.
+     *
+     * Deliberately a list, never a heuristic: tags match whole and only as the
+     * last thing in the name. So "Scene_1 Lhotse" is a cast name, and
+     * "Scene_1 Lh - Jane Doe" keeps its Lh because it isn't the tail. Add
+     * spellings here rather than loosening the match.
+     *
+     * Casing is ignored: the same file arrives as "Scene_1 Lh" or as the dotted
+     * release form "scene.1.lh", and the library has no performer whose whole
+     * name is a listed tag in any casing.
+     */
+    function dropNonCastTags(string $fileName): string
+    {
+        $NON_CAST_TAGS = ['Lh'];
+        if (!$NON_CAST_TAGS) {
+            return $fileName; // an empty alternation would match everything
+        }
+
+        $tags = implode('|', array_map(fn($t) => preg_quote($t, '/'), $NON_CAST_TAGS));
+
+        return preg_replace('/(\bScene_\d+)\s+(?:' . $tags . ')$/i', '$1', $fileName);
     }
 }
 
@@ -200,25 +268,10 @@ if (!function_exists('cleanupFunctions')) {
     {
         $name = trim($fileName);
 
-        // Truncate at the first quality/codec/release-type marker — anything
-        // past these (e.g. release-group tags like "-P0RNL0V3R", "-KTR") is junk.
-        // Optionally consumes " XXX " when it appears as the junk-anchor right
-        // before a quality marker, so titles that legitimately contain "XXX"
-        // (e.g. "XXX Adventures", "Adventures in XXX") are preserved when no
-        // quality marker follows.
-        $name = preg_replace(
-            '/(?:\s*\bXXX\b\s+)?\b(?:2160p|4k|1080p|720p|480p|360p|DVDRip|h264|x264|WEBRip|MP4|xvid)\b.*/i',
-            '',
-            $name
-        );
-        // Bare trailing resolution numbers ("..._1080", "... 720") are junk
-        // too — the quality list above only catches the "p"-suffixed forms.
-        // \s*$ tolerates the trailing space the truncation above leaves, and
-        // (?<!#) keeps "# 720"-style series indexes intact.
-        $name = preg_replace('/(?<!#)(?:\s+(?:2160|1080|720|480|360))+\s*$/', '', $name);
-
-        // Drop dangling separators that the truncation may leave behind.
-        $name = rtrim($name, " \t\n\r\0\x0B-._");
+        // Truncate the quality/codec/release-type tail and the separator it
+        // dangles. Shared with dropNonCastTags, which needs the same answer to
+        // find the real end of the name.
+        $name = trimReleaseJunk($name);
 
         // A title-internal "XXX <article> …" tail is a subtitle (Axel Braun
         // style: "Snow White XXX An Axel Braun Parody" → "Snow White XXX -
@@ -372,16 +425,18 @@ if (!function_exists('sceneNormalization')) {
 if (!function_exists('castSeparator')) {
     function castSeparator(string $fileName): string
     {
-        // After "Scene_N - ", treat " and " as a cast-member separator and turn it into ", ".
-        // Only applies to the segment after Scene_N so titles containing "and" are untouched.
+        // After "Scene_N - ", treat " and " / " & " as a cast-member separator and turn it into ", ".
+        // Only applies to the segment after Scene_N so titles containing "and" or "&" are untouched
+        // ("The Busty & Bushy Cougar & Her Prey - Scene_1 - Chanel Preston").
         if (preg_match('/Scene_\d+\s+-\s+/i', $fileName, $m, PREG_OFFSET_CAPTURE)) {
             $offset = $m[0][1] + strlen($m[0][0]);
             $before = substr($fileName, 0, $offset);
             $after  = substr($fileName, $offset);
-            // Absorb an optional preceding comma and repeated "and"s so
-            // "Jane, and Kira" / "Jane and and Kira" collapse to "Jane, Kira"
-            // in one pass.
-            $after  = preg_replace('/(?:\s*,)?(?:\s+and)+\s+/i', ', ', $after);
+            // Absorb an optional preceding comma and repeated joins so
+            // "Jane, and Kira" / "Jane and and Kira" / "Jane & and Kira"
+            // collapse to "Jane, Kira" in one pass. Global, so a mixed chain
+            // ("Ann and Bea & Cara") fully collapses in that same pass.
+            $after  = preg_replace('/(?:\s*,)?(?:\s+(?:and|&))+\s+/i', ', ', $after);
             return $before . $after;
         }
         return $fileName;
