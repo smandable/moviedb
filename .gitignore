@@ -55,6 +55,16 @@ Thumbs.db
 /server/drive_index.json
 /server/drive_index.json.*
 
+# Local one-off maintenance scripts, kept off the repo, and their artifacts:
+#   fix_scene_separators      retroactive scene-separator cleanup; its rules now
+#                             live in normalize_helpers.php, so the scan handles
+#                             new arrivals (plus its undo manifest)
+#   stage_scenes_without_cast moves cast-less " - Scene_N" files into a
+#                             subdirectory for a batch pass at the Add Cast tab
+/scripts/fix_scene_separators.php
+/scripts/stage_scenes_without_cast.php
+/server/scene_separator_renames.tsv
+
 # Generated: consolidation runtime artifacts (endpoint-spawned runs)
 /server/consolidate_progress.json
 /server/consolidate_progress.json.*
