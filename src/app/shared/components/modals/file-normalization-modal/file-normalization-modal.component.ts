@@ -31,6 +31,19 @@ const DANGLING_TAIL = /[ \t\n\r\0\x0B\-._]+$/;
 const SCENE_SPLIT = /^(.*?\bscene[\s._-]*\d{1,3})(?:\s*-\s*(.*))?$/i;
 
 /**
+ * Separators a cast list may arrive with — typed, pasted, or copied off a site.
+ * Kept as source text because the two call sites need different flags:
+ * tidyCastInput() splits on it, castSegmentStart() scans for the LAST match with
+ * a `g` twin. ONE rule, so the tidier and the autocomplete cannot drift on where
+ * a name ends — that drift is exactly what left an uncomma'd second name with no
+ * suggestions. The single deliberate exception is documented in
+ * castSegmentStart(): a word separator with nothing after it ("...,  And") is
+ * still being typed, so only the tidier treats it as a separator.
+ */
+const CAST_SEPARATOR_SRC = String.raw`\s*(?:,|&|;|\/|\n|\r|\band\b)\s*`;
+const CAST_SEPARATOR = new RegExp(CAST_SEPARATOR_SRC, 'i');
+
+/**
  * Search URLs for the two metadata sites Sean uses. These open in HIS browser —
  * a person browsing, which both sites allow. Nothing here is ever fetched by the
  * app or by an agent: iafd.com's robots.txt disallows ClaudeBot and friends
@@ -328,8 +341,8 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   get castFileGroups(): Array<{ title: string; files: NormalizedFile[] }> {
     const files = this.castFiles;
     const fingerprint = files
-      .map((f) => `${f.originalFileName} ${f.workingBaseName ?? ''} ${f.exclude ? 1 : 0}`)
-      .join('');
+      .map((f) => `${f.originalFileName}\u0000${f.workingBaseName ?? ''}\u0000${f.exclude ? 1 : 0}`)
+      .join('\u0001');
     if (this.castGroupsCache?.fingerprint === fingerprint) {
       return this.castGroupsCache.groups;
     }
@@ -375,8 +388,15 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   /** Known performer names, for the Add Cast autocomplete. */
   castNames: string[] = [];
 
-  /** Lowercased vocabulary for segmenting pasted runs of unseparated names. */
+  /**
+   * Lowercased vocabulary, used to find name boundaries in a run of unseparated
+   * names — both when tidying what was typed (segmentCastRun) and when deciding
+   * which part of it the user is still typing (castSegmentStart). Set lookups
+   * for whole names, plus a sorted copy for the "is anything still being typed
+   * here?" prefix test, because both run on every keystroke.
+   */
   private castNameSet = new Set<string>();
+  private castNamesSorted: string[] = [];
   private castNameMaxWords = 2;
 
   /**
@@ -439,16 +459,29 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Recompute the (small) suggestion list for the text being typed. Matches
-   * the segment after the last comma, but each option carries the full
-   * composed value ("Angel Long, Jane Wilde") because the browser filters
+   * Recompute the (small) suggestion list for the name being typed.
+   *
+   * The segment comes from castSegmentStart(), i.e. from the SAME notion of a
+   * name boundary tidyCastInput()/segmentCastRun() use — so "Angel Long Jane
+   * Wil" offers "Jane Wilde" even though no comma has been typed. Splitting on
+   * commas alone (what this used to do) made the whole run one unmatchable
+   * segment: the tidier had already understood the boundary well enough to put
+   * a comma in the New Filename preview, while the autocomplete offered nothing.
+   *
+   * Each option carries the full composed value because the browser filters
    * datalist options against the input's ENTIRE value — a bare "Jane Wilde"
-   * option would never surface while "Angel Long, Ja" is in the field.
+   * would never surface while "Angel Long, Ja" is in the field. The prefix is
+   * spliced back in VERBATIM and is never re-punctuated: the comma the tidier is
+   * about to insert is not in the field yet, so an option carrying one
+   * ("Angel Long, Jane Wilde") is neither a prefix nor a substring of the typed
+   * "Angel Long Jane Wil" and no filter rule would show it. Picking the raw
+   * option runs it back through setCast(), where tidyCastInput() adds the comma.
    */
   private updateCastSuggestions(text: string): void {
-    const parts = (text ?? '').split(',');
-    const segment = (parts.pop() ?? '').trim().toLowerCase();
-    const prefix = parts.length ? parts.map((p) => p.trim()).join(', ') + ', ' : '';
+    const raw = text ?? '';
+    const { start, glued } = this.castSegmentStart(raw);
+    const prefix = raw.slice(0, start);
+    const segment = raw.slice(start).trim().toLowerCase();
     if (segment.length < 2) {
       this.castSuggestions = [];
       return;
@@ -456,6 +489,23 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     const startsWith: string[] = [];
     const contains: string[] = [];
     for (const name of this.castNames) {
+      // On a glued boundary (no separator typed) only a multi-word name may be
+      // offered — the whole run has to survive TWO splitters, and one-word names
+      // are where they disagree:
+      //   * the TS tidier only segments a part of 4+ words, and segmentCastRun()
+      //     only matches names of 2+ words, so it leaves "Angel Long Belladonna"
+      //     whole and pair-GUESSES a 4-word run, writing a comma in the wrong
+      //     place ("Belladonna Isabella, De Laa");
+      //   * PHP (castDesquash) then re-splits a comma part of 3+ words that
+      //     segments cleanly into store names — which does rescue the 3-word
+      //     case, but it can only split parts, never re-join the tidier's bad
+      //     guess, and it never splits a TWO-word part at all.
+      // A measured sweep of 65k offers found 43 filenames that came out wrong
+      // once one-word names were allowed here. Type the comma and they are
+      // offered as usual, because then neither splitter has to find the seam.
+      if (glued && !name.includes(' ')) {
+        continue;
+      }
       const lower = name.toLowerCase();
       if (lower.startsWith(segment)) {
         startsWith.push(prefix + name);
@@ -470,6 +520,81 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Where the name currently being typed starts inside the raw text: past the
+   * last separator tidyCastInput() understands, then past any leading words that
+   * already resolve to known full names — the same boundaries segmentCastRun()
+   * splits on. `glued` reports that the second half did the work, i.e. no
+   * separator sits between the previous name and this one (which constrains what
+   * updateCastSuggestions() may offer).
+   *
+   * Deliberately narrower than the tidier: it walks only names the vocabulary
+   * confirms, never segmentCastRun()'s pair-guess fallback for unknown words.
+   * That is broader than "the first name must be known" — ANY unknown name stops
+   * the walk, and everything after it becomes one unmatchable segment, so
+   * "Angel Long, <new performer> Jane W" offers nothing either. Fewer
+   * completions than the tidier would split, never one it would leave un-split;
+   * typing a separator after the unknown name restores suggestions.
+   */
+  private castSegmentStart(text: string): { start: number; glued: boolean } {
+    let start = 0;
+    // A fresh regex each call: a shared /g/ one carries lastIndex between calls.
+    const separators = new RegExp(CAST_SEPARATOR_SRC, 'gi');
+    for (let match = separators.exec(text); match; match = separators.exec(text)) {
+      // A WORD separator with nothing after it may not be a separator at all —
+      // "Kortney Kane, And" is how "Andi Rose" starts. Leave it in the segment
+      // so it can still be completed; the next character settles which it is.
+      if (match.index + match[0].length === text.length && /\p{L}$/u.test(match[0])) {
+        break;
+      }
+      start = match.index + match[0].length;
+    }
+
+    const tokens = [...text.slice(start).matchAll(/\S+/g)];
+    const words = tokens.map((token) => token[0]);
+    let consumed = 0;
+    while (consumed < words.length) {
+      const take = this.knownNameLengthAt(words, consumed);
+      // Stop before the trailing word(s): those are what's being typed, not a
+      // finished name — a fully typed "Angel Long" must still suggest itself.
+      if (!take || consumed + take >= words.length) {
+        break;
+      }
+      // Stop too when a LONGER name starts with this one plus what follows:
+      // "Aurora Snow" is a name and so is "Aurora Snow Pack", so with "Aurora
+      // Snow Pac" in the field, consuming the short name would make "Pac" the
+      // segment and offer completions for it instead of the name being typed.
+      if (this.hasNameStartingWith(words.slice(consumed, consumed + take + 1).join(' '))) {
+        break;
+      }
+      consumed += take;
+    }
+
+    return consumed
+      ? { start: start + (tokens[consumed].index ?? 0), glued: true }
+      : { start, glued: false };
+  }
+
+  /**
+   * Is `prefix` the start of some known name? Binary search over the sorted
+   * vocabulary — a Set answers "is this a name", not "could this become one",
+   * and this runs inside the per-keystroke boundary walk.
+   */
+  private hasNameStartingWith(prefix: string): boolean {
+    const needle = prefix.toLowerCase();
+    let lo = 0;
+    let hi = this.castNamesSorted.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this.castNamesSorted[mid] < needle) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    return this.castNamesSorted[lo]?.startsWith(needle) ?? false;
+  }
+
+  /**
    * Cleans a pasted cast list into "Name, Name": collapses whitespace, accepts
    * the separators these sites use (&, "and", newlines, semicolons), and drops
    * wrapping punctuation. A part with no separators but 4+ words is a pasted
@@ -479,7 +604,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    */
   private tidyCastInput(raw: string): string {
     return (raw ?? '')
-      .split(/\s*(?:,|&|;|\/|\n|\r|\band\b)\s*/i)
+      .split(CAST_SEPARATOR)
       .map((part) => part.replace(/\s+/g, ' ').trim())
       .map((part) => part.replace(/^[-_.,;:|'"()[\]]+|[-_.,;:|'"()[\]]+$/g, '').trim())
       .filter((part) => /\p{L}/u.test(part))
@@ -501,13 +626,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     let i = 0;
     while (i < words.length) {
       const remaining = words.length - i;
-      let take = 0;
-      for (let len = Math.min(this.castNameMaxWords, remaining); len >= 2; len--) {
-        if (this.castNameSet.has(words.slice(i, i + len).join(' ').toLowerCase())) {
-          take = len;
-          break;
-        }
-      }
+      let take = this.knownNameLengthAt(words, i);
       if (!take) {
         if (remaining === 1 && out.length) {
           out[out.length - 1] += ` ${words[i]}`;
@@ -522,12 +641,33 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     return out;
   }
 
+  /**
+   * How many words starting at `i` form a known full name — greedy longest match
+   * against the vocabulary, so "anna claire clouds" wins over "anna claire".
+   * 0 when nothing matches.
+   *
+   * Two words is the floor: mid-run, a one-word entry can't be told apart from
+   * half of a two-word name ("Angel Long" would split at "Angel" if "Angel" were
+   * a name in its own right). Both the tidier and the autocomplete ask this one
+   * question, so they agree on where a name ends.
+   */
+  private knownNameLengthAt(words: string[], i: number): number {
+    const remaining = words.length - i;
+    for (let len = Math.min(this.castNameMaxWords, remaining); len >= 2; len--) {
+      if (this.castNameSet.has(words.slice(i, i + len).join(' ').toLowerCase())) {
+        return len;
+      }
+    }
+    return 0;
+  }
+
   /** Pull the autocomplete vocabulary, and feed newly-used names back into it. */
   private loadCastNames(add?: string[]): void {
     this.fileService.getCastNames(this.directory, add).subscribe({
       next: ({ names }) => {
         this.castNames = names ?? [];
         this.castNameSet = new Set(this.castNames.map((n) => n.toLowerCase()));
+        this.castNamesSorted = [...this.castNameSet].sort();
         this.castNameMaxWords = this.castNames.reduce(
           (max, n) => Math.max(max, n.split(' ').length),
           2,

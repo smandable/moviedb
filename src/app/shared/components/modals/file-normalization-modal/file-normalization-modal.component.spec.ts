@@ -486,6 +486,218 @@ describe('FileNormalizationModalComponent', () => {
       expect(component.castSuggestions).toEqual([]); // under 2 chars
     });
 
+    it('caps the suggestion list at 12, prefix matches before substring ones', fakeAsync(() => {
+      component.castNames = [
+        ...Array.from({ length: 14 }, (_, i) => `Jane Fictionelle ${i}`),
+        'Marisol Janeway', // a substring match, so it queues behind the 12
+      ];
+      const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
+      component.files = [file];
+      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+
+      component.setCast(file, 'jane');
+
+      expect(component.castSuggestions.length).toBe(12);
+      expect(component.castSuggestions[0]).toBe('Jane Fictionelle 0');
+      expect(component.castSuggestions).not.toContain('Marisol Janeway');
+      tick(250);
+    }));
+
+    // Regression: typing a second name WITHOUT a comma produced no suggestions
+    // at all, even though the New Filename preview already showed the comma.
+    // updateCastSuggestions() split on commas only, so "Angel Long Jane Wil" was
+    // one unmatchable segment, while tidyCastInput() had already segmented the
+    // same text on vocabulary boundaries. Two parsers, two answers.
+    describe('suggestions for a name typed without a separator', () => {
+      // "Angel Long" / "Jane Wilde" are the pair from the reported repro (both
+      // real store entries); everything else here is invented.
+      const vocabulary = [
+        'Angel Long',
+        'Jane Wilde',
+        'Marla Quintessa',
+        'Vex Harrowgate',
+        'Bly', // a one-word stage name — see the 4-word wrinkle below
+        'Andra Fell', // starts with the word "and", which is also a separator
+        'Rowan Vale', // and the longer name below starts with THIS one
+        'Rowan Vale Ashby',
+      ];
+      let file: NormalizedFile;
+
+      beforeEach(() => {
+        spyOn(fileService, 'getCastNames').and.returnValue(of({ names: vocabulary }));
+        spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+        // ngOnInit re-derives workingBaseName from originalFileName and loads
+        // the vocabulary (castNames AND the lowercased set the parsers share).
+        file = makeFile({ originalFileName: 'Ass Man - Scene_1.mp4' });
+        component.files = [file];
+        component.ngOnInit();
+      });
+
+      it('offers the second name as soon as two of its characters are typed', fakeAsync(() => {
+        component.setCast(file, 'Angel Long J');
+        expect(component.castSuggestions).toEqual([]); // one char so far
+
+        component.setCast(file, 'Angel Long Jane W');
+        expect(component.castSuggestions).toEqual(['Angel Long Jane Wilde']);
+
+        component.setCast(file, 'Angel Long Jane Wil');
+        expect(component.castSuggestions).toEqual(['Angel Long Jane Wilde']);
+        tick(250);
+      }));
+
+      it('builds the option from the raw text and lets the tidier add the comma', fakeAsync(() => {
+        component.setCast(file, 'Angel Long Jane Wil');
+        const [option] = component.castSuggestions;
+
+        // No comma in the option: the browser filters datalist options against
+        // the input's whole value, so it has to prefix-match what was typed.
+        expect(option).toBe('Angel Long Jane Wilde');
+        expect(option.toLowerCase().startsWith('angel long jane wil')).toBeTrue();
+
+        // Picking it runs back through setCast, and tidyCastInput puts the
+        // comma in — so the filename still ends up separated.
+        component.setCast(file, option);
+        expect(component.castOf(file)).toBe('Angel Long, Jane Wilde');
+        expect(file.workingBaseName).toBe(
+          'Ass Man - Scene_1 - Angel Long, Jane Wilde',
+        );
+        tick(250);
+      }));
+
+      it('finds the third name in an unseparated run', fakeAsync(() => {
+        component.setCast(file, 'Angel Long Jane Wilde Marla Q');
+        expect(component.castSuggestions).toEqual([
+          'Angel Long Jane Wilde Marla Quintessa',
+        ]);
+
+        component.setCast(file, 'Angel Long Jane Wilde Marla Quintessa');
+        expect(component.castOf(file)).toBe(
+          'Angel Long, Jane Wilde, Marla Quintessa',
+        );
+        tick(250);
+      }));
+
+      it('still matches after an explicit separator, reusing the raw spacing', fakeAsync(() => {
+        component.setCast(file, 'Angel Long, Jane W');
+        expect(component.castSuggestions).toEqual(['Angel Long, Jane Wilde']);
+
+        // No space after the comma: the prefix is spliced back verbatim, so the
+        // option still prefix-matches the field.
+        component.setCast(file, 'Angel Long,Jane W');
+        expect(component.castSuggestions).toEqual(['Angel Long,Jane Wilde']);
+
+        // "and" is a separator tidyCastInput understands, so it is one here too.
+        component.setCast(file, 'Angel Long and Vex H');
+        expect(component.castSuggestions).toEqual(['Angel Long and Vex Harrowgate']);
+        tick(250);
+      }));
+
+      it('keeps the two-character minimum for the new segment', fakeAsync(() => {
+        component.setCast(file, 'Angel Long V');
+        expect(component.castSuggestions).toEqual([]);
+
+        component.setCast(file, 'Angel Long Ve');
+        expect(component.castSuggestions).toEqual(['Angel Long Vex Harrowgate']);
+        tick(250);
+      }));
+
+      // Regression: the boundary walk read a finished name off the front of the
+      // name still being typed. "Rowan Vale" is a name AND the start of "Rowan
+      // Vale Ashby", so consuming the short one made "As" the segment and
+      // offered completions for that instead of the name in the field.
+      it('keeps a longer name that starts with a shorter one offerable', fakeAsync(() => {
+        component.setCast(file, 'Angel Long Rowan Vale As');
+        expect(component.castSuggestions).toEqual(['Angel Long Rowan Vale Ashby']);
+
+        // same one keystroke earlier, where both names are still candidates
+        component.setCast(file, 'Angel Long Rowan Val');
+        expect(component.castSuggestions).toEqual([
+          'Angel Long Rowan Vale',
+          'Angel Long Rowan Vale Ashby',
+        ]);
+
+        // the comma path had this right before and must not have moved
+        component.setCast(file, 'Angel Long, Rowan Vale As');
+        expect(component.castSuggestions).toEqual(['Angel Long, Rowan Vale Ashby']);
+
+        // once the longer name is complete, the NEXT name is found again
+        component.setCast(file, 'Angel Long Rowan Vale Ashby Jane W');
+        expect(component.castSuggestions).toEqual([
+          'Angel Long Rowan Vale Ashby Jane Wilde',
+        ]);
+        tick(250);
+      }));
+
+      // Regression: "and" is a separator, so a trailing "And" was treated as
+      // one and the segment came out empty — typing the first three letters of
+      // "Andra Fell" blanked the list for exactly that keystroke.
+      it('treats a trailing "and" as a name being typed, not a separator', fakeAsync(() => {
+        // (a two-letter segment also picks up substring matches, hence toContain)
+        component.setCast(file, 'Angel Long, An');
+        expect(component.castSuggestions).toContain('Angel Long, Andra Fell');
+
+        // this keystroke used to come back empty — "And" ate itself
+        component.setCast(file, 'Angel Long, And');
+        expect(component.castSuggestions).toContain('Angel Long, Andra Fell');
+
+        component.setCast(file, 'Angel Long, Andr');
+        expect(component.castSuggestions).toEqual(['Angel Long, Andra Fell']);
+
+        // and the same on a glued boundary
+        component.setCast(file, 'Angel Long And');
+        expect(component.castSuggestions).toEqual(['Angel Long Andra Fell']);
+
+        // with a space after it, it really is the separator again
+        component.setCast(file, 'Angel Long and Vex H');
+        expect(component.castSuggestions).toEqual(['Angel Long and Vex Harrowgate']);
+        tick(250);
+      }));
+
+      // The wrinkle, and it is NOT free: the TS tidier only segments a part of
+      // 4+ words and only matches names of 2+ words, so it leaves "Angel Long
+      // Bly" whole and pair-GUESSES longer runs. PHP (castDesquash) re-splits a
+      // 3+-word part that segments cleanly into store names, so the 3-word case
+      // does survive — but it can never re-join a wrong guess, and it never
+      // splits a two-word part. Allowing one-word names here produced wrong
+      // filenames in a measured sweep, so on a glued boundary they are withheld.
+      it('withholds a one-word name where the tidier would not split it', fakeAsync(() => {
+        component.setCast(file, 'Angel Long Bl');
+        expect(component.castSuggestions).toEqual([]);
+
+        // why: even fully typed, that run keeps no comma
+        component.setCast(file, 'Angel Long Bly');
+        expect(component.castOf(file)).toBe('Angel Long Bly');
+
+        // an explicit separator makes it a segment of its own again
+        component.setCast(file, 'Angel Long, Bl');
+        expect(component.castSuggestions).toEqual(['Angel Long, Bly']);
+        component.setCast(file, 'Angel Long, Bly');
+        expect(component.castOf(file)).toBe('Angel Long, Bly');
+        tick(250);
+      }));
+
+      // Deliberate divergence, the safe way round: the walk trusts only names
+      // the vocabulary confirms, never segmentCastRun's pair-guess fallback. An
+      // unknown name ANYWHERE — not just first — stops the walk, and everything
+      // after it is one unmatchable segment, so no suggestions (rather than
+      // wrong ones) until a separator is typed after it.
+      it('stays quiet around a name it does not know, wherever it sits', fakeAsync(() => {
+        component.setCast(file, 'Nadia Volkova Jane W');
+        expect(component.castSuggestions).toEqual([]);
+
+        // known name first, unknown one second: still nothing, even though the
+        // preview has already put a comma after "Angel Long"
+        component.setCast(file, 'Angel Long Nadia Volkova Jane W');
+        expect(component.castSuggestions).toEqual([]);
+        expect(component.castOf(file)).toBe('Angel Long, Nadia Volkova, Jane W');
+
+        // a separator after the unknown name is what brings them back
+        component.setCast(file, 'Nadia Volkova, Jane W');
+        expect(component.castSuggestions).toEqual(['Nadia Volkova, Jane Wilde']);
+        tick(250);
+      }));
+    });
+
     it('groups related scenes under one title with one lookup', () => {
       const s1 = makeFile({ workingBaseName: 'Ass Man - Scene_1', originalFileName: 'Ass Man - Scene_1.mp4', newFileName: '', needsNormalization: false });
       const s2 = makeFile({ workingBaseName: 'Ass Man - Scene_2', originalFileName: 'Ass Man - Scene_2.mp4', newFileName: '', needsNormalization: false });
