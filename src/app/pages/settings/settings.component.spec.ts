@@ -131,6 +131,26 @@ describe('SettingsComponent', () => {
 
     expect(component.castNames).toContain('New Person');
     expect(component.newName).toBe('');
+    expect(component.castStatus).toBe('Added “New Person”.');
+  });
+
+  it('says a name is already listed instead of claiming an add that kept the stored casing', () => {
+    // The server echoes the spelling the store KEPT — add is not authoritative
+    // about casing, rename is. Reporting 'Added “Anna Example”' beside a list
+    // still reading 'anna example' is the bug this covers.
+    flushInit({}, ['anna example', 'Zoe Example']);
+
+    component.newName = 'Anna Example';
+    component.addName();
+
+    const req = httpMock.expectOne(manageUrl);
+    req.flush({
+      names: ['anna example', 'Zoe Example'],
+      added: 'anna example',
+    });
+
+    expect(component.castStatus).toBe('Already listed as “anna example”.');
+    expect(component.castNames).toEqual(['anna example', 'Zoe Example']);
   });
 
   it('saves the default directory and reports unmounted volumes', () => {

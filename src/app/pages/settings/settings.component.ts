@@ -225,9 +225,20 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
     this.settingsService.addCastName(name).subscribe({
       next: ({ names, added }) => {
+        // The server echoes the spelling the store KEPT, which for a name that
+        // already existed in another casing is not the one just typed. Say so,
+        // rather than claiming an add that didn't happen — the differing casing
+        // on screen would otherwise read as a bug. (Rename is what recases.)
+        const alreadyListed =
+          !!added &&
+          this.castNames.some((n) => n.toLowerCase() === added.toLowerCase());
         this.castNames = names;
         this.newName = '';
-        this.castStatus = added ? `Added “${added}”.` : '';
+        this.castStatus = added
+          ? alreadyListed
+            ? `Already listed as “${added}”.`
+            : `Added “${added}”.`
+          : '';
         this.cdr.markForCheck();
       },
       error: (err: Error) => {
