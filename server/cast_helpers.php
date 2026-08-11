@@ -111,9 +111,18 @@ if (!function_exists('moviedb_load_cast_store')) {
     }
 }
 
-if (!function_exists('moviedb_save_cast_store')) {
-    /** Merge names into the store, case-insensitively deduped. Best effort. */
-    function moviedb_save_cast_store(array $names): array
+if (!function_exists('moviedb_merge_cast_names')) {
+    /**
+     * Dedupe a name list case-insensitively and sort it — the in-memory half of
+     * saving the store.
+     *
+     * FIRST occurrence wins, deliberately: this is the idempotent merge path
+     * (the harvester, and the modal feeding successful renames back in), where
+     * an incoming badly-cased duplicate must never overwrite an entry the store
+     * already holds. Explicit human edits that need to WIN on casing go through
+     * moviedb_rename_cast_name instead.
+     */
+    function moviedb_merge_cast_names(array $names): array
     {
         $byLower = [];
         foreach ($names as $name) {
@@ -124,11 +133,108 @@ if (!function_exists('moviedb_save_cast_store')) {
         }
         $merged = array_values($byLower);
         sort($merged, SORT_NATURAL | SORT_FLAG_CASE);
+        return $merged;
+    }
+}
+
+if (!function_exists('moviedb_save_cast_store')) {
+    /** Merge names into the store, case-insensitively deduped. Best effort. */
+    function moviedb_save_cast_store(array $names): array
+    {
+        $merged = moviedb_merge_cast_names($names);
         // A failed write just means autocomplete forgets — never fail the caller.
         @file_put_contents(
             MOVIEDB_CAST_STORE,
             json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
         return $merged;
+    }
+}
+
+if (!function_exists('moviedb_remove_name')) {
+    /** Drop every entry matching $target case-insensitively (the store's key). */
+    function moviedb_remove_name(array $names, string $target): array
+    {
+        $key = mb_strtolower($target);
+        return array_values(array_filter(
+            $names,
+            fn($n) => mb_strtolower($n) !== $key
+        ));
+    }
+}
+
+if (!function_exists('moviedb_stored_cast_name')) {
+    /**
+     * The spelling the list actually holds for $name, matched the store's way
+     * (case-insensitively); '' when the name isn't there. Endpoints echo this
+     * rather than what the user typed, so a status line can never claim a
+     * casing the store didn't take.
+     */
+    function moviedb_stored_cast_name(array $names, string $name): string
+    {
+        $key = mb_strtolower($name);
+        foreach ($names as $stored) {
+            if (mb_strtolower($stored) === $key) {
+                return $stored;
+            }
+        }
+        return '';
+    }
+}
+
+if (!function_exists('moviedb_add_cast_name')) {
+    /**
+     * Add one hand-typed name and return the list as the store will hold it.
+     *
+     * Deliberately NOT authoritative about casing — the opposite of
+     * moviedb_rename_cast_name. Add is a blind insert: the typist may not know
+     * the name is already stored, so an entry that already exists keeps its own
+     * spelling (first-wins, like the merge path) rather than being recased by a
+     * careless "deedee lynn". Changing the casing of a stored entry is what
+     * rename is for, where the user picked that exact entry out of the list.
+     *
+     * A $newRaw that cleans to '' adds nothing; the endpoint 400s on it first.
+     */
+    function moviedb_add_cast_name(array $names, string $newRaw): array
+    {
+        $clean = moviedb_clean_cast_name($newRaw);
+        if ($clean !== '') {
+            $names[] = $clean;
+        }
+        return moviedb_merge_cast_names($names);
+    }
+}
+
+if (!function_exists('moviedb_rename_cast_name')) {
+    /**
+     * Apply one explicit, human-made rename to a name list and return the list
+     * as the store will hold it (cleaned, deduped, sorted).
+     *
+     * A rename is AUTHORITATIVE ABOUT CASING — that is the whole difference from
+     * the merge path above. Any entry matching the NEW name case-insensitively
+     * is removed along with the old one, so the casing typed on the Settings
+     * page survives: with ["marla vex", "With Marla Vex"], renaming
+     * "With Marla Vex" -> "Marla Vex" leaves exactly one entry, "Marla Vex".
+     * (First-wins merging would have kept the lowercase one and silently thrown
+     * the typed casing away.) Fixing casing by renaming onto an entry is a
+     * supported edit, not an accident.
+     *
+     * Matching is case-insensitive on both ends. Renaming a name that is not in
+     * the list still adds the new name — long-standing behaviour, kept. An empty
+     * $old or a $newRaw that cleans to '' renames nothing (the endpoint rejects
+     * both with a 400 before it ever calls this), but still returns store shape:
+     * EVERY path out of here is deduped and sorted, so a caller can save the
+     * result without checking which path it came from.
+     */
+    function moviedb_rename_cast_name(array $names, string $old, string $newRaw): array
+    {
+        $clean = moviedb_clean_cast_name($newRaw);
+        if ($old === '' || $clean === '') {
+            return moviedb_merge_cast_names($names);
+        }
+        $names = moviedb_remove_name($names, $old);
+        $names = moviedb_remove_name($names, $clean);
+        $names[] = $clean;
+        return moviedb_merge_cast_names($names);
     }
 }

@@ -630,9 +630,23 @@ check(
     'Movie - Scene_1 - Vanity, Jane Fauxheart'
 );
 check(
+    'single-word store name segments in the tail too',
+    castDesquash('Movie - Scene_1 - Jane Fauxheart Vanity', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Vanity'
+);
+check(
     'two-word part is never split',
     castDesquash('Movie - Scene_1 - Kira Mock', array_merge($vocab, ['Kira', 'Mock'])),
     'Movie - Scene_1 - Kira Mock'
+);
+// Load-bearing for the Add Cast autocomplete: this pass only ever SPLITS a
+// part, so a comma the client put in the wrong place stays wrong. That is why
+// the modal will not offer a completion whose run the client-side tidier has to
+// guess at (see updateCastSuggestions in file-normalization-modal.component.ts).
+check(
+    'a comma in the wrong place is never re-joined',
+    castDesquash('Movie - Scene_1 - Vanity Jane, Fauxheart', $vocab),
+    'Movie - Scene_1 - Vanity Jane, Fauxheart'
 );
 check(
     'part that IS a store name is never split',
