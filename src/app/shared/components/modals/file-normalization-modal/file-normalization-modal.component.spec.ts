@@ -803,41 +803,31 @@ describe('FileNormalizationModalComponent', () => {
       expect(url).not.toContain('Scene');
     });
 
-    it('opens a lookup in its own window, not a tab', () => {
-      const open = spyOn(window, 'open').and.returnValue(null);
-      const iafd = component.lookupSites.find((s) => s.label === 'IAFD')!;
-      const event = new MouseEvent('click', { button: 0, cancelable: true });
+    it('leaves the lookup links to the browser, with noopener', () => {
+      // A plain anchor on purpose — see the comment in the template. Nothing
+      // may intercept the click: window.open can only produce a tab (no
+      // features) or a popup (features), never a normal window, and a popup
+      // has no tab strip, so links opened from it land back in the main window.
+      component.files = [
+        makeFile({
+          workingBaseName: 'Ass Man # 03 - Scene_1',
+          originalFileName: 'Ass Man # 03 - Scene_1.mp4',
+          newFileName: '',
+          needsNormalization: false,
+        }),
+      ];
+      component.activeTab = 'cast';
+      fixture.detectChanges();
 
-      component.openLookup(event, iafd, 'Ass Man');
-
-      expect(event.defaultPrevented).toBeTrue();
-      const [url, target, features] = open.calls.mostRecent().args;
-      expect(url).toContain('Ass%20Man');
-      expect(target).toBe('_blank');
-      // Non-empty features are what make it a window rather than a tab.
-      expect(features).toContain('popup=yes');
-      expect(features).toMatch(/width=\d+/);
-      expect(features).toContain('noopener');
-    });
-
-    it('leaves a modified click to the browser', () => {
-      const open = spyOn(window, 'open');
-      const iafd = component.lookupSites.find((s) => s.label === 'IAFD')!;
-
-      for (const init of [
-        { metaKey: true },
-        { ctrlKey: true },
-        { shiftKey: true },
-        { altKey: true },
-        { button: 1 },
-      ]) {
-        const event = new MouseEvent('click', { cancelable: true, ...init });
-        component.openLookup(event, iafd, 'Ass Man');
-        expect(event.defaultPrevented)
-          .withContext(JSON.stringify(init))
-          .toBeFalse();
+      const links: HTMLAnchorElement[] = Array.from(
+        fixture.nativeElement.querySelectorAll('a.lookup-link'),
+      );
+      expect(links.length).toBeGreaterThan(0);
+      for (const link of links) {
+        expect(link.target).toBe('_blank');
+        expect(link.rel).toBe('noopener noreferrer');
+        expect(link.href).toContain('Ass%20Man');
       }
-      expect(open).not.toHaveBeenCalled();
     });
 
     it('loads the cast vocabulary on init', () => {

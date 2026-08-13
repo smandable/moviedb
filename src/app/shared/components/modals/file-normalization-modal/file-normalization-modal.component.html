@@ -156,13 +156,19 @@
                 (change)="dismissGroup(group)"
               />
               <span class="cast-group-title">{{ group.title }}</span>
+              <!--
+                Plain anchors, deliberately. Page code can only open a tab
+                (window.open with no features) or a popup (with features) —
+                there is no way to ask for a normal window, and a popup has no
+                tab strip, so anything opened from it reappears in the main
+                window. Shift+click here gets a real window from the browser.
+              -->
               <span class="lookup-links">
                 <a
                   *ngFor="let site of lookupSites"
                   [href]="lookupUrlForTitle(site, group.title)"
                   target="_blank"
                   rel="noopener noreferrer"
-                  (click)="openLookup($event, site, group.title)"
                   class="lookup-link"
                   [title]="'Search ' + site.label + ' for “' + group.title + '”'"
                   >{{ site.label }}</a
