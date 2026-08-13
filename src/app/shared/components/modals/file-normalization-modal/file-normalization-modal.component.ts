@@ -64,6 +64,13 @@ const LOOKUP_SITES: ReadonlyArray<{ label: string; url: (q: string) => string }>
   },
 ];
 
+/**
+ * Window features for the lookup popups. The size is arbitrary but the list
+ * must not be empty: window.open opens a tab when given no features, and only
+ * treats the request as a popup when features ask for one.
+ */
+const LOOKUP_WINDOW_FEATURES = 'popup=yes,width=1100,height=900,noopener,noreferrer';
+
 export type NormalizationModalTab = 'normalize' | 'cast';
 
 @Component({
@@ -375,6 +382,37 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Open a lookup in its own window instead of a tab. target="_blank" alone
+   * always yields a tab — a separate window needs window.open WITH window
+   * features, which is what makes the browser treat it as a popup.
+   *
+   * The href stays on the anchor so copy-link and middle-click still work, and
+   * a modified click (cmd/ctrl/shift/alt, or any non-primary button) is handed
+   * back to the browser so those keep their usual meaning.
+   */
+  openLookup(
+    event: MouseEvent,
+    site: { url: (q: string) => string },
+    title: string,
+  ): void {
+    if (
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    window.open(
+      this.lookupUrlForTitle(site, title),
+      '_blank',
+      LOOKUP_WINDOW_FEATURES,
+    );
+  }
+
+  /**
    * Edit from the Add Cast tab. Feeds the same server-side normalize preview
    * as the other tab, so "Rename Files" applies cast names too.
    */
@@ -438,10 +476,6 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   lookupQuery(file: NormalizedFile): string {
     const base = this.sceneBaseOf(file).replace(/\s*-\s*Scene_\d{1,3}\s*$/i, '');
     return getBaseTitle(base) || base;
-  }
-
-  lookupUrl(site: { url: (q: string) => string }, file: NormalizedFile): string {
-    return site.url(this.lookupQuery(file));
   }
 
   /**

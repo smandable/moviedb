@@ -794,10 +794,50 @@ describe('FileNormalizationModalComponent', () => {
         workingBaseName: 'Ass Man # 03 - Scene_1 - Angel Long',
       });
 
+      // The template searches the GROUP title, and lookupQuery is what builds
+      // that title — so assert the same composition the app performs.
       expect(component.lookupQuery(file)).toBe('Ass Man');
       const iafd = component.lookupSites.find((s) => s.label === 'IAFD')!;
-      expect(component.lookupUrl(iafd, file)).toContain('Ass%20Man');
-      expect(component.lookupUrl(iafd, file)).not.toContain('Scene');
+      const url = component.lookupUrlForTitle(iafd, component.lookupQuery(file));
+      expect(url).toContain('Ass%20Man');
+      expect(url).not.toContain('Scene');
+    });
+
+    it('opens a lookup in its own window, not a tab', () => {
+      const open = spyOn(window, 'open').and.returnValue(null);
+      const iafd = component.lookupSites.find((s) => s.label === 'IAFD')!;
+      const event = new MouseEvent('click', { button: 0, cancelable: true });
+
+      component.openLookup(event, iafd, 'Ass Man');
+
+      expect(event.defaultPrevented).toBeTrue();
+      const [url, target, features] = open.calls.mostRecent().args;
+      expect(url).toContain('Ass%20Man');
+      expect(target).toBe('_blank');
+      // Non-empty features are what make it a window rather than a tab.
+      expect(features).toContain('popup=yes');
+      expect(features).toMatch(/width=\d+/);
+      expect(features).toContain('noopener');
+    });
+
+    it('leaves a modified click to the browser', () => {
+      const open = spyOn(window, 'open');
+      const iafd = component.lookupSites.find((s) => s.label === 'IAFD')!;
+
+      for (const init of [
+        { metaKey: true },
+        { ctrlKey: true },
+        { shiftKey: true },
+        { altKey: true },
+        { button: 1 },
+      ]) {
+        const event = new MouseEvent('click', { cancelable: true, ...init });
+        component.openLookup(event, iafd, 'Ass Man');
+        expect(event.defaultPrevented)
+          .withContext(JSON.stringify(init))
+          .toBeFalse();
+      }
+      expect(open).not.toHaveBeenCalled();
     });
 
     it('loads the cast vocabulary on init', () => {

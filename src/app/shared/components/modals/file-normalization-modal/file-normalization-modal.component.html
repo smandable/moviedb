@@ -162,6 +162,7 @@
                   [href]="lookupUrlForTitle(site, group.title)"
                   target="_blank"
                   rel="noopener noreferrer"
+                  (click)="openLookup($event, site, group.title)"
                   class="lookup-link"
                   [title]="'Search ' + site.label + ' for “' + group.title + '”'"
                   >{{ site.label }}</a
