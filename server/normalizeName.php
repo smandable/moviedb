@@ -15,9 +15,13 @@ $name = is_array($input) ? (string)($input['name'] ?? '') : '';
 // When the user has hand-edited the name, preserve their casing choices.
 $respectUserCasing = is_array($input) ? !empty($input['respectUserCasing']) : false;
 
+// When the user deliberately typed a period into the cast field, keep the
+// periods in the cast tail instead of sweeping them to spaces.
+$keepCastDots = is_array($input) ? !empty($input['keepCastDots']) : false;
+
 // Defensive cap — base names are short; avoid pathological regex input.
 if (function_exists('mb_substr') && mb_strlen($name) > 1000) {
     $name = mb_substr($name, 0, 1000);
 }
 
-echo json_encode(['normalized' => normalizeFileBaseName($name, $respectUserCasing)]);
+echo json_encode(['normalized' => normalizeFileBaseName($name, $respectUserCasing, $keepCastDots)]);

@@ -138,16 +138,19 @@ export class FileService {
    * the rename preview — same pipeline used by checkFileNamesToNormalize).
    * @param name The working base name (no extension).
    * @param respectUserCasing Preserve the user's casing when they've edited.
+   * @param keepCastDots Keep periods in the cast tail — set when the user
+   *   deliberately typed one, which the default sweep would remove.
    */
   normalizeName(
     name: string,
     respectUserCasing: boolean,
+    keepCastDots: boolean = false,
   ): Observable<{ normalized: string }> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http
       .post<{ normalized: string }>(
         this.normalizeNameUrl,
-        { name, respectUserCasing },
+        { name, respectUserCasing, keepCastDots },
         { headers },
       )
       .pipe(catchError(this.handleError));

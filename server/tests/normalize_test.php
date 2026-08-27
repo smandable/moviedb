@@ -717,5 +717,65 @@ check(
     'Movie - Scene_4K'
 );
 
+echo "deliberate cast periods (keepCastDots + store dot-restore):\n";
+check(
+    'default pipeline sweeps a cast period to a space',
+    normalizeFileBaseName('Movie - Scene_1 - Tessa St. Marrow'),
+    'Movie - Scene_1 - Tessa St Marrow'
+);
+check(
+    'a pasted period is swept even in user-edited (casing-respect) mode',
+    normalizeFileBaseName('Movie - Scene_1 - Tessa St. Marrow', true),
+    'Movie - Scene_1 - Tessa St Marrow'
+);
+check(
+    'keepCastDots preserves the cast tail\'s periods',
+    normalizeFileBaseName('Movie - Scene_1 - Tessa St. Marrow', true, true),
+    'Movie - Scene_1 - Tessa St. Marrow'
+);
+check(
+    'keepCastDots output is a fixed point under the flag',
+    normalizeFileBaseName(
+        normalizeFileBaseName('Movie - Scene_1 - Tessa St. Marrow', true, true),
+        true,
+        true
+    ),
+    'Movie - Scene_1 - Tessa St. Marrow'
+);
+check(
+    'keepCastDots still normalizes a dotted title before the scene marker',
+    normalizeFileBaseName('cool.movie.scene 1 - Tessa St. Marrow', true, true),
+    'Cool Movie - Scene_1 - Tessa St. Marrow'
+);
+check(
+    'keepCastDots without a scene marker changes nothing',
+    normalizeFileBaseName('Some.Dotted.Title', true, true),
+    'Some Dotted Title'
+);
+check(
+    'dot-restore adopts the dotted store spelling',
+    castDesquash(
+        'Movie - Scene_1 - Tessa St Marrow, Kira Mock',
+        array_merge($vocab, ['Tessa St. Marrow'])
+    ),
+    'Movie - Scene_1 - Tessa St. Marrow, Kira Mock'
+);
+check(
+    'dot-restore stands down when the dotless twin is itself stored',
+    castDesquash(
+        'Movie - Scene_1 - Tessa St Marrow',
+        array_merge($vocab, ['Tessa St. Marrow', 'Tessa St Marrow'])
+    ),
+    'Movie - Scene_1 - Tessa St Marrow'
+);
+check(
+    'a dotted-release store leftover is never a restore target',
+    castDesquash(
+        'Movie - Scene_1 - Anvi Amelia',
+        array_merge($vocab, ['anvi.amelia'])
+    ),
+    'Movie - Scene_1 - Anvi Amelia'
+);
+
 echo "\n$checks checks, $failures failure(s)\n";
 exit($failures === 0 ? 0 : 1);

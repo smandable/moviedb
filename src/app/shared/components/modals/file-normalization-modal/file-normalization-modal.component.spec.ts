@@ -76,7 +76,7 @@ describe('FileNormalizationModalComponent', () => {
 
       tick(250);
 
-      expect(spy).toHaveBeenCalledWith('the matrix', true);
+      expect(spy).toHaveBeenCalledWith('the matrix', true, false);
       expect(file.needsNormalization).toBeTrue();
       expect(file.newFileName).toBe('The Matrix.mp4');
     }));
@@ -779,6 +779,62 @@ describe('FileNormalizationModalComponent', () => {
         component.setCast(file, 'Nadia Volkova, Jane W');
         expect(component.castSuggestions).toEqual(['Nadia Volkova, Jane Wilde']);
         tick(250);
+      }));
+    });
+
+    // A pasted period is normalized away as usual; one the user TYPES (a
+    // small edit that raises the period count) is deliberate, so the preview
+    // request asks the server to keep the cast tail's periods.
+    describe('deliberate periods in cast names', () => {
+      let spy: jasmine.Spy;
+      let file: NormalizedFile;
+
+      beforeEach(() => {
+        spy = spyOn(fileService, 'normalizeName').and.returnValue(
+          of({ normalized: 'x' }),
+        );
+        file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
+        component.files = [file];
+      });
+
+      it('does not keep periods for a wholesale paste', fakeAsync(() => {
+        component.setCast(file, 'Wren St. Cardew');
+        tick(250);
+
+        expect(spy.calls.mostRecent().args).toEqual([
+          'Ass Man - Scene_1 - Wren St. Cardew',
+          true,
+          false,
+        ]);
+      }));
+
+      it('keeps periods once one is typed, until none remain', fakeAsync(() => {
+        component.setCast(file, 'Wren St');
+        tick(250);
+        expect(spy.calls.mostRecent().args[2]).toBeFalse();
+
+        component.setCast(file, 'Wren St.');
+        tick(250);
+        expect(spy.calls.mostRecent().args[2]).toBeTrue();
+
+        // Later keystrokes keep the intent…
+        component.setCast(file, 'Wren St. Cardew');
+        tick(250);
+        expect(spy.calls.mostRecent().args[2]).toBeTrue();
+
+        // …and removing every period withdraws it.
+        component.setCast(file, 'Wren Cardew');
+        tick(250);
+        expect(spy.calls.mostRecent().args[2]).toBeFalse();
+      }));
+
+      it('a replacement paste with more periods does not count as typing one', fakeAsync(() => {
+        component.setCast(file, 'Wren St');
+        tick(250);
+        component.setCast(file, 'Vex J. Marrow, Wren St');
+        tick(250);
+
+        expect(spy.calls.mostRecent().args[2]).toBeFalse();
       }));
     });
 

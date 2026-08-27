@@ -108,6 +108,16 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    */
   private castEdited = new Set<NormalizedFile>();
 
+  /**
+   * Rows whose cast field received a DELIBERATE period: a small edit (at most
+   * one character net) that raised the period count — typing "." after "St",
+   * as opposed to pasting "Destiny St. Claire" wholesale. Normalization
+   * strips a pasted period as usual, but a typed one is intent, so the
+   * preview request asks the server to keep the cast tail's periods
+   * (keepCastDots). Cleared when the cast no longer contains any period.
+   */
+  private castDotsTyped = new Set<NormalizedFile>();
+
   private destroyed = false;
 
   /** The row whose name input currently has focus, if any. */
@@ -226,7 +236,9 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     const originalBase = this.stripExtension(file.originalFileName);
     const workingBase = (file.workingBaseName ?? originalBase).trim();
 
-    this.fileService.normalizeName(workingBase, !!file.userEdited).subscribe({
+    this.fileService
+      .normalizeName(workingBase, !!file.userEdited, this.castDotsTyped.has(file))
+      .subscribe({
       next: ({ normalized }) => {
         // Ignore stale responses if the user kept typing.
         if ((file.workingBaseName ?? originalBase).trim() !== workingBase) {
@@ -526,6 +538,15 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * here, then flow through the same normalize preview as everything else.
    */
   setCast(file: NormalizedFile, cast: string): void {
+    const previous = this.castInputValue(file);
+    const previousDots = (previous.match(/\./g) ?? []).length;
+    const nextDots = (cast.match(/\./g) ?? []).length;
+    if (nextDots > previousDots && cast.length <= previous.length + 1) {
+      this.castDotsTyped.add(file);
+    } else if (nextDots === 0) {
+      this.castDotsTyped.delete(file);
+    }
+
     this.castDrafts.set(file, cast);
     this.updateCastSuggestions(cast);
     const tidied = this.tidyCastInput(cast);

@@ -17,8 +17,32 @@ if (!function_exists('stripTitleVariantSuffixes')) {
 }
 
 if (!function_exists('normalizeFileBaseName')) {
-    function normalizeFileBaseName(string $base, bool $respectUserCasing = false): string
+    function normalizeFileBaseName(string $base, bool $respectUserCasing = false, bool $keepCastDots = false): string
     {
+        // A period the user deliberately typed into the cast field must
+        // survive basicFunctions' periods→spaces sweep ("Destiny St.
+        // Claire"). Only the tail after the scene marker is protected — a
+        // dotted TITLE still normalizes — and the dots ride the pipeline as
+        // a letters-only marker so every other stage treats them as part of
+        // the word. The marker also makes the word mixed-case, so titleCase
+        // leaves the user's casing alone (the flag only rides user edits).
+        $dotMarker = 'MDBCASTDOTMARKER';
+        $dotsProtected = false;
+        if ($keepCastDots) {
+            $base = preg_replace_callback(
+                '/^(.*?\bscene[\s._\-]*\d{1,3})(.*)$/i',
+                function ($m) use ($dotMarker, &$dotsProtected) {
+                    if (strpos($m[2], '.') === false) {
+                        return $m[0];
+                    }
+                    $dotsProtected = true;
+                    return $m[1] . str_replace('.', $dotMarker, $m[2]);
+                },
+                $base,
+                1
+            );
+        }
+
         $base = basicFunctions($base);
         $base = titleCase($base, $respectUserCasing);
         $base = cleanupFunctions($base);
@@ -38,6 +62,9 @@ if (!function_exists('normalizeFileBaseName')) {
         // "Brazzers"), and the output must be a fixed point of the pipeline.
         $base = titleCase($base, $respectUserCasing);
         $base = finalCleanup($base);
+        if ($dotsProtected) {
+            $base = str_replace($dotMarker, '.', $base);
+        }
         return $base;
     }
 }
@@ -452,6 +479,13 @@ if (!function_exists('moviedb_cast_squash_map')) {
      *       null (ambiguous, never rewritten)
      *   [1] known set: every full name and every individual word of a name,
      *       lowercased — tokens found here are already valid and left alone
+     *   [3] dot-restore map: "katie st ives" => "Katie St. Ives" — store
+     *       names whose periods basicFunctions' periods→spaces sweep would
+     *       remove, keyed by that dotless form. Abbreviation-shaped names
+     *       only (every dot ends a 1-2 letter word), so a dotted-release
+     *       leftover in the store ("anja.amelia") can never become a restore
+     *       target; ambiguous keys (two dotted spellings, or a dotless twin
+     *       already in the store) map to null and are never rewritten.
      */
     function moviedb_cast_squash_map(?array $vocab = null): array
     {
@@ -468,6 +502,7 @@ if (!function_exists('moviedb_cast_squash_map')) {
         $squash = [];
         $known = [];
         $fullNames = [];
+        $dotRestore = [];
         foreach ($vocab as $name) {
             if (!is_string($name) || $name === '') {
                 continue;
@@ -480,6 +515,21 @@ if (!function_exists('moviedb_cast_squash_map')) {
                     $known[$word] = true;
                 }
             }
+            if (strpos($name, '.') !== false) {
+                preg_match_all('/(\p{L}*)\./u', $name, $runs);
+                $abbrevOnly = true;
+                foreach ($runs[1] as $run) {
+                    $len = mb_strlen($run);
+                    if ($len < 1 || $len > 2) {
+                        $abbrevOnly = false;
+                        break;
+                    }
+                }
+                if ($abbrevOnly) {
+                    $dotKey = trim(preg_replace('/\s+/', ' ', str_replace('.', ' ', $lower)));
+                    $dotRestore[$dotKey] = array_key_exists($dotKey, $dotRestore) ? null : $name;
+                }
+            }
             if (strpos($name, ' ') === false) {
                 continue; // a squash fix must be able to add a space
             }
@@ -487,7 +537,15 @@ if (!function_exists('moviedb_cast_squash_map')) {
             $squash[$key] = array_key_exists($key, $squash) ? null : $name;
         }
 
-        $result = [$squash, $known, $fullNames];
+        // A dotless spelling that is itself a store entry makes its dotted
+        // twin ambiguous — leave both alone rather than pick a side.
+        foreach ($dotRestore as $dotKey => $canonical) {
+            if ($canonical !== null && isset($fullNames[$dotKey])) {
+                $dotRestore[$dotKey] = null;
+            }
+        }
+
+        $result = [$squash, $known, $fullNames, $dotRestore];
         if ($useStore) {
             $cached = $result;
         }
@@ -530,7 +588,7 @@ if (!function_exists('castDesquash')) {
      */
     function castDesquash(string $fileName, ?array $vocab = null): string
     {
-        [$squashMap, $known, $fullNames] = moviedb_cast_squash_map($vocab);
+        [$squashMap, $known, $fullNames, $dotRestore] = moviedb_cast_squash_map($vocab);
         if (!$squashMap && !$fullNames) {
             return $fileName;
         }
@@ -583,7 +641,20 @@ if (!function_exists('castDesquash')) {
         $parts = array_values(array_filter($parts, fn($p) => trim($p) !== ''));
         foreach ($parts as $i => $part) {
             $part = trim($part);
-            if ($part === '' || isset($fullNames[mb_strtolower($part)])) {
+            if ($part === '') {
+                continue;
+            }
+            $partKey = mb_strtolower($part);
+            // Store spelling wins for a name whose periods the pipeline
+            // removed ("Katie St Ives" → "Katie St. Ives") — the same
+            // authority the store already has over squashed spellings. This
+            // also makes a deliberately dotted rename a fixed point of later
+            // scans, once the rename feedback has stored the name.
+            if (!empty($dotRestore[$partKey])) {
+                $parts[$i] = $dotRestore[$partKey];
+                continue;
+            }
+            if (isset($fullNames[$partKey])) {
                 continue;
             }
             $words = explode(' ', $part);
