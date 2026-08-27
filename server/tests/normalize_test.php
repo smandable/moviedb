@@ -753,6 +753,20 @@ check(
     'Some Dotted Title'
 );
 check(
+    'keepCastDots preserves a trailing period (final initial)',
+    normalizeFileBaseName('Movie - Scene_1 - Wren J.', true, true),
+    'Movie - Scene_1 - Wren J.'
+);
+check(
+    'trailing-period output is a fixed point under the flag',
+    normalizeFileBaseName(
+        normalizeFileBaseName('Movie - Scene_1 - Wren J.', true, true),
+        true,
+        true
+    ),
+    'Movie - Scene_1 - Wren J.'
+);
+check(
     'dot-restore adopts the dotted store spelling',
     castDesquash(
         'Movie - Scene_1 - Tessa St Marrow, Kira Mock',

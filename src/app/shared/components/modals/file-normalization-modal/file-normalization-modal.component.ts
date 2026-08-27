@@ -549,7 +549,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
     this.castDrafts.set(file, cast);
     this.updateCastSuggestions(cast);
-    const tidied = this.tidyCastInput(cast);
+    const tidied = this.tidyCastInput(cast, this.castDotsTyped.has(file));
     const base = this.sceneBaseOf(file);
     file.workingBaseName = tidied ? `${base} - ${tidied}` : base;
     this.onCastNameChange(file);
@@ -698,12 +698,23 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * run of unseparated names ("angel long paige owens") and gets segmented.
    * Deliberately does NOT title-case — the PHP pipeline owns casing, same as
    * every other name in this modal.
+   *
+   * keepTrailingPeriod: a name can END in a deliberate period ("Kylie G."),
+   * which is indistinguishable from pasted junk ("Angel Long.") — so the
+   * trailing period survives only when the row's periods are known to be
+   * typed (castDotsTyped). Interior periods always survive the tidier;
+   * whether they reach the FILENAME is the server's keepCastDots call.
    */
-  private tidyCastInput(raw: string): string {
+  private tidyCastInput(raw: string, keepTrailingPeriod = false): string {
     return (raw ?? '')
       .split(CAST_SEPARATOR)
       .map((part) => part.replace(/\s+/g, ' ').trim())
-      .map((part) => part.replace(/^[-_.,;:|'"()[\]]+|[-_.,;:|'"()[\]]+$/g, '').trim())
+      .map((part) =>
+        part
+          .replace(/^[-_.,;:|'"()[\]]+/, '')
+          .replace(keepTrailingPeriod ? /[-_,;:|'"()[\]]+$/ : /[-_.,;:|'"()[\]]+$/, '')
+          .trim(),
+      )
       .filter((part) => /\p{L}/u.test(part))
       .flatMap((part) => {
         const words = part.split(' ');

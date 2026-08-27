@@ -54,6 +54,14 @@ check('clean: collapses whitespace', moviedb_clean_cast_name('  Angel   Long '),
 check('clean: strips wrapping punctuation', moviedb_clean_cast_name('(Lisa Ann),'), 'Lisa Ann');
 check('clean: rejects letterless input', moviedb_clean_cast_name('1080 - 720'), '');
 check('clean: rejects empty', moviedb_clean_cast_name('   '), '');
+// A trailing period stays only on a 1-2 letter final word (a final initial);
+// on a full word it is pasted-sentence junk. Interior periods always survive.
+check('clean: keeps the period of a final initial', moviedb_clean_cast_name('Kylie G.'), 'Kylie G.');
+check('clean: keeps the period behind trailing junk', moviedb_clean_cast_name('Kylie G.,'), 'Kylie G.');
+check('clean: two-letter abbreviation keeps its period', moviedb_clean_cast_name('Wren St.'), 'Wren St.');
+check('clean: full-word trailing period is junk', moviedb_clean_cast_name('Angel Long.'), 'Angel Long');
+check('clean: interior period untouched', moviedb_clean_cast_name('Sami St. Clair'), 'Sami St. Clair');
+check('clean: no period appears from nowhere', moviedb_clean_cast_name('Kylie G'), 'Kylie G');
 
 // --- moviedb_split_cast_tail -------------------------------------------------
 check('split: comma', moviedb_split_cast_tail('Angel Long, Paige Owens'),

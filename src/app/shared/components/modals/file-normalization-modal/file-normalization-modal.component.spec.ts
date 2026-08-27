@@ -828,6 +828,33 @@ describe('FileNormalizationModalComponent', () => {
         expect(spy.calls.mostRecent().args[2]).toBeFalse();
       }));
 
+      // Regression: a TRAILING period ("Kylie G.") was tidied off as wrapping
+      // punctuation before the server ever saw it — the preview stayed
+      // dotless and blur snapped the input back to the dotless name.
+      it('keeps a typed trailing period through tidy, preview, and blur', fakeAsync(() => {
+        component.setCast(file, 'Wren J');
+        tick(250);
+        component.setCast(file, 'Wren J.');
+        tick(250);
+
+        expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Wren J.');
+        expect(spy.calls.mostRecent().args).toEqual([
+          'Ass Man - Scene_1 - Wren J.',
+          true,
+          true,
+        ]);
+
+        component.onNameBlur(file);
+        expect(component.castInputValue(file)).toBe('Wren J.');
+      }));
+
+      it('still strips a pasted trailing period', fakeAsync(() => {
+        component.setCast(file, 'Wren J.');
+        tick(250);
+
+        expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Wren J');
+      }));
+
       it('a replacement paste with more periods does not count as typing one', fakeAsync(() => {
         component.setCast(file, 'Wren St');
         tick(250);

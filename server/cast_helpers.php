@@ -67,8 +67,18 @@ if (!function_exists('moviedb_clean_cast_name')) {
     function moviedb_clean_cast_name(string $name): string
     {
         // Collapse whitespace, drop wrapping punctuation the paste may carry.
-        $name = preg_replace('/\s+/u', ' ', trim($name));
-        $name = trim($name, " \t\n\r\0\x0B-_.,;:|/\\\"'()[]");
+        $collapsed = preg_replace('/\s+/u', ' ', trim($name));
+        $name = trim($collapsed, " \t\n\r\0\x0B-_.,;:|/\\\"'()[]");
+        // A trailing period is edge junk on a pasted sentence ("Angel Long.")
+        // but part of the name on a final initial ("Kylie G."). Keep it only
+        // in the abbreviation shape castDesquash's dot-restore trusts — a
+        // 1-2 letter final word that the raw text really ended with a period
+        // after (possibly followed by other junk the trim removed).
+        if ($name !== ''
+            && preg_match('/(?:^|\s)\p{L}{1,2}$/u', $name)
+            && preg_match('/\p{L}\.[^\p{L}]*$/u', $collapsed)) {
+            $name .= '.';
+        }
         // Fold script-lookalike letters before dedup, so "Аria Lee" (Cyrillic
         // А) and "Aria Lee" cannot coexist as distinct store entries.
         $name = moviedb_fold_homoglyphs($name);
