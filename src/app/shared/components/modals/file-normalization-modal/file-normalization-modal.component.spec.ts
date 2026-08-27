@@ -887,6 +887,58 @@ describe('FileNormalizationModalComponent', () => {
       expect(url).not.toContain('Scene');
     });
 
+    describe('tabbing between cast fields', () => {
+      function renderCastRows(): HTMLInputElement[] {
+        component.files = [
+          makeFile({ workingBaseName: 'Ass Man - Scene_1', originalFileName: 'Ass Man - Scene_1.mp4', newFileName: '', needsNormalization: false }),
+          makeFile({ workingBaseName: 'Ass Man - Scene_2', originalFileName: 'Ass Man - Scene_2.mp4', newFileName: '', needsNormalization: false }),
+          makeFile({ workingBaseName: 'Anal Massage - Scene_1', originalFileName: 'Anal Massage - Scene_1.mp4', newFileName: '', needsNormalization: false }),
+        ];
+        component.activeTab = 'cast';
+        fixture.detectChanges();
+        return Array.from(
+          fixture.nativeElement.querySelectorAll('input.cast-input'),
+        );
+      }
+
+      it('tab skips the working-name box and lands on the next cast field', () => {
+        const inputs = renderCastRows();
+        expect(inputs.length).toBe(3);
+        inputs[0].focus();
+
+        const event = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true, bubbles: true });
+        inputs[0].dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBeTrue();
+        expect(document.activeElement).toBe(inputs[1]);
+      });
+
+      it('shift+tab goes back to the previous cast field', () => {
+        const inputs = renderCastRows();
+        inputs[2].focus();
+
+        const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, cancelable: true, bubbles: true });
+        inputs[2].dispatchEvent(event);
+
+        expect(event.defaultPrevented).toBeTrue();
+        expect(document.activeElement).toBe(inputs[1]);
+      });
+
+      // Focus must never be trapped in the table: at either end the browser's
+      // own tab order takes over so the footer buttons stay reachable.
+      it('does not trap focus at either end of the list', () => {
+        const inputs = renderCastRows();
+
+        const last = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true, bubbles: true });
+        inputs[2].dispatchEvent(last);
+        expect(last.defaultPrevented).toBeFalse();
+
+        const first = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, cancelable: true, bubbles: true });
+        inputs[0].dispatchEvent(first);
+        expect(first.defaultPrevented).toBeFalse();
+      });
+    });
+
     it('leaves the lookup links to the browser, with noopener', () => {
       // A plain anchor on purpose — see the comment in the template. Nothing
       // may intercept the click: window.open can only produce a tab (no

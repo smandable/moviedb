@@ -207,6 +207,8 @@
                 (ngModelChange)="setCast(file, $event)"
                 (focus)="onNameFocus(file)"
                 (blur)="onNameBlur(file)"
+                (keydown.tab)="focusAdjacentCastInput($event, 1)"
+                (keydown.shift.tab)="focusAdjacentCastInput($event, -1)"
               />
             </td>
 

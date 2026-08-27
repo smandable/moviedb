@@ -1,6 +1,7 @@
 import {
   ChangeDetectorRef,
   Component,
+  ElementRef,
   Input,
   OnInit,
   OnDestroy,
@@ -122,7 +123,35 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     public activeModal: NgbActiveModal,
     private fileService: FileService,
     private cdr: ChangeDetectorRef,
+    private host: ElementRef<HTMLElement>,
   ) {}
+
+  /**
+   * Tab steps between cast fields, skipping the working-name box and the group
+   * header controls sitting between them: the Add Cast tab is worked one cast
+   * name after another, and stopping at everything in between doubles the
+   * keystrokes.
+   *
+   * The fields are read from the DOM on each press rather than cached, so rows
+   * appearing or being dismissed can't leave a stale list. At either end the
+   * default takes over — Tab still leaves the table, so focus is never trapped.
+   */
+  focusAdjacentCastInput(event: Event, direction: 1 | -1): void {
+    const inputs = Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLInputElement>(
+        'input.cast-input',
+      ),
+    );
+    const index = inputs.indexOf(event.target as HTMLInputElement);
+    const next = index === -1 ? undefined : inputs[index + direction];
+    if (!next) {
+      return;
+    }
+    event.preventDefault();
+    next.focus();
+    // Match what tabbing into a field normally does.
+    next.select();
+  }
 
   ngOnInit(): void {
     this.files.forEach((f) => {
