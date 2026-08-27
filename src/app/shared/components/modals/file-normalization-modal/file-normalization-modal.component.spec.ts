@@ -375,6 +375,40 @@ describe('FileNormalizationModalComponent', () => {
     }));
   });
 
+  describe('scene-number ordering', () => {
+    // Regression: plain localeCompare is lexicographic, so Scene_10 sorted
+    // between Scene_1 and Scene_2. Digit runs must compare as numbers.
+    const scene = (n: number) =>
+      makeFile({
+        originalFileName: `Sample Reel # 02 - Scene_${n}.mp4`,
+        newFileName: '',
+        needsNormalization: false,
+      });
+
+    it('orders Scene_10 last on the normalize tab', () => {
+      component.files = [scene(10), scene(1), scene(9), scene(2)];
+
+      component.ngOnInit();
+
+      expect(component.files.map((f) => f.workingBaseName)).toEqual([
+        'Sample Reel # 02 - Scene_1',
+        'Sample Reel # 02 - Scene_2',
+        'Sample Reel # 02 - Scene_9',
+        'Sample Reel # 02 - Scene_10',
+      ]);
+    });
+
+    it('orders Scene_10 last in the Add Cast list', () => {
+      component.files = [scene(10), scene(2), scene(1)];
+
+      expect(component.castFiles.map((f) => f.originalFileName)).toEqual([
+        'Sample Reel # 02 - Scene_1.mp4',
+        'Sample Reel # 02 - Scene_2.mp4',
+        'Sample Reel # 02 - Scene_10.mp4',
+      ]);
+    });
+  });
+
   describe('group dismissal', () => {
     const sceneFile = (base: string) =>
       makeFile({

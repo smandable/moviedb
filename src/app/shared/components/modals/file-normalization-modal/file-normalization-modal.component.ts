@@ -29,6 +29,14 @@ const DANGLING_TAIL = /[ \t\n\r\0\x0B\-._]+$/;
 const MAX_FILENAME_BYTES = 255;
 const UTF8 = new TextEncoder();
 
+// How every file list in this modal is ordered. `numeric` compares digit runs
+// as numbers, so Scene_10 sorts after Scene_9, not between Scene_1 and
+// Scene_2.
+const NAME_ORDER = new Intl.Collator(undefined, {
+  sensitivity: 'base',
+  numeric: true,
+});
+
 // Splits a base name into everything up to and including the scene number, and
 // whatever cast follows it: "Ass Man - Scene_1 - Angel Long" -> both halves.
 // Accepts the raw spellings too ("scene 1", "scene.2") — before the normalize
@@ -131,10 +139,9 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
     // Sort ascending by the name we’re going to rename TO (or working name)
     this.files.sort((a, b) =>
-      (a.newFileName || a.workingBaseName || '').localeCompare(
+      NAME_ORDER.compare(
+        a.newFileName || a.workingBaseName || '',
         b.newFileName || b.workingBaseName || '',
-        undefined,
-        { sensitivity: 'base' },
       ),
     );
   }
@@ -314,11 +321,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
             endsWithSceneNumber(this.effectiveBaseName(file))) &&
           !this.dismissedTitles.has(this.lookupQuery(file).toLowerCase()),
       )
-      .sort((a, b) =>
-        a.originalFileName.localeCompare(b.originalFileName, undefined, {
-          sensitivity: 'base',
-        }),
-      );
+      .sort((a, b) => NAME_ORDER.compare(a.originalFileName, b.originalFileName));
   }
 
   /**
