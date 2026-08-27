@@ -966,6 +966,54 @@ describe('FileNormalizationModalComponent', () => {
       }
     });
 
+    describe('copy title button', () => {
+      function renderHeaderButton(): HTMLButtonElement {
+        component.files = [
+          makeFile({
+            workingBaseName: 'Ass Man # 03 - Scene_1',
+            originalFileName: 'Ass Man # 03 - Scene_1.mp4',
+            newFileName: '',
+            needsNormalization: false,
+          }),
+        ];
+        component.activeTab = 'cast';
+        fixture.detectChanges();
+        return fixture.nativeElement.querySelector('button.copy-title');
+      }
+
+      it('copies the group title and confirms until the timeout', fakeAsync(() => {
+        const write = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+        const button = renderHeaderButton();
+        expect(button.textContent!.trim()).toBe('Copy');
+
+        button.click();
+        tick(); // resolve the clipboard promise
+        fixture.detectChanges();
+
+        expect(write).toHaveBeenCalledWith('Ass Man');
+        expect(button.textContent).toContain('Copied');
+        expect(button.classList).toContain('copied');
+
+        tick(1500);
+        fixture.detectChanges();
+        expect(button.textContent!.trim()).toBe('Copy');
+        expect(button.classList).not.toContain('copied');
+      }));
+
+      it('keeps the plain label when the clipboard write fails', fakeAsync(() => {
+        spyOn(navigator.clipboard, 'writeText').and.rejectWith(new Error('denied'));
+        spyOn(console, 'error');
+        const button = renderHeaderButton();
+
+        button.click();
+        tick();
+        fixture.detectChanges();
+
+        expect(button.textContent!.trim()).toBe('Copy');
+        expect(button.classList).not.toContain('copied');
+      }));
+    });
+
     it('loads the cast vocabulary on init', () => {
       const spy = spyOn(fileService, 'getCastNames').and.returnValue(
         of({ names: ['Angel Long', 'Jane Wilde'] }),

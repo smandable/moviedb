@@ -88,6 +88,24 @@
     background-color: #0d6efd;
     color: #fff;
   }
+
+  // The copy control sits with the lookup links and dresses like them; it
+  // just needs the button chrome stripped.
+  button.copy-title {
+    background: none;
+    font-family: inherit;
+    font-weight: inherit; // buttons default to 400; the links inherit the header's 600
+    cursor: pointer;
+  }
+
+  // Feedback that the title landed on the clipboard; wins over :hover so the
+  // check stays green under the pointer.
+  button.copy-title.copied,
+  button.copy-title.copied:hover {
+    background-color: #198754;
+    border-color: #198754;
+    color: #fff;
+  }
   // Small checkbox column
   .normalize-table col.col-check {
     width: 40px;

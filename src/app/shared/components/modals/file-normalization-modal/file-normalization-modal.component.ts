@@ -179,6 +179,9 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     this.destroyed = true;
     this.previewTimers.forEach((t) => clearTimeout(t));
     this.previewTimers.clear();
+    if (this.copiedTimer) {
+      clearTimeout(this.copiedTimer);
+    }
   }
 
   /**
@@ -421,6 +424,33 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
   lookupUrlForTitle(site: { url: (q: string) => string }, title: string): string {
     return site.url(title);
+  }
+
+  /** Title most recently copied to the clipboard, while its "✓" shows. */
+  copiedTitle: string | null = null;
+  private copiedTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Copies a group's title for pasting into a search box elsewhere. The
+   * button flips to a check for a moment as feedback; zoneless, so the async
+   * clipboard promise has to trigger the repaint itself.
+   */
+  copyTitle(title: string): void {
+    navigator.clipboard?.writeText(title).then(
+      () => {
+        this.copiedTitle = title;
+        if (this.copiedTimer) {
+          clearTimeout(this.copiedTimer);
+        }
+        this.copiedTimer = setTimeout(() => {
+          this.copiedTimer = null;
+          this.copiedTitle = null;
+          this.refreshView();
+        }, 1500);
+        this.refreshView();
+      },
+      (err) => console.error('Copy failed:', err),
+    );
   }
 
 

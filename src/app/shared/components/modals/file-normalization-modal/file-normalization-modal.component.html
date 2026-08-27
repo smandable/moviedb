@@ -180,6 +180,15 @@
                   [title]="'Search ' + site.label + ' for “' + group.title + '”'"
                   >{{ site.label }}</a
                 >
+                <button
+                  type="button"
+                  class="lookup-link copy-title"
+                  [class.copied]="copiedTitle === group.title"
+                  (click)="copyTitle(group.title)"
+                  [title]="'Copy “' + group.title + '” to the clipboard'"
+                >
+                  {{ copiedTitle === group.title ? "Copied ✓" : "Copy" }}
+                </button>
               </span>
             </td>
           </tr>
