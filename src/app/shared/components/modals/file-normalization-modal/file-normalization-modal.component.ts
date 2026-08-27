@@ -22,6 +22,13 @@ const RENAME_SUCCESS_STATUS = 'Renamed successfully';
 // see the rtrim in server/normalize_helpers.php.
 const DANGLING_TAIL = /[ \t\n\r\0\x0B\-._]+$/;
 
+// The filesystem refuses any single file name longer than this many UTF-8
+// bytes (NAME_MAX). A long cast list can push a pending rename past it, so
+// the row warns at typing time; renameTheFilesToNormalize.php enforces the
+// same cap server-side.
+const MAX_FILENAME_BYTES = 255;
+const UTF8 = new TextEncoder();
+
 // Splits a base name into everything up to and including the scene number, and
 // whatever cast follows it: "Ass Man - Scene_1 - Angel Long" -> both halves.
 // Accepts the raw spellings too ("scene 1", "scene.2") — before the normalize
@@ -266,6 +273,16 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     }
     const tail = (file.workingBaseName ?? '').match(DANGLING_TAIL)?.[0] ?? '';
     return tail && !base.endsWith(tail) ? base + tail : base;
+  }
+
+  readonly maxFileNameLength = MAX_FILENAME_BYTES;
+
+  /**
+   * UTF-8 byte length of the pending rename target — what the filesystem's
+   * 255-byte cap is measured against. 0 when no rename is pending.
+   */
+  newNameLength(file: NormalizedFile): number {
+    return file.newFileName ? UTF8.encode(file.newFileName).length : 0;
   }
 
   onNameFocus(file: NormalizedFile): void {

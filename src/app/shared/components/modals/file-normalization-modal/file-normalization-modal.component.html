@@ -96,6 +96,13 @@
               <ng-container *ngIf="file.needsNormalization">
                 {{ previewBaseName(file) }}
               </ng-container>
+              <div
+                *ngIf="newNameLength(file) > maxFileNameLength"
+                class="text-danger small"
+              >
+                File name too long — over the {{ maxFileNameLength }}-character
+                limit by {{ newNameLength(file) - maxFileNameLength }}.
+              </div>
               <div *ngIf="file.renameError" class="text-danger small">
                 {{ file.renameError }}
               </div>
@@ -207,6 +214,13 @@
               <ng-container *ngIf="file.needsNormalization">
                 {{ previewBaseName(file) }}
               </ng-container>
+              <div
+                *ngIf="newNameLength(file) > maxFileNameLength"
+                class="text-danger small"
+              >
+                File name too long — over the {{ maxFileNameLength }}-character
+                limit by {{ newNameLength(file) - maxFileNameLength }}.
+              </div>
               <div *ngIf="file.renameError" class="text-danger small">
                 {{ file.renameError }}
               </div>

@@ -325,6 +325,56 @@ describe('FileNormalizationModalComponent', () => {
     });
   });
 
+  describe('file-name length cap', () => {
+    // The filesystem refuses names over 255 bytes (NAME_MAX); the modal warns
+    // at the same threshold so the user sees it before a rename ever runs.
+
+    it('measures the pending name in UTF-8 bytes, 0 when none is pending', () => {
+      // "é" is one character but two UTF-8 bytes.
+      expect(component.newNameLength(makeFile({ newFileName: 'Renée.mp4' }))).toBe(10);
+      expect(component.newNameLength(makeFile({ newFileName: '' }))).toBe(0);
+    });
+
+    it('warns on the normalize tab only for rows over the limit', () => {
+      const over = makeFile({
+        originalFileName: 'long.mp4',
+        newFileName: `${'A'.repeat(255)}.mp4`, // 259 bytes — over by 4
+      });
+      const under = makeFile();
+      component.files = [over, under];
+      fixture.detectChanges();
+
+      const text = (fixture.nativeElement as HTMLElement).textContent!;
+      expect((text.match(/File name too long/g) || []).length).toBe(1);
+      expect(text).toContain('limit by 4');
+    });
+
+    it('warns while typing a cast list that pushes the name over the limit', fakeAsync(() => {
+      const base = 'Ass Man - Scene_1';
+      const cast = 'A'.repeat(250);
+      const file = makeFile({
+        originalFileName: `${base}.mp4`,
+        newFileName: '',
+        needsNormalization: false,
+      });
+      component.files = [file];
+      fixture.detectChanges(); // runs ngOnInit
+      spyOn(fileService, 'normalizeName').and.returnValue(
+        of({ normalized: `${base} - ${cast}` }),
+      );
+
+      component.activeTab = 'cast';
+      component.setCast(file, cast);
+      tick(250);
+      fixture.detectChanges();
+
+      expect(component.newNameLength(file)).toBeGreaterThan(255);
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+        'File name too long',
+      );
+    }));
+  });
+
   describe('group dismissal', () => {
     const sceneFile = (base: string) =>
       makeFile({

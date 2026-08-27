@@ -2,6 +2,38 @@
 
 require_once __DIR__ . '/path_guard.php';
 
+// Keep PHP warnings/notices out of the JSON response body: rename() warns
+// when it fails ("File name too long", "Permission denied", …), and that
+// HTML in front of the JSON breaks the client's parse. The warnings still
+// go to the error log; they just don't get echoed to the client.
+ini_set('display_errors', '0');
+
+// The filesystem refuses any single file name longer than this many bytes
+// (NAME_MAX); a long cast list can push a rename target past it. The modal
+// warns at the same threshold client-side.
+const MOVIEDB_MAX_FILENAME_BYTES = 255;
+
+/**
+ * rename() that reports WHY it failed: the OS reason pulled from PHP's
+ * warning ("Permission denied", …), '' when unavailable.
+ */
+function moviedb_rename_with_reason(string $from, string $to, ?string &$reason): bool
+{
+    $reason = '';
+    error_clear_last();
+    if (rename($from, $to)) {
+        return true;
+    }
+    $message = error_get_last()['message'] ?? '';
+    // The warning reads "rename(<from>,<to>): <reason>"; the paths may
+    // themselves contain "): ", so split on the LAST occurrence.
+    $pos = strrpos($message, '): ');
+    if ($pos !== false) {
+        $reason = trim(substr($message, $pos + 3));
+    }
+    return false;
+}
+
 // Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405); // Method Not Allowed
@@ -61,6 +93,19 @@ foreach ($files as $file) {
         continue;
     }
 
+    // A rename target longer than the filesystem's per-name cap can never
+    // succeed — report the actual count so the user knows how much to trim.
+    if (strlen($file['newFileName']) > MOVIEDB_MAX_FILENAME_BYTES) {
+        $results[] = [
+            'originalFileName' => $file['originalFileName'],
+            'newFileName'      => $file['newFileName'],
+            'status'           => 'File name too long ('
+                . strlen($file['newFileName']) . ' of '
+                . MOVIEDB_MAX_FILENAME_BYTES . ' characters)',
+        ];
+        continue;
+    }
+
     $originalPath = $path . "/" . $file['originalFileName'];
     $newPath      = $path . "/" . $file['newFileName'];
 
@@ -98,11 +143,12 @@ foreach ($files as $file) {
         }
 
         // Step 1: original -> temp
-        if (!rename($originalPath, $tempPath)) {
+        if (!moviedb_rename_with_reason($originalPath, $tempPath, $reason)) {
             $results[] = [
                 'originalFileName' => $file['originalFileName'],
                 'newFileName'      => $file['newFileName'],
-                'status'           => 'Failed to rename (temp step)',
+                'status'           => 'Failed to rename (temp step)'
+                    . ($reason === '' ? '' : ': ' . $reason),
             ];
             continue;
         }
@@ -110,14 +156,15 @@ foreach ($files as $file) {
         clearstatcache(true);
 
         // Step 2: temp -> new (correct casing)
-        if (!rename($tempPath, $newPath)) {
+        if (!moviedb_rename_with_reason($tempPath, $newPath, $reason)) {
             // Best-effort rollback
             @rename($tempPath, $originalPath);
 
             $results[] = [
                 'originalFileName' => $file['originalFileName'],
                 'newFileName'      => $file['newFileName'],
-                'status'           => 'Failed to rename (final step)',
+                'status'           => 'Failed to rename (final step)'
+                    . ($reason === '' ? '' : ': ' . $reason),
             ];
             continue;
         }
@@ -131,7 +178,7 @@ foreach ($files as $file) {
     }
 
     // Non-case-only renames (or identical path) can use normal rename
-    if (rename($originalPath, $newPath)) {
+    if (moviedb_rename_with_reason($originalPath, $newPath, $reason)) {
         $results[] = [
             'originalFileName' => $file['originalFileName'],
             'newFileName'      => $file['newFileName'],
@@ -141,7 +188,8 @@ foreach ($files as $file) {
         $results[] = [
             'originalFileName' => $file['originalFileName'],
             'newFileName'      => $file['newFileName'],
-            'status'           => 'Failed to rename',
+            'status'           => 'Failed to rename'
+                . ($reason === '' ? '' : ': ' . $reason),
         ];
     }
 }
