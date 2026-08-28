@@ -173,6 +173,55 @@ describe('SettingsComponent', () => {
     expect(component.directoryMessage).toContain('unmounted');
   });
 
+  describe('needs-cast move-up toggle', () => {
+    it('defaults ON when the settings omit the key', () => {
+      flushInit({});
+
+      expect(component.moveRenamedUpFromNeedsCast).toBeTrue();
+    });
+
+    it('adopts a stored false', () => {
+      flushInit({ moveRenamedUpFromNeedsCast: false });
+
+      expect(component.moveRenamedUpFromNeedsCast).toBeFalse();
+    });
+
+    it('saves on toggle', () => {
+      flushInit({});
+
+      component.saveMoveUpSetting(false);
+
+      const req = httpMock.expectOne(settingsUrl);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ moveRenamedUpFromNeedsCast: false });
+      req.flush({
+        success: true,
+        settings: { moveRenamedUpFromNeedsCast: false },
+        directoryExists: null,
+      });
+
+      expect(component.moveRenamedUpFromNeedsCast).toBeFalse();
+      expect(component.moveUpStatus).toBe('saved');
+    });
+
+    it('reverts the checkbox when the save fails', () => {
+      flushInit({});
+
+      component.saveMoveUpSetting(false);
+      httpMock
+        .expectOne(settingsUrl)
+        .flush(
+          { message: 'Failed to write settings file' },
+          { status: 500, statusText: 'Server Error' },
+        );
+
+      // The server kept the old value, so the checkbox must show it
+      expect(component.moveRenamedUpFromNeedsCast).toBeTrue();
+      expect(component.moveUpStatus).toBe('error');
+      expect(component.moveUpMessage).toContain('Failed to write');
+    });
+  });
+
   describe('drive index card', () => {
     it('adopts the server\'s effective roots when none are stored', () => {
       // The server (drive_index_lib.php) owns the defaults; the status

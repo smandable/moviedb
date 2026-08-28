@@ -239,7 +239,12 @@ describe('FileNormalizationModalComponent', () => {
       expect(a.workingBaseName).toBe('A - Scene_1');
       expect(a.newFileName).toBe('');
       expect(a.needsNormalization).toBeFalse();
-      expect(component.renameSummary).toEqual({ renamed: 1, failed: 0 });
+      expect(component.renameSummary).toEqual({
+        renamed: 1,
+        failed: 0,
+        moved: 0,
+        moveFailed: 0,
+      });
     });
 
     it('marks failures with the server status and keeps them renameable', () => {
@@ -267,7 +272,12 @@ describe('FileNormalizationModalComponent', () => {
       expect(a.originalFileName).toBe('a.mp4');
       expect(a.renameError).toBe('New file name already exists');
       expect(a.needsNormalization).toBeTrue();
-      expect(component.renameSummary).toEqual({ renamed: 0, failed: 1 });
+      expect(component.renameSummary).toEqual({
+        renamed: 0,
+        failed: 1,
+        moved: 0,
+        moveFailed: 0,
+      });
       expect(component.activeTab).toBe('cast');
     });
 
@@ -322,6 +332,87 @@ describe('FileNormalizationModalComponent', () => {
 
       expect(spy).not.toHaveBeenCalled();
       expect(close).toHaveBeenCalledWith('all-done');
+    });
+  });
+
+  describe('needs-cast move-up results', () => {
+    it('adopts movedTo as the row path and closes when nothing remains', () => {
+      const a = makeFile({
+        path: '/test/needs-cast',
+        originalFileName: 'Fixture Flick - Scene_1.mp4',
+        newFileName: 'Fixture Flick - Scene_1 - Casey Fixture.mp4',
+        exclude: false,
+      });
+      component.files = [a];
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({
+          results: [
+            {
+              originalFileName: 'Fixture Flick - Scene_1.mp4',
+              newFileName: 'Fixture Flick - Scene_1 - Casey Fixture.mp4',
+              status: 'Renamed successfully',
+              movedTo: '/test',
+            },
+          ],
+        }),
+      );
+      const close = spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      // Later renames of this row must target the file's new home
+      expect(a.path).toBe('/test');
+      expect(a.originalFileName).toBe(
+        'Fixture Flick - Scene_1 - Casey Fixture.mp4',
+      );
+      expect(component.renameSummary).toEqual({
+        renamed: 1,
+        failed: 0,
+        moved: 1,
+        moveFailed: 0,
+      });
+      expect(close).toHaveBeenCalledWith('all-done');
+    });
+
+    it('holds the modal open on a move error, landing where the row shows', () => {
+      const a = makeFile({
+        path: '/test/needs-cast',
+        originalFileName: 'Fixture Flick - Scene_1.mp4',
+        newFileName: 'Fixture Flick - Scene_1 - Casey Fixture.mp4',
+        exclude: false,
+      });
+      component.files = [a];
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({
+          results: [
+            {
+              originalFileName: 'Fixture Flick - Scene_1.mp4',
+              newFileName: 'Fixture Flick - Scene_1 - Casey Fixture.mp4',
+              status: 'Renamed successfully',
+              moveError:
+                'Renamed, but not moved up: "Fixture Flick - Scene_1 - Casey Fixture.mp4" already exists in /test',
+            },
+          ],
+        }),
+      );
+      const close = spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      // The rename itself stood; only the move failed — the file is still in
+      // staging, so the path must not change and the error must stay visible.
+      expect(close).not.toHaveBeenCalled();
+      expect(a.path).toBe('/test/needs-cast');
+      expect(a.renameError).toContain('already exists');
+      // The renamed row carries its cast, so the Add Cast list no longer
+      // shows it — the modal lands on the tab where the message is visible.
+      expect(component.activeTab).toBe('normalize');
+      expect(component.renameSummary).toEqual({
+        renamed: 1,
+        failed: 0,
+        moved: 0,
+        moveFailed: 1,
+      });
     });
   });
 

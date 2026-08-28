@@ -27,6 +27,10 @@ export interface RenameResult {
   originalFileName: string;
   newFileName: string;
   status: string;
+  /** Directory the renamed file was moved up into (needs-cast staging). */
+  movedTo?: string;
+  /** The rename landed, but the move up out of needs-cast staging failed. */
+  moveError?: string;
 }
 
 export interface ProcessFilesResponse {

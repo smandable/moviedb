@@ -16,6 +16,11 @@ export interface AppSettings {
   driveIndexRoots?: string[];
   /** Consolidation options (Settings page, consolidateMovies.php). */
   consolidate?: ConsolidateSettings;
+  /**
+   * Move a file renamed inside a needs-cast staging folder up one level once
+   * it carries a cast (read by renameTheFilesToNormalize.php; absent = ON).
+   */
+  moveRenamedUpFromNeedsCast?: boolean;
 }
 
 export interface SaveSettingsResponse {

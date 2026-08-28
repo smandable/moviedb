@@ -256,6 +256,12 @@
     <span *ngIf="renameSummary.failed > 0" class="text-danger ms-2"
       >{{ renameSummary.failed }} failed</span
     >
+    <span *ngIf="renameSummary.moved > 0" class="text-success ms-2"
+      >{{ renameSummary.moved }} moved up a level</span
+    >
+    <span *ngIf="renameSummary.moveFailed > 0" class="text-danger ms-2"
+      >{{ renameSummary.moveFailed }} left in needs-cast</span
+    >
   </div>
   <button
     type="button"

@@ -4,10 +4,11 @@
  * App settings persisted server-side (server/app_settings.json, gitignored)
  * so they survive browser-data clears and apply to any browser.
  *
- * GET                          -> { settings: {...} }
- * POST { defaultDirectory }    -> { settings: {...}, directoryExists: bool }
- * POST { driveIndexRoots }     -> { settings: {...} }
- * POST { consolidate }         -> { settings: {...} }
+ * GET                                  -> { settings: {...} }
+ * POST { defaultDirectory }            -> { settings: {...}, directoryExists: bool }
+ * POST { driveIndexRoots }             -> { settings: {...} }
+ * POST { consolidate }                 -> { settings: {...} }
+ * POST { moveRenamedUpFromNeedsCast }  -> { settings: {...} }
  *
  * Only whitelisted keys are stored. defaultDirectory, each driveIndexRoots
  * entry, and each consolidate drive must pass the ALLOWED_BASE_PATH guard
@@ -15,7 +16,10 @@
  * mount a volume before saving a root on it). directoryExists is
  * informational only. driveIndexRoots overrides the drive-index build roots
  * (see server/drive_index_lib.php); consolidate configures
- * scripts/consolidate_movies.php (see server/consolidate_lib.php).
+ * scripts/consolidate_movies.php (see server/consolidate_lib.php);
+ * moveRenamedUpFromNeedsCast is a plain boolean, the needs-cast move-up
+ * toggle read by renameTheFilesToNormalize.php (absent means ON — see
+ * server/rename_helpers.php).
  */
 
 require_once __DIR__ . '/path_guard.php';
@@ -139,6 +143,15 @@ if (array_key_exists('consolidate', $data)) {
         exit();
     }
     $settings['consolidate'] = $check['clean'];
+}
+
+if (array_key_exists('moveRenamedUpFromNeedsCast', $data)) {
+    if (!is_bool($data['moveRenamedUpFromNeedsCast'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'moveRenamedUpFromNeedsCast must be a boolean']);
+        exit();
+    }
+    $settings['moveRenamedUpFromNeedsCast'] = $data['moveRenamedUpFromNeedsCast'];
 }
 
 if (!moviedb_save_settings($settings)) {

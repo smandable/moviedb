@@ -50,6 +50,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
   directoryStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
   directoryMessage: string = '';
 
+  // ---- Needs-cast move-up ----
+  /** Default ON — matches the server default in rename_helpers.php. */
+  moveRenamedUpFromNeedsCast = true;
+  moveUpStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+  moveUpMessage = '';
+
   // ---- Cast name vocabulary ----
   castNames: string[] = [];
   castNamesLoaded = false;
@@ -133,6 +139,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
           this.driveIndexRoots = [...settings.driveIndexRoots];
           this.rootsFromSettings = true;
         }
+        if (settings.moveRenamedUpFromNeedsCast !== undefined) {
+          this.moveRenamedUpFromNeedsCast = settings.moveRenamedUpFromNeedsCast;
+        }
         this.cdr.markForCheck();
       },
       error: () => this.cdr.markForCheck(),
@@ -208,6 +217,34 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  /**
+   * The move-up checkbox saves on toggle — a Save button for one boolean is
+   * just an extra click. On a failed save the checkbox reverts, so it never
+   * shows a state the server didn't keep.
+   */
+  saveMoveUpSetting(value: boolean): void {
+    const previous = this.moveRenamedUpFromNeedsCast;
+    this.moveRenamedUpFromNeedsCast = value;
+    this.moveUpStatus = 'saving';
+    this.settingsService
+      .saveSettings({ moveRenamedUpFromNeedsCast: value })
+      .subscribe({
+        next: (res) => {
+          this.moveRenamedUpFromNeedsCast =
+            res.settings.moveRenamedUpFromNeedsCast ?? value;
+          this.moveUpStatus = 'saved';
+          this.moveUpMessage = 'Saved.';
+          this.cdr.markForCheck();
+        },
+        error: (err: Error) => {
+          this.moveRenamedUpFromNeedsCast = previous;
+          this.moveUpStatus = 'error';
+          this.moveUpMessage = err.message;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   get filteredNames(): string[] {

@@ -99,7 +99,14 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   activeTab: NormalizationModalTab = 'normalize';
 
   isRenaming: boolean = false;
-  renameSummary: { renamed: number; failed: number } | null = null;
+  renameSummary: {
+    renamed: number;
+    failed: number;
+    /** Files moved up out of a needs-cast staging folder after their rename. */
+    moved: number;
+    /** Renames that landed but whose move up out of staging failed. */
+    moveFailed: number;
+  } | null = null;
 
   /**
    * Rows the user has started editing on the Add Cast tab. Typing a cast name
@@ -833,13 +840,23 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * pending normalizations (failed renames keep theirs, so errors stay
    * visible) or scene files without a cast. With both lists empty the modal
    * closes; the parent page re-enables Update Database on close.
+   *
+   * A lingering renameError also holds it open: a failed move up out of
+   * needs-cast staging leaves no pending rename behind, so without this the
+   * modal would close over the one red message that says a file is stuck.
+   * And since such a row already carries its cast, the Add Cast list no
+   * longer shows it — with no cast work left, land where the row is visible.
    */
   private finishRenamePass(): void {
-    if (!this.hasFilesToRename && this.castFiles.length === 0) {
+    const hasErrors = this.files.some((file) => !!file.renameError);
+    if (!this.hasFilesToRename && this.castFiles.length === 0 && !hasErrors) {
       this.activeModal.close('all-done');
       return;
     }
-    this.activeTab = 'cast';
+    const onlyOffListErrors =
+      this.castFiles.length === 0 &&
+      this.files.some((file) => !!file.renameError && !file.needsNormalization);
+    this.activeTab = onlyOffListErrors ? 'normalize' : 'cast';
   }
 
   /**
@@ -852,6 +869,8 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     const castLanded: string[] = [];
     let renamed = 0;
     let failed = 0;
+    let moved = 0;
+    let moveFailed = 0;
 
     this.files.forEach((file) => {
       const result = byOriginalName.get(file.originalFileName);
@@ -868,6 +887,18 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
         file.needsNormalization = false;
         file.userEdited = false;
         file.renameError = undefined;
+        if (result.movedTo) {
+          // Needs-cast staging: the server moved the renamed file up a
+          // level, so any later rename of this row must target its new home.
+          moved++;
+          file.path = result.movedTo;
+        } else if (result.moveError) {
+          // Renamed but stuck in staging (e.g. the name already exists a
+          // level up). There is nothing to retry from here, so the message
+          // is the whole remedy — finishRenamePass() keeps it on screen.
+          moveFailed++;
+          file.renameError = result.moveError;
+        }
         // Remember any cast that actually landed on disk, so it autocompletes
         // next time — including after this batch leaves the staging drive.
         // Read AFTER workingBaseName is updated, so it reflects the new name.
@@ -885,7 +916,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.renameSummary = { renamed, failed };
+    this.renameSummary = { renamed, failed, moved, moveFailed };
 
     if (castLanded.length) {
       this.loadCastNames(castLanded);

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/path_guard.php';
+require_once __DIR__ . '/rename_helpers.php';
 
 // Keep PHP warnings/notices out of the JSON response body: rename() warns
 // when it fails ("File name too long", "Permission denied", …), and that
@@ -14,24 +15,20 @@ ini_set('display_errors', '0');
 const MOVIEDB_MAX_FILENAME_BYTES = 255;
 
 /**
- * rename() that reports WHY it failed: the OS reason pulled from PHP's
- * warning ("Permission denied", …), '' when unavailable.
+ * The success row for one renamed file, with the needs-cast staging move-up
+ * folded in when it applies (moviedb_move_renamed_up in rename_helpers.php):
+ * the row gains movedTo after a move, or moveError when a move was due but
+ * failed. The rename itself stands either way.
  */
-function moviedb_rename_with_reason(string $from, string $to, ?string &$reason): bool
+function moviedb_result_with_move_up(array $file, string $path): array
 {
-    $reason = '';
-    error_clear_last();
-    if (rename($from, $to)) {
-        return true;
-    }
-    $message = error_get_last()['message'] ?? '';
-    // The warning reads "rename(<from>,<to>): <reason>"; the paths may
-    // themselves contain "): ", so split on the LAST occurrence.
-    $pos = strrpos($message, '): ');
-    if ($pos !== false) {
-        $reason = trim(substr($message, $pos + 3));
-    }
-    return false;
+    $result = [
+        'originalFileName' => $file['originalFileName'],
+        'newFileName'      => $file['newFileName'],
+        'status'           => 'Renamed successfully',
+    ];
+    $move = moviedb_move_renamed_up($path, $file['newFileName']);
+    return $move === null ? $result : $result + $move;
 }
 
 // Only allow POST requests
@@ -169,21 +166,13 @@ foreach ($files as $file) {
             continue;
         }
 
-        $results[] = [
-            'originalFileName' => $file['originalFileName'],
-            'newFileName'      => $file['newFileName'],
-            'status'           => 'Renamed successfully',
-        ];
+        $results[] = moviedb_result_with_move_up($file, $path);
         continue;
     }
 
     // Non-case-only renames (or identical path) can use normal rename
     if (moviedb_rename_with_reason($originalPath, $newPath, $reason)) {
-        $results[] = [
-            'originalFileName' => $file['originalFileName'],
-            'newFileName'      => $file['newFileName'],
-            'status'           => 'Renamed successfully',
-        ];
+        $results[] = moviedb_result_with_move_up($file, $path);
     } else {
         $results[] = [
             'originalFileName' => $file['originalFileName'],
