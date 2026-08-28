@@ -598,8 +598,9 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       // are where they disagree:
       //   * the TS tidier only segments a part of 4+ words, and segmentCastRun()
       //     only matches names of 2+ words, so it leaves "Angel Long Belladonna"
-      //     whole and pair-GUESSES a 4-word run, writing a comma in the wrong
-      //     place ("Belladonna Isabella, De Laa");
+      //     whole and pair-GUESSES the unknown stretch of a run some known name
+      //     anchors, writing a comma in the wrong place ("Angel Long,
+      //     Belladonna Isabella, De Laa");
       //   * PHP (castDesquash) then re-splits a comma part of 3+ words that
       //     segments cleanly into store names — which does rescue the 3-word
       //     case, but it can only split parts, never re-join the tidier's bad
@@ -702,7 +703,8 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * Cleans a pasted cast list into "Name, Name": collapses whitespace, accepts
    * the separators these sites use (&, "and", newlines, semicolons), and drops
    * wrapping punctuation. A part with no separators but 4+ words is a pasted
-   * run of unseparated names ("angel long paige owens") and gets segmented.
+   * run of unseparated names ("angel long paige owens") and gets segmented —
+   * but only when the vocabulary corroborates it; see segmentCastRun.
    * Deliberately does NOT title-case — the PHP pipeline owns casing, same as
    * every other name in this modal.
    *
@@ -735,14 +737,24 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * against the known vocabulary first (so "anna claire clouds" stays one
    * name), pairs of words as the fallback, and a single leftover word joins
    * the name before it rather than standing alone.
+   *
+   * The fallback only fires in a run at least one KNOWN name anchors. A run
+   * the vocabulary corroborates nowhere is far more likely one new
+   * performer's long name — "Alex De La Flor", typed before the store knew
+   * it, was pair-guessed into "Alex De, La Flor" — than several unknown names
+   * pasted with no separator, so it stays whole. The rename then feeds the
+   * new name into the store, which makes it an anchor from there on.
    */
   private segmentCastRun(words: string[]): string[] {
     const out: string[] = [];
+    let anchored = false;
     let i = 0;
     while (i < words.length) {
       const remaining = words.length - i;
       let take = this.knownNameLengthAt(words, i);
-      if (!take) {
+      if (take) {
+        anchored = true;
+      } else {
         if (remaining === 1 && out.length) {
           out[out.length - 1] += ` ${words[i]}`;
           i++;
@@ -753,7 +765,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       out.push(words.slice(i, i + take).join(' '));
       i += take;
     }
-    return out;
+    return anchored ? out : [words.join(' ')];
   }
 
   /**

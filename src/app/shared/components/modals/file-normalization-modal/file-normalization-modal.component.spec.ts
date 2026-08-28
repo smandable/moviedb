@@ -830,11 +830,12 @@ describe('FileNormalizationModalComponent', () => {
 
       // The wrinkle, and it is NOT free: the TS tidier only segments a part of
       // 4+ words and only matches names of 2+ words, so it leaves "Angel Long
-      // Bly" whole and pair-GUESSES longer runs. PHP (castDesquash) re-splits a
-      // 3+-word part that segments cleanly into store names, so the 3-word case
-      // does survive — but it can never re-join a wrong guess, and it never
-      // splits a two-word part. Allowing one-word names here produced wrong
-      // filenames in a measured sweep, so on a glued boundary they are withheld.
+      // Bly" whole and pair-GUESSES the unknown stretch of longer runs a known
+      // name anchors. PHP (castDesquash) re-splits a 3+-word part that segments
+      // cleanly into store names, so the 3-word case does survive — but it can
+      // never re-join a wrong guess, and it never splits a two-word part.
+      // Allowing one-word names here produced wrong filenames in a measured
+      // sweep, so on a glued boundary they are withheld.
       it('withholds a one-word name where the tidier would not split it', fakeAsync(() => {
         component.setCast(file, 'Angel Long Bl');
         expect(component.castSuggestions).toEqual([]);
@@ -869,6 +870,29 @@ describe('FileNormalizationModalComponent', () => {
         // a separator after the unknown name is what brings them back
         component.setCast(file, 'Nadia Volkova, Jane W');
         expect(component.castSuggestions).toEqual(['Nadia Volkova, Jane Wilde']);
+        tick(250);
+      }));
+
+      // Regression: a NEW performer's 4-word name, typed before the store
+      // knew it, was pair-guessed into two names ("Alex De La Flor" became
+      // "Alex De, La Flor"). A run the vocabulary corroborates NOWHERE is one
+      // long new name, not several unknown names glued together — it stays
+      // whole, and the rename feeds it into the store, where it anchors the
+      // next run.
+      it('never invents a comma inside a run with no known name in it', fakeAsync(() => {
+        component.setCast(file, 'Vexa De La Harrow');
+        expect(component.castOf(file)).toBe('Vexa De La Harrow');
+        expect(file.workingBaseName).toBe(
+          'Ass Man - Scene_1 - Vexa De La Harrow',
+        );
+
+        // blur must not yank a comma in either — tidied equals typed now
+        component.onNameBlur(file);
+        expect(component.castInputValue(file)).toBe('Vexa De La Harrow');
+
+        // a run a known name anchors still splits exactly as before
+        component.setCast(file, 'Angel Long Vexa De La Harrow');
+        expect(component.castOf(file)).toBe('Angel Long, Vexa De, La Harrow');
         tick(250);
       }));
     });
@@ -1007,9 +1031,14 @@ describe('FileNormalizationModalComponent', () => {
       component.setCast(file, 'anna claire clouds paige owens');
       expect(component.castOf(file)).toBe('anna claire clouds, paige owens');
 
-      // unknown names fall back to pairs
+      // unknown names fall back to pairs when a known name anchors the run…
+      component.setCast(file, 'angel long zz aa');
+      expect(component.castOf(file)).toBe('angel long, zz aa');
+
+      // …but a run the vocabulary corroborates nowhere is one NEW name and
+      // stays whole ("Alex De La Flor" must not become "Alex De, La Flor")
       component.setCast(file, 'zz aa bb cc');
-      expect(component.castOf(file)).toBe('zz aa, bb cc');
+      expect(component.castOf(file)).toBe('zz aa bb cc');
       tick(250);
     }));
 
