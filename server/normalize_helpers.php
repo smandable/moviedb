@@ -57,6 +57,11 @@ if (!function_exists('normalizeFileBaseName')) {
         // ("GinaValentina" → "Gina Valentina"); before the titleCase re-run so
         // an all-lowercase store entry still gets cased in the same pass
         $base = castDesquash($base);
+        // Store-backed volume marker for known numbered series ("Private
+        // Tropical 37 Anal Honeymoon..." → "... # 37 - Anal Honeymoon...");
+        // before the titleCase re-run so the inserted " - " gets the
+        // after-dash casing.
+        $base = seriesVolumeNumber($base);
         // Re-run titleCase: the " - " inserters above can start new segments
         // (e.g. "brazzers-scene-4-jane" → "brazzers - Scene_4 - Jane" needs
         // "Brazzers"), and the output must be a fixed point of the pipeline.
@@ -676,6 +681,106 @@ if (!function_exists('castDesquash')) {
         $after = implode(', ', $parts);
 
         return $before . $after;
+    }
+}
+
+if (!function_exists('moviedb_series_prefix_set')) {
+    /**
+     * Lowercased set of series names known to take volume numbers, derived
+     * from the drive index's base titles (or an injected title list in
+     * tests): every "Prefix # NN[ - Subtitle]" contributes its prefix.
+     * Precision-first like the cast harvester: a prefix qualifies only with
+     * at least two DISTINCT volume numbers on record, so a lone "X # 01"
+     * can't turn every "X <n> ..." into a volume.
+     */
+    function moviedb_series_prefix_set(?array $titles = null): array
+    {
+        static $cached = null;
+        $useStore = ($titles === null);
+        if ($useStore) {
+            if ($cached !== null) {
+                return $cached;
+            }
+            $titles = [];
+            $path = __DIR__ . '/drive_index.json';
+            if (is_file($path)) {
+                $raw = @file_get_contents($path);
+                $data = $raw === false ? null : json_decode($raw, true);
+                foreach (($data['entries'] ?? []) as $entry) {
+                    if (isset($entry['base']) && is_string($entry['base'])) {
+                        $titles[] = $entry['base'];
+                    }
+                }
+            }
+        }
+
+        $volumes = [];
+        foreach ($titles as $title) {
+            if (is_string($title)
+                && preg_match('/^(.*\S)\s+#\s+(\d{1,3})(?=\s|$)/', $title, $m)) {
+                $volumes[mb_strtolower($m[1])][(int)$m[2]] = true;
+            }
+        }
+        $set = [];
+        foreach ($volumes as $prefix => $vols) {
+            if (count($vols) >= 2) {
+                $set[$prefix] = true;
+            }
+        }
+
+        if ($useStore) {
+            $cached = $set;
+        }
+        return $set;
+    }
+}
+
+if (!function_exists('seriesVolumeNumber')) {
+    /**
+     * Insert the volume marker + subtitle break when a KNOWN numbered series
+     * is followed by a bare number and more words: "Private Tropical 37 Anal
+     * Honeymoon in the Tropics" → "Private Tropical # 37 - Anal Honeymoon in
+     * the Tropics". A mid-name number is usually part of the title ("Anal
+     * Sex 4 Dummies", "Cum in 60 Seconds" — 156 such names in the live
+     * library), so nothing is rewritten unless the text before the number
+     * matches a series from moviedb_series_prefix_set. Rightmost candidate
+     * first, so the longest (most specific) known prefix wins.
+     */
+    function seriesVolumeNumber(string $fileName, ?array $seriesTitles = null): string
+    {
+        $series = moviedb_series_prefix_set($seriesTitles);
+        if (!$series) {
+            return $fileName;
+        }
+        // A candidate is a spaced 1-3 digit number with text after it (a
+        // trailing number is the trailing-number rule's job). The separator
+        // alternation absorbs an already-typed " - " so the break is never
+        // doubled — spaced dashes only, or "Naughty 3-Somes" would split at
+        // its glued hyphen. 4-digit years can't match: no separator splits
+        // "1974".
+        if (!preg_match_all('/(?<=\S)\s+(\d{1,3})(?:\s+-\s+|\s+)(?=\S)/', $fileName, $m, PREG_OFFSET_CAPTURE)) {
+            return $fileName;
+        }
+        for ($i = count($m[1]) - 1; $i >= 0; $i--) {
+            $prefix = substr($fileName, 0, $m[0][$i][1]);
+            if (substr($prefix, -1) === '#') {
+                continue; // the number is already a "# NN" volume
+            }
+            if (!isset($series[mb_strtolower($prefix)])) {
+                continue;
+            }
+            $rest = substr($fileName, $m[0][$i][1] + strlen($m[0][$i][0]));
+            if ($rest[0] === '#') {
+                continue; // "Pure 18 # 01": the marker follows — the bare
+                          // number is part of the series name, not a volume
+            }
+            $number = $m[1][$i][0];
+            if (strlen($number) === 1) {
+                $number = '0' . $number;
+            }
+            return $prefix . ' # ' . $number . ' - ' . $rest;
+        }
+        return $fileName;
     }
 }
 

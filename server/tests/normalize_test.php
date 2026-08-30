@@ -530,6 +530,11 @@ check(
     normalizeFileBaseName('Adventures in XXX'),
     'Adventures in XXX'
 );
+check(
+    'stable (default): Private Tropical # 37 - Anal Honeymoon in the Tropics',
+    normalizeFileBaseName('Private Tropical # 37 - Anal Honeymoon in the Tropics'),
+    'Private Tropical # 37 - Anal Honeymoon in the Tropics'
+);
 
 echo "disc / CD canonicalization:\n";
 check(
@@ -632,6 +637,58 @@ check(
     'short tokens are never rewritten',
     castDesquash('Movie - Scene_1 - KiraM', array_merge($vocab, ['Kira M'])),
     'Movie - Scene_1 - KiraM'
+);
+
+echo "seriesVolumeNumber (store-backed volume marker, injected titles):\n";
+$seriesTitles = [
+    'Fake Series # 01 - Alpha',
+    'Fake Series # 02',
+    'Lone # 01',
+];
+check(
+    'known series gets volume marker + subtitle break',
+    seriesVolumeNumber('Fake Series 5 Beta Gamma', $seriesTitles),
+    'Fake Series # 05 - Beta Gamma'
+);
+check(
+    'an already-typed dash after the number is not doubled',
+    seriesVolumeNumber('Fake Series 5 - Beta Gamma', $seriesTitles),
+    'Fake Series # 05 - Beta Gamma'
+);
+check(
+    'marked-up output is a fixed point of the stage',
+    seriesVolumeNumber('Fake Series # 05 - Beta Gamma', $seriesTitles),
+    'Fake Series # 05 - Beta Gamma'
+);
+check(
+    'a single-volume prefix does not qualify (corroboration gate)',
+    seriesVolumeNumber('Lone 5 Beta', $seriesTitles),
+    'Lone 5 Beta'
+);
+check(
+    'unknown prefix is untouched',
+    seriesVolumeNumber('Other 5 Beta', $seriesTitles),
+    'Other 5 Beta'
+);
+check(
+    'trailing number is left for the trailing-number rule',
+    seriesVolumeNumber('Fake Series 5', $seriesTitles),
+    'Fake Series 5'
+);
+check(
+    '4-digit numbers never match',
+    seriesVolumeNumber('Fake Series 1974 Beta', $seriesTitles),
+    'Fake Series 1974 Beta'
+);
+check(
+    'a glued hyphen is part of the word, not a separator',
+    seriesVolumeNumber('Fake Series 3-Somes # 06', array_merge($seriesTitles, ['Fake Series 3-Somes # 03'])),
+    'Fake Series 3-Somes # 06'
+);
+check(
+    'a number right before an existing # NN is part of the series name',
+    seriesVolumeNumber('Fake 18 # 06', ['Fake # 01', 'Fake # 02', 'Fake 18 # 01', 'Fake 18 # 02']),
+    'Fake 18 # 06'
 );
 
 echo "castDesquash comma restoration:\n";
