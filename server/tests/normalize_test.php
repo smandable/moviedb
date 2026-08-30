@@ -146,6 +146,26 @@ check(
     'Title 1974 - Scene_2 - Jane Doe'
 );
 check(
+    'volume number before a subtitle segment becomes # NN',
+    normalizeFileBaseName('Mountain.Crush.2 - Snowbunnies - Scene_1 - Ella_Hughes'),
+    'Mountain Crush # 02 - Snowbunnies - Scene_1 - Ella Hughes'
+);
+check(
+    'year before a subtitle segment stays plain',
+    normalizeFileBaseName('Title.2020 - Subtitle - Scene_1 - Jane Doe'),
+    'Title 2020 - Subtitle - Scene_1 - Jane Doe'
+);
+check(
+    'segment-ending number without a Scene_ segment stays plain',
+    normalizeFileBaseName('Just 18 - Pussycat Teens'),
+    'Just 18 - Pussycat Teens'
+);
+check(
+    'segment-ending number mid-name without a Scene_ segment stays plain',
+    normalizeFileBaseName('Sinners - Club 18 - Teenie Toys'),
+    'Sinners - Club 18 - Teenie Toys'
+);
+check(
     'title ending in "Scene" + year + quality junk',
     normalizeFileBaseName('The.Kill.Scene.2019.1080p.WEBRip.x264-GRP'),
     'The Kill Scene 2019'
@@ -465,6 +485,7 @@ $fixedPoints = [
     'Cum Oozing Holes # 01 - Scene_1',
     'The Busty & Bushy Cougar & Her Prey - Scene_1 - Chanel Preston',
     '18 & Creamed - Scene_1',
+    'Mountain Crush # 02 - Snowbunnies - Scene_1 - Ella Hughes',
 ];
 // Raw inputs whose FIRST normalization must already be a fixed point
 // (otherwise the rename tool re-flags files it just renamed).

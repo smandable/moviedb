@@ -388,9 +388,16 @@ if (!function_exists('cleanupFunctions')) {
         // ("(Scene_1)") are left alone.
         $name = preg_replace('/(?<=[\w)])\s*(?:,[\s\-]*|[\s\-]+)Scene_(?=\d)/', ' - Scene_', $name);
 
-        // Numbers immediately before " - Scene_"
+        // Numbers ending a segment, when a Scene_N segment follows — directly
+        // ("Title 2 - Scene_1") or past a subtitle ("Mountain Crush 2 -
+        // Snowbunnies - Scene_1" → "Mountain Crush # 02 - Snowbunnies - …").
+        // The Scene_ requirement keeps full-movie names alone: "Just 18 -
+        // Pussycat Teens", "Fornication 101 - 2nd Semester", "Sinners - Club
+        // 18 - Teenie Toys" are titles, not volume numbers (live-corpus
+        // sweep, 2026-08-30). Scene numbers themselves are glued to their
+        // underscore, so \b never matches them.
         $name = preg_replace_callback(
-            '/(?<!# )\b(\d+)(?=\s+-\s*Scene_)/',
+            '/(?<!# )(?<!Scene_)\b(\d+)(?=\s+-\s.*\bScene_\d)/',
             function ($matches) {
                 $number = $matches[1];
 
