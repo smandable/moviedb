@@ -716,6 +716,14 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    */
   private tidyCastInput(raw: string, keepTrailingPeriod = false): string {
     return (raw ?? '')
+      // The lookup sites' copy-paste echo: selecting a name also grabs the
+      // photo's alt text, so the clipboard carries "<Name> <Name> Bodyshot".
+      // Only the doubled-name form is collapsed — the repetition is what
+      // proves "Bodyshot" is alt text, not a surname. Before the split, so
+      // segmentCastRun never sees the echo; the optional comma re-collapses
+      // a previously tidied "Name, Name Bodyshot". PHP strips the same
+      // pattern (dropCastPasteArtifact), so the filename is safe either way.
+      .replace(/(\S(?:[^,\n\r]*\S)?)\s*,?\s+\1\s+Bodyshot\b/gi, '$1')
       .split(CAST_SEPARATOR)
       .map((part) => part.replace(/\s+/g, ' ').trim())
       .map((part) =>

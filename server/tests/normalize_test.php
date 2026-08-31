@@ -328,6 +328,38 @@ check(
     'Jane Fauxheart & Kira Mock Compilation'
 );
 
+echo "lookup-site copy-paste echo (\"<Name> <Name> Bodyshot\"):\n";
+check(
+    'doubled pasted name with its photo alt-text collapses',
+    normalizeFileBaseName('Movie - Scene_1 - Jane Fauxheart Jane Fauxheart Bodyshot'),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'echo already comma-split by the client tidier collapses too',
+    normalizeFileBaseName('Movie - Scene_1 - Jane Fauxheart, Jane Fauxheart Bodyshot'),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'echo mid-list keeps the other names',
+    normalizeFileBaseName('Movie - Scene_1 - Kira Mock, Jane Fauxheart Jane Fauxheart Bodyshot'),
+    'Movie - Scene_1 - Kira Mock, Jane Fauxheart'
+);
+check(
+    'lowercase dotted release form of the echo',
+    normalizeFileBaseName('movie.scene.1.jane.fauxheart.jane.fauxheart.bodyshot'),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'a lone Bodyshot surname is kept (no doubled-name evidence)',
+    normalizeFileBaseName('Movie - Scene_1 - Jane Bodyshot'),
+    'Movie - Scene_1 - Jane Bodyshot'
+);
+check(
+    'doubled words before the scene marker are a title, not an echo',
+    normalizeFileBaseName('Bang Bang Bodyshot - Scene_1 - Jane Fauxheart'),
+    'Bang Bang Bodyshot - Scene_1 - Jane Fauxheart'
+);
+
 echo "trailing non-cast tags are dropped, not promoted to cast:\n";
 check(
     'trailing "Lh" is dropped',

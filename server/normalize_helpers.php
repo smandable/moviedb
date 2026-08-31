@@ -53,6 +53,10 @@ if (!function_exists('normalizeFileBaseName')) {
         $base = dropNonCastTags($base);
         $base = sceneNormalization($base);
         $base = castSeparator($base);
+        // Collapse the lookup-site copy-paste echo ("Shona River Shona River
+        // Bodyshot"); before castDesquash so the store logic only ever sees
+        // the real name.
+        $base = dropCastPasteArtifact($base);
         // Store-backed fix for cast names missing their spaces
         // ("GinaValentina" → "Gina Valentina"); before the titleCase re-run so
         // an all-lowercase store entry still gets cased in the same pass
@@ -479,6 +483,30 @@ if (!function_exists('castSeparator')) {
             return $before . $after;
         }
         return $fileName;
+    }
+}
+
+if (!function_exists('dropCastPasteArtifact')) {
+    /**
+     * Collapse the copy-paste echo the cast lookup sites produce: selecting a
+     * performer's name also grabs their photo's alt text, so the clipboard
+     * carries "<Name> <Name> Bodyshot". Only the doubled-name form is touched
+     * — the repetition is the evidence that "Bodyshot" is alt text and not a
+     * surname ("Jane Bodyshot" alone is left alone) — and only in the cast
+     * segment after "Scene_N - ", like every other cast rule. The optional
+     * comma absorbs the client tidier's segmentation, which may have split
+     * the echo into "Name, Name Bodyshot" before the server sees it.
+     */
+    function dropCastPasteArtifact(string $fileName): string
+    {
+        if (!preg_match('/Scene_\d+\s+-\s+/i', $fileName, $m, PREG_OFFSET_CAPTURE)) {
+            return $fileName;
+        }
+        $offset = $m[0][1] + strlen($m[0][0]);
+        $before = substr($fileName, 0, $offset);
+        $after  = substr($fileName, $offset);
+        $after  = preg_replace('/(\S(?:[^,]*\S)?)\s*,?\s+\1\s+Bodyshot\b/iu', '$1', $after);
+        return $before . $after;
     }
 }
 

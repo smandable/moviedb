@@ -626,6 +626,30 @@ describe('FileNormalizationModalComponent', () => {
       tick(250);
     }));
 
+    // Regression: copying a name off a lookup site also grabs the photo's
+    // alt text, so the clipboard carries "<Name> <Name> Bodyshot".
+    it('collapses the pasted "<Name> <Name> Bodyshot" copy echo', fakeAsync(() => {
+      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+      const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
+      component.files = [file];
+
+      component.setCast(file, 'Shona River Shona River Bodyshot');
+      expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Shona River');
+
+      // pasted after an already-typed name
+      component.setCast(file, 'Angel Long, Shona River Shona River Bodyshot');
+      expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Angel Long, Shona River');
+
+      // a previously tidied echo ("Name, Name Bodyshot") re-collapses
+      component.setCast(file, 'Shona River, Shona River Bodyshot');
+      expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Shona River');
+
+      // no doubled name, no echo: a Bodyshot "surname" is left alone
+      component.setCast(file, 'Shona Bodyshot');
+      expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Shona Bodyshot');
+      tick(250);
+    }));
+
     // Regression: fresh group objects on every change-detection pass made
     // *ngFor rebuild all rows (with their datalist inputs) per pass — the
     // page froze the first time the tab was opened against a real batch.
