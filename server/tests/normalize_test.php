@@ -827,6 +827,28 @@ check(
     'Movie - Scene_4K'
 );
 
+echo "glued '#' volume marker:\n";
+check(
+    'a volume number glued to the title gets its space back',
+    normalizeFileBaseName('Faux.Meadow#28.Scene_1.1080'),
+    'Faux Meadow # 28 - Scene_1'
+);
+check(
+    'a previously half-fixed "Title# NN" self-heals',
+    normalizeFileBaseName('Faux Meadow# 28 - Scene_1'),
+    'Faux Meadow # 28 - Scene_1'
+);
+check(
+    'the canonical form is a fixed point',
+    normalizeFileBaseName('Faux Meadow # 28 - Scene_1'),
+    'Faux Meadow # 28 - Scene_1'
+);
+check(
+    'a "#" with no digits after it is not a volume marker',
+    normalizeFileBaseName('Music in C# Minor'),
+    'Music in C# Minor'
+);
+
 echo "deliberate cast periods (keepCastDots + store dot-restore):\n";
 check(
     'default pipeline sweeps a cast period to a space',

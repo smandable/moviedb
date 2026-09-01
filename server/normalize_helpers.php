@@ -357,6 +357,12 @@ if (!function_exists('cleanupFunctions')) {
             $name
         );
 
+        // A '#' glued to the preceding word gets its space back — both the
+        // raw form ("Natural#28") and names a previous pass half-fixed
+        // ("Natural# 28"). Digits must follow, so titles like "C# Minor"
+        // are left alone.
+        $name = preg_replace('/(?<=\w)#(?=\s*\d)/', ' #', $name);
+
         // "#07" or "#   07" → "# 07"; "#1" → "# 01"
         $name = preg_replace_callback('/#\s*(\d+)/', function ($matches) {
             $number = $matches[1];
