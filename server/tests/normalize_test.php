@@ -546,6 +546,7 @@ $rawInputs = [
     'Movie - Scene_1 Lhotse',
     'Girls Playing # 03 - Scene_1 - Hollie Morgan & Courtney Simpson',
     'Movie.Scene.1.Jane.Fauxheart.&.Kira.Mock',
+    'Movie.Scene.1.Jane.Fauxheart.Busty.Teen.Tries.Anal',
 ];
 foreach ($rawInputs as $raw) {
     $n1 = normalizeFileBaseName($raw);
@@ -775,6 +776,145 @@ check(
     'comma restoration is a fixed point',
     castDesquash('Movie - Scene_3 - Jane Fauxheart, Kira Mock', $vocab),
     'Movie - Scene_3 - Jane Fauxheart, Kira Mock'
+);
+
+echo "dropCastJunkTail (store-guided junk truncation, injected vocab):\n";
+check(
+    'junk after a recognized name is dropped',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart Busty Teen Tries Anal', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'store casing is adopted for the kept name',
+    dropCastJunkTail('Movie - Scene_1 - jane fauxheart anal study break', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'comma-joined pair keeps both, junk after the second dropped',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart, Kira Mock Hot Action', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'glued pair with trailing junk gets the comma and loses the junk',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart Kira Mock Junk Words', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'junk split across a comma (castSeparator ate a junk "and") is all dropped',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart Gf Bends Over Car, Does Anal', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'a name buried in the junk is rescued',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart With Kira Mock', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'a name in a later comma part survives the junk before it',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart Junk, Kira Mock', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'an unknown "and"-joined name before any junk is kept whole',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart, Newbie Person', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Newbie Person'
+);
+check(
+    'no leading store name, no truncation',
+    dropCastJunkTail('Movie - Scene_1 - Busty Teen Tries Anal', $vocab),
+    'Movie - Scene_1 - Busty Teen Tries Anal'
+);
+check(
+    'a mononym is no anchor',
+    dropCastJunkTail('Movie - Scene_1 - Vanity Does Anal', $vocab),
+    'Movie - Scene_1 - Vanity Does Anal'
+);
+check(
+    'a mononym mid-junk is not rescued',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart Hot Vanity Action', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart'
+);
+check(
+    'clean tail is untouched',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart, Kira Mock', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Kira Mock'
+);
+check(
+    'clean tail with a mononym is untouched',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart, Vanity', $vocab),
+    'Movie - Scene_1 - Jane Fauxheart, Vanity'
+);
+check(
+    'no scene marker, no truncation',
+    dropCastJunkTail('Jane Fauxheart Busty Teen', $vocab),
+    'Jane Fauxheart Busty Teen'
+);
+check(
+    'title segment is never touched',
+    dropCastJunkTail('Jane Fauxheart Busty - Scene_1 - Kira Mock', $vocab),
+    'Jane Fauxheart Busty - Scene_1 - Kira Mock'
+);
+check(
+    'dotless spelling of a dotted store name anchors and is restored',
+    dropCastJunkTail(
+        'Movie - Scene_1 - Tessa St Marrow Anal Celebration',
+        array_merge($vocab, ['Tessa St. Marrow'])
+    ),
+    'Movie - Scene_1 - Tessa St. Marrow'
+);
+check(
+    'truncated output is a fixed point of the stage',
+    dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart, Kira Mock', $vocab),
+    dropCastJunkTail(dropCastJunkTail('Movie - Scene_1 - Jane Fauxheart Kira Mock Junk Words', $vocab), $vocab)
+);
+
+echo "dotted-cast-tail gate (release names qualify, typed input never):\n";
+check(
+    'dotted release tail qualifies',
+    moviedb_has_dotted_cast_tail('Movie.Scene.1.Jane.Fauxheart.Busty.Teen'),
+    true
+);
+check(
+    'partially dotted tail qualifies',
+    moviedb_has_dotted_cast_tail('Movie - Scene_1 - Jane.Fauxheart.junk'),
+    true
+);
+check(
+    'spaced tail does not qualify',
+    moviedb_has_dotted_cast_tail('Movie - Scene_1 - Jane Fauxheart Busty Teen'),
+    false
+);
+check(
+    'an abbreviation period (dot before a space) does not qualify',
+    moviedb_has_dotted_cast_tail('Movie - Scene_1 - Tessa St. Marrow'),
+    false
+);
+check(
+    'a trailing final-initial period does not qualify',
+    moviedb_has_dotted_cast_tail('Movie - Scene_1 - Wren J.'),
+    false
+);
+check(
+    'a year after "Scene" does not anchor the gate',
+    moviedb_has_dotted_cast_tail('The.Crime.Scene.1999'),
+    false
+);
+check(
+    'no scene marker, no gate',
+    moviedb_has_dotted_cast_tail('Some.Dotted.Title'),
+    false
+);
+check(
+    'bare scene number with nothing after does not qualify',
+    moviedb_has_dotted_cast_tail('Movie.Scene.1'),
+    false
+);
+// End-to-end: names absent from the real store are never anchors, so a
+// dotted junk tail passes through unchanged (and stays a fixed point).
+check(
+    'pipeline leaves an unrecognized dotted tail alone',
+    normalizeFileBaseName('Movie.Scene.1.Jane.Fauxheart.Busty.Teen.Tries.Anal'),
+    'Movie - Scene_1 - Jane Fauxheart Busty Teen Tries Anal'
 );
 
 echo "glued scene-number + name:\n";

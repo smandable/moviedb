@@ -19,6 +19,11 @@ if (!function_exists('stripTitleVariantSuffixes')) {
 if (!function_exists('normalizeFileBaseName')) {
     function normalizeFileBaseName(string $base, bool $respectUserCasing = false, bool $keepCastDots = false): string
     {
+        // Decided before basicFunctions sweeps the dots away: a release-style
+        // dotted cast tail is the only shape dropCastJunkTail may touch, so
+        // typed cast input can never be truncated mid-keystroke.
+        $dottedCastTail = !$keepCastDots && moviedb_has_dotted_cast_tail($base);
+
         // A period the user deliberately typed into the cast field must
         // survive basicFunctions' periods→spaces sweep ("Destiny St.
         // Claire"). Only the tail after the scene marker is protected — a
@@ -61,6 +66,12 @@ if (!function_exists('normalizeFileBaseName')) {
         // ("GinaValentina" → "Gina Valentina"); before the titleCase re-run so
         // an all-lowercase store entry still gets cased in the same pass
         $base = castDesquash($base);
+        // Store-guided junk truncation ("Scene_1 - Ashley Adams Busty Teen
+        // Tries Anal" → "Scene_1 - Ashley Adams") — dotted release tails
+        // only; after castDesquash so squashes and commas are already fixed.
+        if ($dottedCastTail) {
+            $base = dropCastJunkTail($base);
+        }
         // Store-backed volume marker for known numbered series ("Private
         // Tropical 37 Anal Honeymoon..." → "... # 37 - Anal Honeymoon...");
         // before the titleCase re-run so the inserted " - " gets the
@@ -621,6 +632,160 @@ if (!function_exists('moviedb_segment_cast_words')) {
             }
         }
         return null;
+    }
+}
+
+if (!function_exists('moviedb_has_dotted_cast_tail')) {
+    /**
+     * True when the pre-pipeline base name carries a release-style dotted
+     * tail after its scene marker ("Scene.1.Ashley.Adams.Busty.Teen") —
+     * word-glued dots only, so a typed or pasted abbreviation period
+     * ("Sami St. Clair", dot before a space) does not qualify. Must be asked
+     * BEFORE basicFunctions sweeps periods to spaces. (?!\d) keeps a year
+     * after "Scene" from anchoring the check ("Crime.Scene.1999").
+     */
+    function moviedb_has_dotted_cast_tail(string $base): bool
+    {
+        return preg_match('/\bscene[\s._\-]*\d{1,3}(?!\d)(.*)$/i', $base, $m) === 1
+            && preg_match('/\w\.\w/', $m[1]) === 1;
+    }
+}
+
+if (!function_exists('moviedb_match_cast_name_at')) {
+    /**
+     * Longest store name starting at word $i — 2-4 words, dotless spellings
+     * resolving through the dot-restore map ("Tessa St Marrow" → "Tessa St.
+     * Marrow"). Returns [wordCount, canonicalName] or null. Mononyms never
+     * match: junk words are store mononyms too ("Angel", "Honey"), and the
+     * client tidier's measured sweep showed one-word matches on glued
+     * boundaries produce wrong filenames.
+     */
+    function moviedb_match_cast_name_at(array $words, int $i, array $fullNames, array $dotRestore): ?array
+    {
+        for ($len = min(4, count($words) - $i); $len >= 2; $len--) {
+            $key = mb_strtolower(implode(' ', array_slice($words, $i, $len)));
+            if (isset($fullNames[$key])) {
+                return [$len, $fullNames[$key]];
+            }
+            if (!empty($dotRestore[$key])) {
+                return [$len, $dotRestore[$key]];
+            }
+        }
+        return null;
+    }
+}
+
+if (!function_exists('moviedb_rescue_cast_names')) {
+    /**
+     * Scan $words from $i for 2+-word store names, skipping anything
+     * unrecognized. Used by dropCastJunkTail once junk has started, so a
+     * name buried in the junk survives ("With Kimmy Fabel" keeps her).
+     */
+    function moviedb_rescue_cast_names(array $words, int $i, array $fullNames, array $dotRestore): array
+    {
+        $names = [];
+        $n = count($words);
+        while ($i < $n) {
+            $hit = moviedb_match_cast_name_at($words, $i, $fullNames, $dotRestore);
+            if ($hit === null) {
+                $i++;
+                continue;
+            }
+            $names[] = $hit[1];
+            $i += $hit[0];
+        }
+        return $names;
+    }
+}
+
+if (!function_exists('dropCastJunkTail')) {
+    /**
+     * Drop scene-description junk trailing a recognized cast name in the
+     * segment after "Scene_N - " ("Ashley Adams Busty Teen Tries Anal" →
+     * "Ashley Adams"), the cast-name store as the only guide. Invoked by
+     * normalizeFileBaseName solely on names moviedb_has_dotted_cast_tail
+     * flagged, so typed cast input is never touched.
+     *
+     * Precision-first: nothing happens unless the tail STARTS with a store
+     * name of 2+ words — an unknown leading name is no evidence of junk, and
+     * a mononym is no anchor (see moviedb_match_cast_name_at). Once junk
+     * starts, only further 2+-word store names survive, in order, comma-
+     * joined; everything else is dropped — including later comma parts,
+     * because castSeparator turns a junk-internal "and" into a comma
+     * ("...Car, Does Anal"). A comma part BEFORE any junk that the store
+     * doesn't know is kept whole: that's an "and"-joined NEW performer, left
+     * for the manual edit whose rename then feeds the store.
+     */
+    function dropCastJunkTail(string $fileName, ?array $vocab = null): string
+    {
+        [, , $fullNames, $dotRestore] = moviedb_cast_squash_map($vocab);
+        if (!$fullNames) {
+            return $fileName;
+        }
+        if (!preg_match('/Scene_\d+\s+-\s+/i', $fileName, $m, PREG_OFFSET_CAPTURE)) {
+            return $fileName;
+        }
+        $offset = $m[0][1] + strlen($m[0][0]);
+        $before = substr($fileName, 0, $offset);
+        $after = substr($fileName, $offset);
+
+        $parts = array_values(array_filter(
+            array_map('trim', preg_split('/\s*,\s*/', $after)),
+            fn($p) => $p !== ''
+        ));
+        if (!$parts) {
+            return $fileName;
+        }
+
+        $kept = [];
+        $sawJunk = false;
+        foreach ($parts as $idx => $part) {
+            $words = explode(' ', $part);
+            if ($sawJunk) {
+                // Junk has started: the part survives only via its names.
+                foreach (moviedb_rescue_cast_names($words, 0, $fullNames, $dotRestore) as $name) {
+                    $kept[] = $name;
+                }
+                continue;
+            }
+            // Fully store-recognized (mononyms allowed here — the whole part
+            // consuming cleanly is the evidence): keep as typed; castDesquash
+            // has already comma-split what should be split.
+            if (moviedb_segment_cast_words($words, $fullNames) !== null) {
+                $kept[] = $part;
+                continue;
+            }
+            // Chain store names from the start of the part.
+            $i = 0;
+            $names = [];
+            while (($hit = moviedb_match_cast_name_at($words, $i, $fullNames, $dotRestore)) !== null) {
+                $names[] = $hit[1];
+                $i += $hit[0];
+            }
+            if ($i >= count($words)) {
+                $kept[] = $part; // consumed via dot-restore spellings: clean
+                continue;
+            }
+            if (!$names) {
+                if ($idx === 0) {
+                    return $fileName; // no anchor: not a store-led cast tail
+                }
+                $kept[] = $part; // unknown "and"-joined name before any junk
+                continue;
+            }
+            // Names, then junk: keep the names, rescue any store name buried
+            // later in the part, drop the rest.
+            $sawJunk = true;
+            foreach (moviedb_rescue_cast_names($words, $i, $fullNames, $dotRestore) as $name) {
+                $names[] = $name;
+            }
+            $kept[] = implode(', ', $names);
+        }
+
+        if (!$sawJunk) {
+            return $fileName;
+        }
+        return $before . implode(', ', $kept);
     }
 }
 
