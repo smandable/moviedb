@@ -15,13 +15,24 @@ export function stripTrailingNumber(title: string): string {
 }
 
 /**
- * Reduce a title to its base by removing a trailing " # NN" and/or
- * " - <suffix>" (scene/cast), then trimming.
+ * Reduce a title to its base by removing a trailing " # NN", any trailing
+ * "(...)" tag, and/or " - <suffix>" (scene/cast), then trimming.
  * e.g. "Some Title # 03 - Cast" -> "Some Title"
+ *
+ * The "(...)" tag is a year or a studio ("Some Title # 03 (2024)",
+ * "Some Title (Evil Angel)") — a disambiguator sitting between the volume
+ * number and the suffix, never part of the title itself. It has to be
+ * matched here rather than left to the caller: " # NN" only strips when
+ * nothing but a suffix follows it, so an unhandled tag silently kept the
+ * volume number as well ("Some Title # 03 (2024)" came back whole).
+ *
+ * Tag and number are one alternation, so either order works and the result
+ * is idempotent — "Oil Overload (Chris Streams) # 01" reduces in one pass.
+ * Only a TRAILING run is stripped: "Some (Odd) Title" is left alone.
  */
 export function getBaseTitle(title: string): string {
   const raw = title ?? '';
-  const match = raw.match(/^(.*?)(?:\s+#\s+\d+)?(?:\s+-\s+.*)?$/);
+  const match = raw.match(/^(.*?)(?:\s+#\s+\d+|\s+\([^()]*\))*(?:\s+-\s+.*)?$/);
   return (match ? match[1] : raw).trim();
 }
 

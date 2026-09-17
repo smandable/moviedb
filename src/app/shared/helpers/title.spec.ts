@@ -41,6 +41,31 @@ describe('getBaseTitle', () => {
     expect(getBaseTitle('Some Title - Scene_1 - Cast')).toBe('Some Title');
   });
 
+  it('strips a trailing year/studio "(...)" tag', () => {
+    expect(getBaseTitle('Some Title (2024)')).toBe('Some Title');
+    expect(getBaseTitle('Some Title (Evil Angel)')).toBe('Some Title');
+  });
+
+  it('strips " # NN" even when a "(...)" tag follows it', () => {
+    // Regression: the tag sits between the volume number and the end, so
+    // " # NN" used to be left in place and the whole string came back.
+    expect(getBaseTitle('Some Title # 03 (2024)')).toBe('Some Title');
+    expect(getBaseTitle('Some Title # 03 (2024) - Scene_1')).toBe('Some Title');
+    expect(getBaseTitle('Some Title # 03 (Evil Angel) - Cast')).toBe(
+      'Some Title',
+    );
+  });
+
+  it('keeps parentheses that are not a trailing tag', () => {
+    expect(getBaseTitle('Some (Odd) Title')).toBe('Some (Odd) Title');
+  });
+
+  it('handles the tag sitting before the volume number', () => {
+    expect(getBaseTitle('Oil Overload (Chris Streams) # 01')).toBe(
+      'Oil Overload',
+    );
+  });
+
   it('leaves a plain title untouched', () => {
     expect(getBaseTitle('Some Title')).toBe('Some Title');
   });
