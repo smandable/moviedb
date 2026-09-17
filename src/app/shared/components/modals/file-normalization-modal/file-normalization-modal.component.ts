@@ -47,6 +47,17 @@ const NAME_ORDER = new Intl.Collator(undefined, {
 const SCENE_SPLIT = /^(.*?\bscene[\s._-]*\d{1,3})(?:\s*-\s*(.*))?$/i;
 
 /**
+ * A movie's scenes on the Add Cast tab. `key` is stable across edits and
+ * identifies the group (grouping, dismissal, *ngFor trackBy); `title` is the
+ * live text shown in the header and used for lookups.
+ */
+interface CastGroup {
+  key: string;
+  title: string;
+  files: NormalizedFile[];
+}
+
+/**
  * Separators a cast list may arrive with — typed, pasted, or copied off a site.
  * Kept as source text because the two call sites need different flags:
  * tidyCastInput() splits on it, castSegmentStart() scans for the LAST match with
@@ -370,22 +381,22 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
         (file) =>
           (this.castEdited.has(file) ||
             endsWithSceneNumber(this.effectiveBaseName(file))) &&
-          !this.dismissedTitles.has(this.lookupQuery(file).toLowerCase()),
+          !this.dismissedGroups.has(this.castGroupKey(file)),
       )
       .sort((a, b) => NAME_ORDER.compare(a.originalFileName, b.originalFileName));
   }
 
   /**
-   * Titles set aside via the group-header checkbox — cast info couldn't be
+   * Group keys set aside via the group-header checkbox — cast info couldn't be
    * found, so the whole group leaves the Add Cast list (and stops counting
    * as remaining work for the close-on-done logic). View-state only, per
    * modal session: it never touches `exclude`, so a dismissed file keeps any
    * pending *normalization* rename on the other tab.
    */
-  readonly dismissedTitles = new Set<string>();
+  readonly dismissedGroups = new Set<string>();
 
-  dismissGroup(group: { title: string }): void {
-    this.dismissedTitles.add(group.title.toLowerCase());
+  dismissGroup(group: CastGroup): void {
+    this.dismissedGroups.add(group.key);
   }
 
   get hasPendingCastRenames(): boolean {
@@ -394,7 +405,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
   private castGroupsCache: {
     fingerprint: string;
-    groups: Array<{ title: string; files: NormalizedFile[] }>;
+    groups: CastGroup[];
   } | null = null;
 
   /**
@@ -409,7 +420,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * the page outright the first time the tab was opened against a real batch.
    * The template's trackBy is the second half of the same defense.
    */
-  get castFileGroups(): Array<{ title: string; files: NormalizedFile[] }> {
+  get castFileGroups(): CastGroup[] {
     const files = this.castFiles;
     const fingerprint = files
       .map((f) => `${f.originalFileName}\u0000${f.workingBaseName ?? ''}\u0000${f.exclude ? 1 : 0}`)
@@ -418,23 +429,25 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       return this.castGroupsCache.groups;
     }
 
-    const groups = new Map<string, { title: string; files: NormalizedFile[] }>();
+    const groups = new Map<string, CastGroup>();
     for (const file of files) {
-      const title = this.lookupQuery(file);
-      const key = title.toLowerCase();
+      const key = this.castGroupKey(file);
       const group = groups.get(key);
       if (group) {
         group.files.push(file);
       } else {
-        groups.set(key, { title, files: [file] });
+        // The header text follows the first row's LIVE name, so correcting a
+        // title updates the lookup links and the Copy button right away; only
+        // the key (and so the row's identity) is pinned to the on-disk name.
+        groups.set(key, { key, title: this.lookupQuery(file), files: [file] });
       }
     }
     this.castGroupsCache = { fingerprint, groups: [...groups.values()] };
     return this.castGroupsCache.groups;
   }
 
-  trackGroup(_index: number, group: { title: string }): string {
-    return group.title;
+  trackGroup(_index: number, group: CastGroup): string {
+    return group.key;
   }
 
   trackFile(_index: number, file: NormalizedFile): NormalizedFile {
@@ -535,8 +548,29 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * noise to those sites, so search the movie title alone.
    */
   lookupQuery(file: NormalizedFile): string {
-    const base = this.sceneBaseOf(file).replace(/\s*-\s*Scene_\d{1,3}\s*$/i, '');
+    return this.queryFromBase(this.sceneBaseOf(file));
+  }
+
+  /** The movie title a scene base name belongs to, for lookups and grouping. */
+  private queryFromBase(sceneBase: string): string {
+    const base = sceneBase.replace(/\s*-\s*Scene_\d{1,3}\s*$/i, '');
     return getBaseTitle(base) || base;
+  }
+
+  /**
+   * Which group a row belongs to, derived from the name ON DISK.
+   *
+   * Deliberately NOT lookupQuery(), which reads workingBaseName: editing the
+   * title in the left column would then re-key the row on every keystroke,
+   * moving it to a different group (or one of its own). *ngFor tears down the
+   * old tbody, the textarea is destroyed, and the edit loses focus mid-word.
+   * The on-disk name can't change under the cursor — the same reasoning that
+   * makes castFiles sort on originalFileName.
+   */
+  private castGroupKey(file: NormalizedFile): string {
+    const base = this.stripExtension(file.originalFileName);
+    const sceneBase = base.match(SCENE_SPLIT)?.[1] ?? base;
+    return this.queryFromBase(sceneBase).toLowerCase();
   }
 
   /**

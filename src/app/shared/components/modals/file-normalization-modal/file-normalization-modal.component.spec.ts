@@ -530,7 +530,7 @@ describe('FileNormalizationModalComponent', () => {
     it('dismissed groups no longer hold the modal open after a rename pass', () => {
       const a = sceneFile('Ass Man - Scene_1');
       component.files = [a];
-      component.dismissGroup({ title: 'Ass Man' });
+      component.dismissGroup(component.castFileGroups[0]);
       const spy = spyOn(fileService, 'renameTheFilesToNormalize');
       const close = spyOn(component.activeModal, 'close');
 
@@ -1408,5 +1408,82 @@ describe('FileNormalizationModalComponent', () => {
       expect(file.originalFileName).toBe('Ass Man - Scene_1 - Jane Doe.mp4');
       expect(component.castFiles).toEqual([]);
     }));
+  });
+  describe('Add Cast grouping survives editing the title', () => {
+    const volume = (scene: string) =>
+      makeFile({
+        originalFileName: `Party of Three # 03 (2024) - ${scene}.mp4`,
+        workingBaseName: `Party of Three # 03 (2024) - ${scene}`,
+        newFileName: '',
+      });
+
+    it('keeps a row in its group while the title is being retyped', () => {
+      const s1 = volume('Scene_1');
+      const s2 = volume('Scene_2');
+      component.files = [s1, s2];
+
+      const keyBefore = component.trackGroup(0, component.castFileGroups[0]);
+
+      // Mid-keystroke: a character has just been deleted from the title.
+      s1.workingBaseName = 'Party of Three # 03 (2024 - Scene_1';
+      component.onCastNameChange(s1);
+
+      const after = component.castFileGroups;
+      expect(after.length).withContext('row split into its own group').toBe(1);
+      expect(after[0].files).toContain(s1);
+      expect(component.trackGroup(0, after[0]))
+        .withContext('group identity changed -> *ngFor tears the row down')
+        .toBe(keyBefore);
+    });
+
+    it('does not drop the focused textarea when the title changes', () => {
+      component.files = [volume('Scene_1'), volume('Scene_2')];
+      component.activeTab = 'cast';
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      const inputs = el.querySelectorAll<HTMLTextAreaElement>(
+        '.working-name-input',
+      );
+      const typing = inputs[0];
+      typing.focus();
+      expect(document.activeElement).toBe(typing);
+
+      typing.value = 'Party of Thre # 03 (2024) - Scene_1';
+      component.files[0].workingBaseName = typing.value;
+      component.onCastNameChange(component.files[0]);
+      fixture.detectChanges();
+
+      expect(document.activeElement)
+        .withContext('the row was rebuilt and the caret was lost')
+        .toBe(typing);
+      expect(
+        el.querySelectorAll<HTMLTextAreaElement>('.working-name-input')[0],
+      ).toBe(typing);
+    });
+
+    it('still shows the corrected title on the header and Copy button', () => {
+      const s1 = volume('Scene_1');
+      component.files = [s1];
+
+      s1.workingBaseName = 'Party of Four # 03 (2024) - Scene_1';
+      component.onCastNameChange(s1);
+
+      expect(component.castFileGroups[0].title).toBe('Party of Four');
+    });
+
+    it('keeps a dismissed group dismissed after its title is edited', () => {
+      const s1 = volume('Scene_1');
+      component.files = [s1];
+      component.dismissGroup(component.castFileGroups[0]);
+      expect(component.castFiles).not.toContain(s1);
+
+      s1.workingBaseName = 'Party of Four # 03 (2024) - Scene_1';
+      component.onCastNameChange(s1);
+
+      expect(component.castFiles)
+        .withContext('editing the title resurrected a dismissed group')
+        .not.toContain(s1);
+    });
   });
 });
