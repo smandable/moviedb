@@ -85,7 +85,124 @@ if (!function_exists('normalizeFileBaseName')) {
         if ($dotsProtected) {
             $base = str_replace($dotMarker, '.', $base);
         }
-        return $base;
+        // Last: titles whose spelling was settled by hand override the rules.
+        return applyTitleOverride($base);
+    }
+}
+
+if (!function_exists('moviedb_title_overrides')) {
+    /**
+     * Titles whose spelling was settled by hand, keyed by lowercase base
+     * title (the part before any " # NN" or " - Scene…"). Every spelling of a
+     * listed title maps to its one canonical form, which is therefore a fixed
+     * point too. Real titles by necessity — this is what the rules can't know.
+     */
+    function moviedb_title_overrides(): array
+    {
+        static $map = null;
+        if ($map !== null) {
+            return $map;
+        }
+
+        // Kept exactly as written — the casing rules misread each one
+        // (reviewed 2026-10-01): a subtitle with no dash before it, a
+        // compound or phrase read as small words, a foreign phrase, or a
+        // spelling that is the title itself.
+        $exact = [
+            'Anal.Oil.Latex.',
+            'Beyond Fucked A Zombie Odyssey',
+            'Break Up Blues',
+            'Debbie Does Dallas The Next Generation',
+            'Debbie Does Dallas The Revenge',
+            'Dress Up Dolls',
+            'Dress Up Teens',
+            'Frigid, A Tale Of Persistence',
+            'Groupies, The Music From Behind',
+            'Having Sex With The In Laws',
+            'Joanna Angel Gangbang As Above So Below',
+            'La Cochonne Hard A La Francaise',
+            'Legs Up Hose Down',
+            'Orgy World The Next Level',
+            'Pick Up Lines',
+            'Put Up or Shut Up',
+            'Ass Up Latin',
+            'Star Trek The Next Generation - An XXX Parody',
+            'Straight Up Anal',
+            'Swing In Strike Out',
+            'Throat A Cautionary Tale',
+            'Up, Up and Away (1984)',
+        ];
+
+        // One title written two ways → the chosen spelling (Sean,
+        // 2026-10-01): digits, except three titles that read as words; and
+        // "&" vs "and" by each title's most common form.
+        $spellings = [
+            '2 on One' => '2 on 1',
+            'Five Minutes of Fury' => '5 Minutes of Fury',
+            'Five Sins' => '5 Sins',
+            'Seven the Hard Way' => '7 the Hard Way',
+            'Ten Little Angels' => '10 Little Angels',
+            'Eighteen Candles' => '18 Candles',
+            'I Got Five on It' => 'I Got 5 on It',
+            'Just Over Eighteen' => 'Just Over 18',
+            'Just Turned Eighteen' => 'Just Turned 18',
+            '1 on 1' => 'One on One',
+            '2 of a Kind' => 'Two of a Kind',
+            "3's Cumpany" => "Three's Cumpany",
+            'Big & Real' => 'Big and Real',
+            'Big Black Dicks and Tattooed Chicks' => 'Big Black Dicks & Tattooed Chicks',
+            'Brothers & Sisters' => 'Brothers and Sisters',
+            'Cocks and Hookers' => 'Cocks & Hookers',
+            'Fresh & Easy' => 'Fresh and Easy',
+            'Friends and Lovers' => 'Friends & Lovers',
+            'Hot & Dirty Group Sex' => 'Hot and Dirty Group Sex',
+            'Interracial and Anal' => 'Interracial & Anal',
+            'Mommy You and Me Make 3' => 'Mommy You & Me Make 3',
+            'Sex & Lies' => 'Sex and Lies',
+            'Shut up & Fuck Me' => 'Shut up and Fuck Me',
+            'Tits & Oil' => 'Tits and Oil',
+            'Young & Tight' => 'Young and Tight',
+        ];
+
+        return $map = moviedb_build_title_overrides($exact, $spellings);
+    }
+
+    /**
+     * Lowercase-keyed lookup from both lists. An exact title is also keyed
+     * by its period-swept form: the pipeline turns periods into spaces long
+     * before applyTitleOverride() runs.
+     */
+    function moviedb_build_title_overrides(array $exact, array $spellings): array
+    {
+        $map = [];
+        foreach ($exact as $title) {
+            $map[mb_strtolower($title)] = $title;
+            $swept = trim(preg_replace('/\s+/', ' ', str_replace('.', ' ', $title)));
+            $map[mb_strtolower($swept)] = $title;
+        }
+        foreach ($spellings as $variant => $canonical) {
+            $map[mb_strtolower($variant)] = $canonical;
+            $map[mb_strtolower($canonical)] = $canonical;
+        }
+        return $map;
+    }
+}
+
+if (!function_exists('applyTitleOverride')) {
+    /**
+     * Swaps a name's base title for its settled spelling, keeping everything
+     * after it (" # NN", " - Scene_N - Cast"). The base is matched after the
+     * rest of the pipeline has run, so "Anal Oil Latex # 01" (periods already
+     * swept to spaces) still finds "Anal.Oil.Latex.".
+     */
+    function applyTitleOverride(string $name, ?array $overrides = null): string
+    {
+        $base = trim(preg_replace('/\s*# \d+.*$/', '', stripTitleVariantSuffixes($name)));
+        if ($base === '' || !str_starts_with($name, $base)) {
+            return $name;
+        }
+        $canonical = ($overrides ?? moviedb_title_overrides())[mb_strtolower($base)] ?? null;
+        return $canonical === null ? $name : $canonical . substr($name, strlen($base));
     }
 }
 
@@ -258,6 +375,7 @@ if (!function_exists('titleCase')) {
 
         foreach ($delimiters as $delimiter) {
             $words = explode($delimiter, $result);
+            $originalWords = $words;
 
             foreach ($words as $i => $word) {
                 $original   = $word;
@@ -277,7 +395,8 @@ if (!function_exists('titleCase')) {
                     continue;
                 }
 
-                // 3) If the word is NOT all-lowercase and NOT a "small word", assume user chose the case
+                // 3) If the word is NOT all-lowercase and NOT a "small word", assume user chose the case.
+                //    A user-edited name keeps capitalized small words too ("Back To The Start").
                 if (!$isAllLower) {
                     if ($respectUserCasing || !in_array($lower, $lowercaseExceptions, true)) {
                         $words[$i] = $original;
@@ -285,11 +404,30 @@ if (!function_exists('titleCase')) {
                     }
                 }
 
-                // 4) Small words: lowercase (unless first or after "-")
+                // 4) Small words: lowercase, unless first or last in their
+                //    segment — normal title case capitalizes both ends ("All
+                //    Filled Up # 01", "Scene_1 - Laura A"). A segment starts
+                //    after "-" and ends before "-", a "# NN" volume marker, or a
+                //    "(...)" tag. In both modes: a lowercase "and" is a casing
+                //    choice too, and skipping this for user edits capitalized it
+                //    ("Married And Available").
                 $prevWord = $words[$i - 1] ?? null;
+                $nextWord = $words[$i + 1] ?? null;
+                $isLastInSegment = $nextWord === null
+                    || $nextWord === '-'
+                    || str_starts_with($nextWord, '#')
+                    || str_starts_with($nextWord, '(');
+                // A capital "A" spelled out beside another single capital
+                // ("L A Stories", "A N A L") is an initial, not the article.
+                // "I" doesn't count: "Am I A Slut" is the article.
+                $isSpelledInitial = $original === 'A' && (
+                    preg_match('/^[B-HJ-Z]$/', $originalWords[$i - 1] ?? '')
+                    || preg_match('/^[B-HJ-Z]$/', $originalWords[$i + 1] ?? '')
+                );
                 if (
-                    !$respectUserCasing &&
                     $i > 0 &&
+                    !$isLastInSegment &&
+                    !$isSpelledInitial &&
                     in_array($lower, $lowercaseExceptions, true) &&
                     $prevWord !== '-'
                 ) {
@@ -306,7 +444,37 @@ if (!function_exists('titleCase')) {
             $result = implode($delimiter, $words);
         }
 
-        return $result;
+        return restoreFixedCasePhrases($result);
+    }
+}
+
+if (!function_exists('restoreFixedCasePhrases')) {
+    /**
+     * Phrases whose capitals the small-word rule would wrongly drop — a
+     * compound or a letter, not a preposition or article ("Strap On
+     * Lesbians", "Oiled Up Anal", "Straight A Students", "The A Cup Girls")
+     * — and an article opening an undashed parody subtitle ("Sherlock A XXX
+     * Parody"). Each was a reviewed false positive of the 2026-10-01 casing
+     * clean-up, and every library title containing one reads that way.
+     * Deliberately absent: "Straight Up" ("Straight up the Pipe" is a
+     * preposition) and a bare "A Parody" ("This Is a Parody").
+     */
+    function restoreFixedCasePhrases(string $name): string
+    {
+        $phrases = [
+            'Strap On', 'Oiled Up', 'Inked Up', 'Dressed Up', 'Pin Up',
+            'Hands On', 'Pissed Off', 'Straight A', 'Grade A', 'A Cup', 'Letter A',
+        ];
+        foreach ($phrases as $phrase) {
+            $pattern = str_replace(' ', '\s+', preg_quote($phrase, '/'));
+            $name = preg_replace('/\b' . $pattern . '\b/i', $phrase, $name);
+        }
+        // "… A XXX Parody", "… An XXX Porn Parody", "… A Dreamzone XXX Parody"
+        return preg_replace_callback(
+            '/\b(a|an|the)(?=(?:\s+(?:XXX|Porn|Hardcore|DP|Dreamzone)){1,2}\s+Parody\b)/i',
+            fn($m) => ucfirst(strtolower($m[1])),
+            $name
+        );
     }
 }
 
@@ -395,9 +563,20 @@ if (!function_exists('cleanupFunctions')) {
             },
             $name
         );
+        // The volume rules below turn a number into "# NN". Two kinds of number
+        // are part of the title instead (Sean, 2026-10-01): an age after
+        // Barely/Just/Turned/Over/Only/Legal ("They're Barely 18", "Over 40" —
+        // 18 and up, so "Bent Over 2" is still volume 2), and anything after
+        // "Than" ("2 Heads Are Better Than 1"). Titles whose number is simply
+        // part of the name ("Kill Code 87") are masked for the duration.
+        $notVolume = '(?<!# )(?<!Scene_)\b'
+            . '(?!(?<=\bBarely |\bJust |\bTurned |\bOver |\bOnly |\bLegal )(?:1[89]|[2-9]\d)\b)'
+            . '(?<!\bThan )';
+        $name = protectTitleNumbers($name);
+
         // Numbers before a parenthetical suffix:
         $name = preg_replace_callback(
-            '/(?<!# )(?<!Scene_)\b(\d{1,3})\b(?=\s*\()/',
+            '/' . $notVolume . '(\d{1,3})\b(?=\s*\()/i',
             function ($matches) {
                 $number = $matches[1];
                 if (strlen($number) === 1) {
@@ -423,7 +602,7 @@ if (!function_exists('cleanupFunctions')) {
         // sweep, 2026-08-30). Scene numbers themselves are glued to their
         // underscore, so \b never matches them.
         $name = preg_replace_callback(
-            '/(?<!# )(?<!Scene_)\b(\d+)(?=\s+-\s.*\bScene_\d)/',
+            '/' . $notVolume . '(\d+)(?=\s+-\s.*\bScene_\d)/i',
             function ($matches) {
                 $number = $matches[1];
 
@@ -442,7 +621,7 @@ if (!function_exists('cleanupFunctions')) {
 
         // Trailing numbers at the end (but not already "# " and not part of Scene_)
         $name = preg_replace_callback(
-            '/(?<!# )(?<!Scene_)\b(\d+)\b$/',
+            '/' . $notVolume . '(\d+)\b$/i',
             function ($matches) {
                 $number = $matches[1];
 
@@ -462,7 +641,44 @@ if (!function_exists('cleanupFunctions')) {
         // Ensure no redundant "# #"
         $name = preg_replace('/#\s+#/', '# ', $name);
 
-        return trim($name);
+        return trim(unprotectTitleNumbers($name));
+    }
+}
+
+if (!function_exists('protectTitleNumbers')) {
+    /**
+     * Titles whose number is part of the name, never a volume (Sean,
+     * 2026-10-01). Hand-listed: nothing distinguishes "Kill Code 87" from
+     * "Mountain Crush 2" except knowing the title.
+     */
+    function moviedb_numbered_titles(): array
+    {
+        return ['Kill Code 87'];
+    }
+
+    /**
+     * Glues a marker to each listed title's number so the volume rules'
+     * \b(\d+) can't see it; unprotectTitleNumbers() takes it back off.
+     */
+    function protectTitleNumbers(string $name, ?array $titles = null): string
+    {
+        foreach ($titles ?? moviedb_numbered_titles() as $title) {
+            if (!preg_match('/^(.*\D)(\d+)$/', $title, $m)) {
+                continue;
+            }
+            $words = str_replace(' ', '\s+', preg_quote($m[1], '/'));
+            $name = preg_replace(
+                '/\b(' . $words . ')' . $m[2] . '\b/i',
+                '${1}MDBKEEPNUM' . $m[2],
+                $name
+            );
+        }
+        return $name;
+    }
+
+    function unprotectTitleNumbers(string $name): string
+    {
+        return str_replace('MDBKEEPNUM', '', $name);
     }
 }
 

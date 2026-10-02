@@ -518,6 +518,8 @@ $fixedPoints = [
     'The Busty & Bushy Cougar & Her Prey - Scene_1 - Chanel Preston',
     '18 & Creamed - Scene_1',
     'Mountain Crush # 02 - Snowbunnies - Scene_1 - Ella Hughes',
+    'Adventures in XXX',
+    'Private Tropical # 37 - Anal Honeymoon in the Tropics',
 ];
 // Raw inputs whose FIRST normalization must already be a fixed point
 // (otherwise the rename tool re-flags files it just renamed).
@@ -556,18 +558,82 @@ foreach ($fixedPoints as $name) {
     check("stable (default): $name", normalizeFileBaseName($name), $name);
     check("stable (respect): $name", normalizeFileBaseName($name, true), $name);
 }
-// Pre-existing respectUserCasing behavior capitalizes lowercase small words
-// ("in" → "In"), so this one is only a fixed point in default mode.
+
+echo "user-edited names (respectUserCasing) keep small words lowercase:\n";
+// Typing a cast flips the preview into respect mode, which used to skip the
+// small-word rule: an untouched lowercase "and" in the title came back as
+// "And", and the next scan (default mode) flagged the renamed file again.
 check(
-    'stable (default): Adventures in XXX',
-    normalizeFileBaseName('Adventures in XXX'),
-    'Adventures in XXX'
+    'lowercase "and" in the title survives a typed cast',
+    normalizeFileBaseName('Quietly and Slowly # 02 - Scene_1 - Mira Quell', true),
+    'Quietly and Slowly # 02 - Scene_1 - Mira Quell'
 );
 check(
-    'stable (default): Private Tropical # 37 - Anal Honeymoon in the Tropics',
-    normalizeFileBaseName('Private Tropical # 37 - Anal Honeymoon in the Tropics'),
-    'Private Tropical # 37 - Anal Honeymoon in the Tropics'
+    'all-lowercase typing: small words stay lowercase, the rest is title-cased',
+    normalizeFileBaseName('a night in the city - scene 1 - mira quell', true),
+    'A Night in the City - Scene_1 - Mira Quell'
 );
+check(
+    'a deliberately capitalized small word is still kept',
+    normalizeFileBaseName('Back To The Start - Scene_1', true),
+    'Back To The Start - Scene_1'
+);
+// What a cast rename writes must be what the next scan expects, or the
+// rename tool re-flags the file it just renamed.
+foreach ([
+    'Quietly and Slowly # 02 - Scene_1 - Mira Quell',
+    'a night in the city - scene 1 - mira quell',
+] as $typed) {
+    $renamed = normalizeFileBaseName($typed, true);
+    check("next scan leaves it alone: $typed", normalizeFileBaseName($renamed), $renamed);
+}
+
+echo "the last word of a segment is capitalized, small or not:\n";
+check(
+    'before a volume marker',
+    normalizeFileBaseName('Kept Me up # 01'),
+    'Kept Me Up # 01'
+);
+check(
+    'before " - Scene_N"',
+    normalizeFileBaseName('Wrap Me up - Scene_1 - Mira Quell'),
+    'Wrap Me Up - Scene_1 - Mira Quell'
+);
+check(
+    'a trailing initial in the cast',
+    normalizeFileBaseName('Movie.Scene.1.Mira.A'),
+    'Movie - Scene_1 - Mira A'
+);
+check(
+    'before a "(...)" tag',
+    normalizeFileBaseName('Turn Me on (2020)'),
+    'Turn Me On (2020)'
+);
+check(
+    'last only once the release junk is gone',
+    normalizeFileBaseName('Wind.Me.Up.1080p.x264-GRP'),
+    'Wind Me Up'
+);
+check(
+    'interior small words stay lowercase',
+    normalizeFileBaseName('Out Of The Blue # 02'),
+    'Out of the Blue # 02'
+);
+check(
+    'respect mode: lowercase typing gets the same ends',
+    normalizeFileBaseName('fire me up - scene 2 - mira a', true),
+    'Fire Me Up - Scene_2 - Mira A'
+);
+foreach ([
+    'Kept Me Up # 01',
+    'Wrap Me Up - Scene_1 - Mira Quell',
+    'Movie - Scene_1 - Mira A',
+    'Turn Me On (2020)',
+    'Out of the Blue # 02',
+] as $name) {
+    check("stable (default): $name", normalizeFileBaseName($name), $name);
+    check("stable (respect): $name", normalizeFileBaseName($name, true), $name);
+}
 
 echo "disc / CD canonicalization:\n";
 check(
@@ -1062,6 +1128,82 @@ check(
     ),
     'Movie - Scene_1 - Anvi Amelia'
 );
+
+echo "numbers that are part of the title, not a volume:\n";
+check(
+    'an age after "Barely" stays',
+    normalizeFileBaseName("Velvet Lantern - They're Barely 18 - Scene_1 - Mira Quell"),
+    "Velvet Lantern - They're Barely 18 - Scene_1 - Mira Quell"
+);
+check(
+    'an age after "Over" stays',
+    normalizeFileBaseName('Moms Over 40 - Scene_1 - Mira Quell'),
+    'Moms Over 40 - Scene_1 - Mira Quell'
+);
+check(
+    'a small number after "Over" is still a volume',
+    normalizeFileBaseName('Bent Over 2 - Scene_1 - Mira Quell'),
+    'Bent Over # 02 - Scene_1 - Mira Quell'
+);
+check(
+    'a number after "Than" stays',
+    normalizeFileBaseName('Three Heads Are Better Than 2'),
+    'Three Heads Are Better Than 2'
+);
+check(
+    'a listed numbered title keeps its number (injected list)',
+    unprotectTitleNumbers(cleanupFunctions(protectTitleNumbers('Moon Code 42 - Scene_1 - Mira Quell', ['Moon Code 42']))),
+    'Moon Code 42 - Scene_1 - Mira Quell'
+);
+check(
+    'an unlisted title still gets its volume marker',
+    unprotectTitleNumbers(cleanupFunctions(protectTitleNumbers('Moon Code 42 - Scene_1 - Mira Quell', []))),
+    'Moon Code # 42 - Scene_1 - Mira Quell'
+);
+
+echo "phrases the small-word rule must not lowercase:\n";
+check('a compound noun', normalizeFileBaseName('Strap on Stargazers - Scene_1'), 'Strap On Stargazers - Scene_1');
+check('a compound adjective', normalizeFileBaseName('Oiled up Vixens # 02'), 'Oiled Up Vixens # 02');
+check('a letter grade', normalizeFileBaseName('Straight a Sorority'), 'Straight A Sorority');
+check('a cup size', normalizeFileBaseName('The a Cup Club'), 'The A Cup Club');
+check('an undashed parody subtitle', normalizeFileBaseName('Moonbase a XXX Parody'), 'Moonbase A XXX Parody');
+check('a plain article before "Parody" stays small', normalizeFileBaseName('This Is a Parody'), 'This is a Parody');
+check('a two-word parody subtitle', normalizeFileBaseName('Moonbase An XXX Porn Parody'), 'Moonbase An XXX Porn Parody');
+check('a grade', normalizeFileBaseName('Grade A Starlets'), 'Grade A Starlets');
+check('a spelled-out initial', normalizeFileBaseName('L A Moonlight'), 'L A Moonlight');
+check('spelled-out letters', normalizeFileBaseName('A N A L Lantern # 01'), 'A N A L Lantern # 01');
+check('the article beside "I" stays small', normalizeFileBaseName('Am I A Lantern'), 'Am I a Lantern');
+check('a lowercase article beside a letter stays small', normalizeFileBaseName('I Wanna B a Lantern'), 'I Wanna B a Lantern');
+check('"up" as a preposition stays small', normalizeFileBaseName('Straight Up the Ladder'), 'Straight up the Ladder');
+check(
+    'respect mode keeps the compound too',
+    normalizeFileBaseName('strap on stargazers - scene 1 - mira quell', true),
+    'Strap On Stargazers - Scene_1 - Mira Quell'
+);
+
+echo "hand-settled title spellings (injected lists):\n";
+$overrides = moviedb_build_title_overrides(
+    ['Moon.Base.', 'Night Shift The Return'],
+    ['Moon and Stars' => 'Moon & Stars', 'Four Lanterns' => '4 Lanterns']
+);
+check(
+    'a variant spelling becomes the chosen one, suffix kept',
+    applyTitleOverride('Moon and Stars # 02 - Scene_1 - Mira Quell', $overrides),
+    'Moon & Stars # 02 - Scene_1 - Mira Quell'
+);
+check('the chosen spelling is a fixed point', applyTitleOverride('Moon & Stars', $overrides), 'Moon & Stars');
+check('a word spelling becomes digits', applyTitleOverride('Four Lanterns # 01', $overrides), '4 Lanterns # 01');
+check(
+    'an exact title survives its periods being swept',
+    applyTitleOverride('Moon Base # 03 - Scene_2 - Mira Quell', $overrides),
+    'Moon.Base. # 03 - Scene_2 - Mira Quell'
+);
+check(
+    'an exact title keeps its casing',
+    applyTitleOverride('Night Shift the Return - Scene_1', $overrides),
+    'Night Shift The Return - Scene_1'
+);
+check('an unlisted title is untouched', applyTitleOverride('Moon Stars # 02', $overrides), 'Moon Stars # 02');
 
 echo "\n$checks checks, $failures failure(s)\n";
 exit($failures === 0 ? 0 : 1);
