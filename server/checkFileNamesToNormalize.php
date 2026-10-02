@@ -2,6 +2,7 @@
 // Pull in shared normalization helpers
 require_once __DIR__ . '/normalize_helpers.php';
 require_once __DIR__ . '/path_guard.php';
+require_once __DIR__ . '/drive_index_lib.php'; // MOVIEDB_DRIVE_INDEX_VIDEO_EXTS
 
 // Keep PHP warnings/notices out of the JSON response body.
 // They still go to the error log; they just don't get echoed to the client.
@@ -40,8 +41,11 @@ if (!is_dir($directory)) {
 moviedb_reject_path($directory);
 
 try {
-    $files = @scandir($directory);
-    if ($files === false) {
+    // videoOnly (the Settings page): list video files only, the same types
+    // the drive index catalogs — library folders also hold scripts and notes.
+    $onlyExtensions = !empty($data['videoOnly']) ? MOVIEDB_DRIVE_INDEX_VIDEO_EXTS : null;
+    $normalizedFiles = moviedb_scan_names_to_normalize($directory, $onlyExtensions);
+    if ($normalizedFiles === null) {
         ob_clean();
         http_response_code(500);
         $err = error_get_last();
@@ -54,44 +58,6 @@ try {
             'message' => "Cannot read directory \"$directory\": $detail",
         ]);
         exit();
-    }
-    $normalizedFiles = [];
-
-    foreach ($files as $file) {
-        // Skip current and parent directories
-        if ($file === '.' || $file === '..') {
-            continue;
-        }
-
-        // Skip hidden files
-        if (substr($file, 0, 1) === '.') {
-            continue;
-        }
-
-        $path = $directory;
-        $fileName = $file;
-
-        $fileExtension       = pathinfo($fileName, PATHINFO_EXTENSION);
-        $fileNameNoExtension = pathinfo($fileName, PATHINFO_FILENAME);
-
-        $originalBase   = $fileNameNoExtension;                 // raw base name
-        $normalizedBase = normalizeFileBaseName($originalBase); // shared pipeline
-
-        $needsNormalization = ($originalBase !== $normalizedBase);
-
-        $newFileName = $normalizedBase . ($fileExtension ? '.' . $fileExtension : '');
-
-        // Prepare file data
-        $normalizedFiles[] = [
-            'path'               => $path,
-            'originalFileName'   => $fileName,
-            // Only send newFileName when we actually want to rename
-            'newFileName'        => $needsNormalization ? $newFileName : '',
-            'fileExtension'      => $fileExtension,
-            'fileNameNoExtension' => $normalizedBase,
-            'needsNormalization' => $needsNormalization,
-            'status'             => $needsNormalization ? 'Needs Renaming' : '',
-        ];
     }
 
     // Set appropriate headers for JSON response

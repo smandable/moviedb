@@ -20,6 +20,12 @@ import {
   ConsolidateStatus,
   ConsolidateProgress,
 } from '@services/consolidate.service';
+import { FileService, NormalizedFile } from '@services/file.service';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import {
+  FileNormalizationModalComponent,
+  RENAME_SUCCESS_STATUS,
+} from '@modals/file-normalization-modal/file-normalization-modal.component';
 import { formatBytes, formatDurationHuman } from '@helpers/formatters';
 import { environment } from 'src/environments/environment';
 
@@ -91,6 +97,24 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private progressTimer: ReturnType<typeof setInterval> | undefined;
   rebuildError = '';
 
+  // ---- Normalize library filenames ----
+  /**
+   * Folders offered for normalizing, edited inline like the index roots and
+   * saved as "normalizeRoots". Until one is saved this mirrors the drive-index
+   * roots — add a subfolder (e.g. one under Etc/Extra) to reach files the
+   * one-level scan can't.
+   */
+  normalizeFolders: string[] = [];
+  private normalizeFoldersFromSettings = false;
+  /** The folder list lives in a collapsed-by-default accordion. */
+  normalizeFoldersExpanded = false;
+  normalizeFoldersStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+  normalizeFoldersMessage = '';
+  /** The folder whose scan is in flight, if any — one scan at a time. */
+  normalizeScanningRoot: string | null = null;
+  /** Outcome line shown beside each root's Normalize button. */
+  normalizeResults: Record<string, { text: string; error: boolean }> = {};
+
   // ---- Consolidation ----
   // Form state mirrors the "consolidate" settings key; populated from the
   // status endpoint's effective settings — the server owns the defaults.
@@ -126,6 +150,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
     private settingsService: SettingsService,
     private driveIndexService: DriveIndexService,
     private consolidateService: ConsolidateService,
+    private fileService: FileService,
+    private modalService: NgbModal,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -139,6 +165,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
           this.driveIndexRoots = [...settings.driveIndexRoots];
           this.rootsFromSettings = true;
         }
+        if (settings.normalizeRoots?.length) {
+          this.normalizeFolders = [...settings.normalizeRoots];
+          this.normalizeFoldersFromSettings = true;
+        }
+        this.syncNormalizeFolders();
         if (settings.moveRenamedUpFromNeedsCast !== undefined) {
           this.moveRenamedUpFromNeedsCast = settings.moveRenamedUpFromNeedsCast;
         }
@@ -154,6 +185,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         if (!this.rootsFromSettings && status.roots?.length) {
           this.driveIndexRoots = [...status.roots];
         }
+        this.syncNormalizeFolders();
         this.cdr.markForCheck();
       },
       error: (err: Error) => {
@@ -434,6 +466,126 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.progressTimer = undefined;
     }
     this.rebuildProgress = null;
+  }
+
+  // ---- Normalize library filenames ----
+
+  /**
+   * Until a folder list is saved, offer the drive-index roots — whichever of
+   * the settings and status responses lands last has the final say.
+   */
+  private syncNormalizeFolders(): void {
+    if (!this.normalizeFoldersFromSettings) {
+      this.normalizeFolders = this.driveIndexRoots.filter((r) => r.trim() !== '');
+    }
+  }
+
+  addNormalizeFolder(): void {
+    this.normalizeFolders.push('');
+    this.normalizeFoldersStatus = 'idle';
+  }
+
+  removeNormalizeFolder(index: number): void {
+    this.normalizeFolders.splice(index, 1);
+    this.normalizeFoldersStatus = 'idle';
+  }
+
+  /** Saving an empty list goes back to offering the drive-index roots. */
+  saveNormalizeFolders(): void {
+    const folders = this.normalizeFolders
+      .map((folder) => folder.trim())
+      .filter((folder) => !!folder);
+    this.normalizeFoldersStatus = 'saving';
+    this.settingsService.saveSettings({ normalizeRoots: folders }).subscribe({
+      next: (res) => {
+        const saved = res.settings.normalizeRoots ?? [];
+        this.normalizeFoldersFromSettings = saved.length > 0;
+        if (this.normalizeFoldersFromSettings) {
+          this.normalizeFolders = [...saved];
+        } else {
+          this.syncNormalizeFolders();
+        }
+        this.normalizeFoldersStatus = 'saved';
+        this.normalizeFoldersMessage = this.normalizeFoldersFromSettings
+          ? 'Saved.'
+          : 'Saved — back to the drive-index roots.';
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.normalizeFoldersStatus = 'error';
+        this.normalizeFoldersMessage = err.message;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /**
+   * Scans one folder and opens the Process Directory rename review on the
+   * files whose names would change. Ignored while another scan runs (a
+   * sleeping drive can take ~20s to answer, and a second click used to stack a
+   * second modal over a stale list) or while a consolidation is moving files.
+   */
+  normalizeRoot(folder: string): void {
+    const root = folder.trim();
+    if (!root || this.normalizeScanningRoot || this.isConsolidating) {
+      return;
+    }
+    this.normalizeScanningRoot = root;
+    delete this.normalizeResults[root];
+
+    this.fileService.checkFileNamesToNormalize(root, true).subscribe({
+      next: ({ files }) => {
+        this.normalizeScanningRoot = null;
+        const candidates = files.filter((f) => f.needsNormalization);
+        if (candidates.length) {
+          this.openNormalizeModal(root, candidates);
+        } else {
+          this.normalizeResults[root] = {
+            text: `All ${files.length} files are already normalized.`,
+            error: false,
+          };
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.normalizeScanningRoot = null;
+        this.normalizeResults[root] = {
+          text: `Couldn't scan: ${err.message}`,
+          error: true,
+        };
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private openNormalizeModal(root: string, files: NormalizedFile[]): void {
+    const modalRef = this.modalService.open(FileNormalizationModalComponent, {
+      size: 'xl',
+      scrollable: true,
+      modalDialogClass: 'file-normalization-dialog',
+    });
+    modalRef.componentInstance.files = files;
+    modalRef.componentInstance.directory = root;
+    modalRef.componentInstance.harvestDirectoryCastNames = false;
+
+    // The modal folds each rename's result into these same objects.
+    const onClosed = () => {
+      const renamed = files.filter(
+        (f) => f.status === RENAME_SUCCESS_STATUS,
+      ).length;
+      this.normalizeResults[root] = {
+        text: renamed
+          ? `Renamed ${renamed} of ${files.length} proposed.`
+          : `Nothing renamed (${files.length} proposed).`,
+        error: false,
+      };
+      // Renamed files are stale in the index; refresh it, as a trash does.
+      if (renamed && !this.isRebuilding && !this.isConsolidating) {
+        this.rebuildIndex();
+      }
+      this.cdr.markForCheck();
+    };
+    modalRef.result.then(onClosed, onClosed);
   }
 
   // ---- Consolidation ----

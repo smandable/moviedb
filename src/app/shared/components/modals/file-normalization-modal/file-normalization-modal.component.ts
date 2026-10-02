@@ -17,7 +17,7 @@ import {
 import { endsWithSceneNumber, getBaseTitle } from '@helpers/title';
 
 // Status string emitted by server/renameTheFilesToNormalize.php
-const RENAME_SUCCESS_STATUS = 'Renamed successfully';
+export const RENAME_SUCCESS_STATUS = 'Renamed successfully';
 
 // The characters finalCleanup() strips off the end of a name server-side —
 // see the rtrim in server/normalize_helpers.php.
@@ -103,6 +103,15 @@ export type NormalizationModalTab = 'normalize' | 'cast';
 export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   @Input() files: NormalizedFile[] = [];
   @Input() directory: string = '';
+
+  /**
+   * Mine `directory`'s filenames for cast names when the modal opens
+   * (castNames.php merges them into the store). Right for a staging batch;
+   * the Settings page turns it off for whole library roots, where it would
+   * re-add any name deliberately deleted from the store that a filename on
+   * the drive still carries. Names typed here still feed the store either way.
+   */
+  @Input() harvestDirectoryCastNames = true;
 
   allSelected: boolean = true;
 
@@ -832,7 +841,8 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
   /** Pull the autocomplete vocabulary, and feed newly-used names back into it. */
   private loadCastNames(add?: string[]): void {
-    this.fileService.getCastNames(this.directory, add).subscribe({
+    const harvestFrom = this.harvestDirectoryCastNames ? this.directory : undefined;
+    this.fileService.getCastNames(harvestFrom, add).subscribe({
       next: ({ names }) => {
         this.castNames = names ?? [];
         this.castNameSet = new Set(this.castNames.map((n) => n.toLowerCase()));

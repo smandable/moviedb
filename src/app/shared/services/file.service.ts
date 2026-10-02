@@ -82,16 +82,20 @@ export class FileService {
   /**
    * Sends a request to check and normalize filenames.
    * @param directory The directory path to process.
+   * @param videoOnly List video files only (the drive index's types) — for
+   *   library folders, which also hold scripts and notes.
    * @returns An observable containing the list of files.
    */
   checkFileNamesToNormalize(
     directory: string,
+    videoOnly = false,
   ): Observable<{ files: NormalizedFile[] }> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const body = videoOnly ? { directory, videoOnly } : { directory };
     return this.http
       .post<{
         files: NormalizedFile[];
-      }>(this.checkFilesUrl, { directory }, { headers })
+      }>(this.checkFilesUrl, body, { headers })
       .pipe(catchError(this.handleError));
   }
 

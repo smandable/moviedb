@@ -9,6 +9,7 @@
  * POST { driveIndexRoots }             -> { settings: {...} }
  * POST { consolidate }                 -> { settings: {...} }
  * POST { moveRenamedUpFromNeedsCast }  -> { settings: {...} }
+ * POST { normalizeRoots }              -> { settings: {...} }
  *
  * Only whitelisted keys are stored. defaultDirectory, each driveIndexRoots
  * entry, and each consolidate drive must pass the ALLOWED_BASE_PATH guard
@@ -19,7 +20,9 @@
  * scripts/consolidate_movies.php (see server/consolidate_lib.php);
  * moveRenamedUpFromNeedsCast is a plain boolean, the needs-cast move-up
  * toggle read by renameTheFilesToNormalize.php (absent means ON — see
- * server/rename_helpers.php).
+ * server/rename_helpers.php). normalizeRoots lists the folders the Settings
+ * page offers to normalize (absent or empty means the drive-index roots);
+ * each entry is guarded like driveIndexRoots.
  */
 
 require_once __DIR__ . '/path_guard.php';
@@ -131,6 +134,50 @@ if (array_key_exists('driveIndexRoots', $data)) {
         $cleanRoots[] = $root;
     }
     $settings['driveIndexRoots'] = $cleanRoots;
+}
+
+if (array_key_exists('normalizeRoots', $data)) {
+    // The Settings page's "Normalize Library Filenames" folders. Validated
+    // like driveIndexRoots; an empty list is allowed and means "offer the
+    // drive-index roots" again.
+    $roots = $data['normalizeRoots'];
+    if (!is_array($roots) || count($roots) > 50) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'normalizeRoots must be an array of at most 50 paths']);
+        exit();
+    }
+    $cleanRoots = [];
+    foreach ($roots as $root) {
+        if (!is_string($root) || trim($root) === '') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'normalizeRoots entries must be non-empty strings']);
+            exit();
+        }
+        $root = rtrim(trim($root), '/');
+        if ($root === '' || $root[0] !== '/' || !moviedb_is_path_allowed($root)) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "normalizeRoots entry is not an allowed absolute path: $root",
+            ]);
+            exit();
+        }
+        $rootError = moviedb_validate_drive_root($root);
+        if ($rootError !== null) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "normalizeRoots entry rejected ($root): $rootError",
+            ]);
+            exit();
+        }
+        $cleanRoots[] = $root;
+    }
+    if ($cleanRoots) {
+        $settings['normalizeRoots'] = $cleanRoots;
+    } else {
+        unset($settings['normalizeRoots']);
+    }
 }
 
 if (array_key_exists('consolidate', $data)) {

@@ -21,6 +21,11 @@ export interface AppSettings {
    * it carries a cast (read by renameTheFilesToNormalize.php; absent = ON).
    */
   moveRenamedUpFromNeedsCast?: boolean;
+  /**
+   * Folders the Settings page offers to normalize; absent means the
+   * drive-index roots.
+   */
+  normalizeRoots?: string[];
 }
 
 export interface SaveSettingsResponse {

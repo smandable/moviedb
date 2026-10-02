@@ -206,6 +206,57 @@ if (!function_exists('applyTitleOverride')) {
     }
 }
 
+if (!function_exists('moviedb_scan_names_to_normalize')) {
+    /**
+     * The rename modal's file list for one directory: each regular file in it
+     * with its normalized name. Dot-files and subfolders are skipped — the list
+     * is offered for renaming as-is, and a library root holds "needs-cast" and
+     * "duplicates" folders that other code finds by exactly those names.
+     * $onlyExtensions (lowercase) narrows the list to those file types — the
+     * Settings page passes the video extensions, because a library folder can
+     * also hold scripts and notes ("convert_to_mp4.php") that normalizing
+     * would mangle. Returns null when the directory can't be listed
+     * (error_get_last() says why).
+     */
+    function moviedb_scan_names_to_normalize(string $directory, ?array $onlyExtensions = null): ?array
+    {
+        $entries = @scandir($directory);
+        if ($entries === false) {
+            return null;
+        }
+
+        $rows = [];
+        foreach ($entries as $fileName) {
+            if ($fileName[0] === '.' || !is_file($directory . '/' . $fileName)) {
+                continue;
+            }
+
+            $fileExtension  = pathinfo($fileName, PATHINFO_EXTENSION);
+            if ($onlyExtensions !== null
+                && !in_array(strtolower($fileExtension), $onlyExtensions, true)) {
+                continue;
+            }
+            $originalBase   = pathinfo($fileName, PATHINFO_FILENAME);
+            $normalizedBase = normalizeFileBaseName($originalBase);
+            $needsNormalization = ($originalBase !== $normalizedBase);
+
+            $rows[] = [
+                'path'                => $directory,
+                'originalFileName'    => $fileName,
+                // Only send newFileName when we actually want to rename
+                'newFileName'         => $needsNormalization
+                    ? $normalizedBase . ($fileExtension ? '.' . $fileExtension : '')
+                    : '',
+                'fileExtension'       => $fileExtension,
+                'fileNameNoExtension' => $normalizedBase,
+                'needsNormalization'  => $needsNormalization,
+                'status'              => $needsNormalization ? 'Needs Renaming' : '',
+            ];
+        }
+        return $rows;
+    }
+}
+
 // Shared filename normalization helpers.
 // Used by checkFileNamesToNormalize.php, etc.
 

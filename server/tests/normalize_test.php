@@ -1205,5 +1205,50 @@ check(
 );
 check('an unlisted title is untouched', applyTitleOverride('Moon Stars # 02', $overrides), 'Moon Stars # 02');
 
+echo "directory scan for the rename modal (temp-dir fixture):\n";
+$scanDir = sys_get_temp_dir() . '/moviedb_scan_' . uniqid();
+mkdir($scanDir);
+mkdir("$scanDir/duplicates");
+mkdir("$scanDir/needs-cast");
+touch("$scanDir/movie.scene.1.mira.quell.mp4");
+touch("$scanDir/Quietly and Slowly - Scene_1 - Mira Quell.mp4");
+touch("$scanDir/.DS_Store");
+$scanRows = moviedb_scan_names_to_normalize($scanDir);
+$byName = array_column($scanRows ?? [], null, 'originalFileName');
+check(
+    'lists regular files only — no subfolders, no dot-files',
+    array_keys($byName) == ['Quietly and Slowly - Scene_1 - Mira Quell.mp4', 'movie.scene.1.mira.quell.mp4']
+        || array_keys($byName) == ['movie.scene.1.mira.quell.mp4', 'Quietly and Slowly - Scene_1 - Mira Quell.mp4'],
+    true
+);
+check(
+    'a file needing a rename carries the normalized name',
+    [$byName['movie.scene.1.mira.quell.mp4']['needsNormalization'] ?? null, $byName['movie.scene.1.mira.quell.mp4']['newFileName'] ?? null],
+    [true, 'Movie - Scene_1 - Mira Quell.mp4']
+);
+check(
+    'an already-normalized file is listed with no rename',
+    [$byName['Quietly and Slowly - Scene_1 - Mira Quell.mp4']['needsNormalization'] ?? null, $byName['Quietly and Slowly - Scene_1 - Mira Quell.mp4']['newFileName'] ?? null],
+    [false, '']
+);
+check('an unlistable directory returns null', moviedb_scan_names_to_normalize("$scanDir/missing"), null);
+touch("$scanDir/convert_helper.php");
+check(
+    'a type filter keeps videos and drops scripts',
+    array_column(moviedb_scan_names_to_normalize($scanDir, ['mp4']) ?? [], 'originalFileName'),
+    ['Quietly and Slowly - Scene_1 - Mira Quell.mp4', 'movie.scene.1.mira.quell.mp4']
+);
+check(
+    'without the filter the script is listed too',
+    in_array('convert_helper.php', array_column(moviedb_scan_names_to_normalize($scanDir) ?? [], 'originalFileName'), true),
+    true
+);
+unlink("$scanDir/convert_helper.php");
+array_map('unlink', glob("$scanDir/*.mp4"));
+unlink("$scanDir/.DS_Store");
+rmdir("$scanDir/duplicates");
+rmdir("$scanDir/needs-cast");
+rmdir($scanDir);
+
 echo "\n$checks checks, $failures failure(s)\n";
 exit($failures === 0 ? 0 : 1);

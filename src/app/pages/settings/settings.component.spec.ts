@@ -12,6 +12,12 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { environment } from 'src/environments/environment';
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
+import { NormalizedFile } from '@services/file.service';
+import {
+  FileNormalizationModalComponent,
+  RENAME_SUCCESS_STATUS,
+} from '@modals/file-normalization-modal/file-normalization-modal.component';
 
 import {
   SettingsComponent,
@@ -400,6 +406,285 @@ describe('SettingsComponent', () => {
 
       expect(component.rootsExpanded).toBeTrue();
       expect(el.querySelector('.root-input')).toBeTruthy();
+    });
+  });
+
+  describe('normalize library filenames card', () => {
+    const checkUrl = `${environment.apiBaseUrl}checkFileNamesToNormalize.php`;
+    const rootA = '/Volumes/Fixture A/recorded';
+    const rootB = '/Volumes/Fixture B/recorded';
+
+    function scanFile(name: string, newName = ''): NormalizedFile {
+      return {
+        path: rootA,
+        originalFileName: name,
+        newFileName: newName,
+        fileExtension: 'mp4',
+        fileNameNoExtension: (newName || name).replace(/\.mp4$/, ''),
+        needsNormalization: newName !== '',
+        status: newName ? 'Needs Renaming' : '',
+      };
+    }
+
+    /** A stand-in for the opened modal, closed or dismissed on demand. */
+    function fakeModal() {
+      let close!: (reason: unknown) => void;
+      let dismiss!: (reason: unknown) => void;
+      const result = new Promise((res, rej) => {
+        close = res;
+        dismiss = rej;
+      });
+      const ref = { componentInstance: {}, result } as unknown as NgbModalRef;
+      return { ref, close: () => close('all-done'), dismiss: () => dismiss('cancel') };
+    }
+
+    /** The folder rows, with the (collapsed-by-default) list expanded. */
+    function rows(): HTMLElement[] {
+      component.normalizeFoldersExpanded = true;
+      // OnPush: a field set from outside the component doesn't dirty ITS view
+      (component['cdr'] as ChangeDetectorRef).markForCheck();
+      fixture.detectChanges();
+      return Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll('.normalize-row'),
+      );
+    }
+
+    const inputOf = (row: HTMLElement) =>
+      row.querySelector<HTMLInputElement>('input.root-input')!;
+
+    it('collapses the folder list by default and expands on toggle', () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      fixture.detectChanges();
+
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('.normalize-row')).toBeNull();
+      const toggle = el.querySelector('.normalize-toggle') as HTMLElement;
+      expect(toggle.textContent).toContain('Folders (1)');
+
+      toggle.click();
+      fixture.detectChanges();
+
+      expect(el.querySelectorAll('.normalize-row').length).toBe(1);
+    });
+
+    it('offers the drive-index roots, editable, until a list is saved', async () => {
+      flushInit({ driveIndexRoots: [rootA, rootB] }, undefined, {
+        ...neverBuiltStatus,
+        unmountedRoots: [rootB],
+      });
+
+      const [a, b, ...rest] = rows();
+      await fixture.whenStable(); // ngModel writes input values asynchronously
+      expect(rest.length).toBe(0);
+      expect(inputOf(a).value).toBe(rootA);
+      expect(a.textContent).not.toContain('Not mounted');
+      expect(inputOf(b).value).toBe(rootB);
+      expect(b.textContent).toContain('Not mounted right now.');
+    });
+
+    it('a saved folder list wins over the drive-index roots', () => {
+      const sub = `${rootA}/Subfolder`;
+      flushInit({ driveIndexRoots: [rootA, rootB], normalizeRoots: [sub] });
+
+      expect(component.normalizeFolders).toEqual([sub]);
+    });
+
+    it('saves the folders, trimming and dropping blank rows', () => {
+      flushInit({ driveIndexRoots: [rootA] });
+
+      component.normalizeFolders = [` ${rootA}/Subfolder `, '   ', rootB];
+      component.saveNormalizeFolders();
+
+      const req = httpMock.expectOne(settingsUrl);
+      expect(req.request.body).toEqual({
+        normalizeRoots: [`${rootA}/Subfolder`, rootB],
+      });
+      req.flush({
+        success: true,
+        settings: { normalizeRoots: [`${rootA}/Subfolder`, rootB] },
+        directoryExists: null,
+      });
+
+      expect(component.normalizeFoldersStatus).toBe('saved');
+      expect(component.normalizeFolders).toEqual([`${rootA}/Subfolder`, rootB]);
+    });
+
+    it('saving an empty list goes back to the drive-index roots', () => {
+      flushInit({ driveIndexRoots: [rootA, rootB], normalizeRoots: ['/Volumes/Elsewhere'] });
+
+      component.normalizeFolders = ['  '];
+      component.saveNormalizeFolders();
+      const req = httpMock.expectOne(settingsUrl);
+      expect(req.request.body).toEqual({ normalizeRoots: [] });
+      req.flush({ success: true, settings: { driveIndexRoots: [rootA, rootB] }, directoryExists: null });
+
+      expect(component.normalizeFolders).toEqual([rootA, rootB]);
+      expect(component.normalizeFoldersMessage).toBe('Saved — back to the drive-index roots.');
+    });
+
+    it('surfaces a rejected folder inline', () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      spyOn(console, 'error');
+
+      component.normalizeFolders = ['/etc'];
+      component.saveNormalizeFolders();
+      httpMock.expectOne(settingsUrl).flush(
+        { success: false, message: 'normalizeRoots entry is not an allowed absolute path: /etc' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+      const el: HTMLElement = fixture.nativeElement;
+      rows();
+      expect(component.normalizeFoldersStatus).toBe('error');
+      expect(el.textContent).toContain('normalizeRoots entry is not an allowed absolute path: /etc');
+    });
+
+    it('adds and removes folder rows', () => {
+      flushInit({ driveIndexRoots: [rootA, rootB] });
+
+      component.addNormalizeFolder();
+      expect(component.normalizeFolders).toEqual([rootA, rootB, '']);
+      component.removeNormalizeFolder(0);
+      expect(component.normalizeFolders).toEqual([rootB, '']);
+      // A blank row has nothing to scan
+      expect(rows()[1].querySelector<HTMLButtonElement>('button.normalize-btn')!.disabled).toBeTrue();
+    });
+
+    it('scans the root and reviews only the files whose names would change', () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      const fake = fakeModal();
+      const open = spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(fake.ref);
+
+      component.normalizeRoot(rootA);
+      const req = httpMock.expectOne(checkUrl);
+      expect(req.request.body).toEqual({ directory: rootA, videoOnly: true });
+      req.flush({
+        files: [
+          scanFile('kept me up.mp4', 'Kept Me Up.mp4'),
+          scanFile('Already Fine.mp4'),
+          scanFile('wrap me up.mp4', 'Wrap Me Up.mp4'),
+        ],
+      });
+
+      expect(open).toHaveBeenCalledOnceWith(
+        FileNormalizationModalComponent,
+        jasmine.objectContaining({ size: 'xl' }),
+      );
+      const instance = fake.ref.componentInstance;
+      expect(instance.files.map((f: NormalizedFile) => f.originalFileName)).toEqual([
+        'kept me up.mp4',
+        'wrap me up.mp4',
+      ]);
+      expect(instance.directory).toBe(rootA);
+      // A whole root must not be mined into the cast store
+      expect(instance.harvestDirectoryCastNames).toBeFalse();
+    });
+
+    it('shows the scan in flight and ignores clicks until it answers', () => {
+      flushInit({ driveIndexRoots: [rootA, rootB] });
+      const [a, b] = rows();
+
+      a.querySelector('button')!.click();
+      // The guard, not just the disabled attribute
+      component.normalizeRoot(rootB);
+      const req = httpMock.expectOne(checkUrl);
+      rows();
+      expect(a.querySelector('button')!.textContent).toContain('Scanning…');
+      expect(b.querySelector('button')!.disabled).toBeTrue();
+
+      req.flush({ files: [scanFile('Already Fine.mp4')] });
+      rows();
+      expect(a.querySelector('button')!.textContent).toContain('Normalize…');
+      expect(b.querySelector('button')!.disabled).toBeFalse();
+    });
+
+    it('says so instead of opening an empty review', () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      const open = spyOn(TestBed.inject(NgbModal), 'open');
+
+      component.normalizeRoot(rootA);
+      httpMock
+        .expectOne(checkUrl)
+        .flush({ files: [scanFile('Already Fine.mp4'), scanFile('Also Fine.mp4')] });
+
+      expect(open).not.toHaveBeenCalled();
+      expect(rows()[0].textContent).toContain('All 2 files are already normalized.');
+    });
+
+    it('surfaces a failed scan inline and re-enables the button', () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      spyOn(console, 'error'); // FileService logs the HTTP failure
+
+      component.normalizeRoot(rootA);
+      httpMock
+        .expectOne(checkUrl)
+        .flush(
+          { success: false, message: 'Invalid directory path' },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      const [a] = rows();
+      expect(a.querySelector('.normalize-result')!.textContent).toContain(
+        "Couldn't scan: Invalid directory path",
+      );
+      expect(a.querySelector('.normalize-result')!.classList).toContain('text-danger');
+      expect(a.querySelector('button')!.disabled).toBeFalse();
+    });
+
+    it('after renames, reports the count and rebuilds the index', async () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      const fake = fakeModal();
+      spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(fake.ref);
+      const rebuild = spyOn(component, 'rebuildIndex');
+
+      component.normalizeRoot(rootA);
+      httpMock.expectOne(checkUrl).flush({
+        files: [scanFile('a.mp4', 'A.mp4'), scanFile('b.mp4', 'B.mp4')],
+      });
+      // The modal folds rename results into the very objects it was given
+      fake.ref.componentInstance.files[0].status = RENAME_SUCCESS_STATUS;
+      fake.close();
+      await fake.ref.result;
+
+      expect(component.normalizeResults[rootA]).toEqual({
+        text: 'Renamed 1 of 2 proposed.',
+        error: false,
+      });
+      expect(rebuild).toHaveBeenCalledTimes(1);
+    });
+
+    it('closing without renaming leaves the index alone', async () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      const fake = fakeModal();
+      spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(fake.ref);
+      const rebuild = spyOn(component, 'rebuildIndex');
+
+      component.normalizeRoot(rootA);
+      httpMock.expectOne(checkUrl).flush({
+        files: [scanFile('a.mp4', 'A.mp4'), scanFile('b.mp4', 'B.mp4')],
+      });
+      fake.dismiss();
+      await fake.ref.result.catch(() => undefined);
+
+      expect(component.normalizeResults[rootA].text).toBe(
+        'Nothing renamed (2 proposed).',
+      );
+      expect(rebuild).not.toHaveBeenCalled();
+    });
+
+    it('is paused while a consolidation is moving files', () => {
+      flushInit({ driveIndexRoots: [rootA] });
+      component.isConsolidating = true;
+      // OnPush: a field set from outside the component doesn't dirty ITS view
+      (component['cdr'] as ChangeDetectorRef).markForCheck();
+
+      const [a] = rows();
+      expect(a.querySelector('button')!.disabled).toBeTrue();
+      expect(fixture.nativeElement.querySelector('.normalize-paused')).toBeTruthy();
+      component.normalizeRoot(rootA);
+      httpMock.expectNone(checkUrl);
+
+      component.isConsolidating = false;
     });
   });
 

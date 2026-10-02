@@ -1282,6 +1282,37 @@ describe('FileNormalizationModalComponent', () => {
       expect(spy).toHaveBeenCalledWith('/Volumes/Download/fixed', ['Angel Long']);
     });
 
+    it('can skip harvesting the directory, yet still feed typed cast back', () => {
+      // The Settings page opens this on whole library roots, where a harvest
+      // would re-add names deliberately deleted from the store.
+      const spy = spyOn(fileService, 'getCastNames').and.returnValue(
+        of({ names: [] }),
+      );
+      component.harvestDirectoryCastNames = false;
+      component.directory = '/Volumes/Fixture/recorded';
+      const file = makeFile({
+        originalFileName: 'Ass Man - Scene_1.mp4',
+        newFileName: 'Ass Man - Scene_1 - Angel Long.mp4',
+      });
+      component.files = [file];
+      component.ngOnInit();
+      expect(spy).toHaveBeenCalledWith(undefined, undefined);
+
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({
+          results: [
+            {
+              originalFileName: 'Ass Man - Scene_1.mp4',
+              newFileName: 'Ass Man - Scene_1 - Angel Long.mp4',
+              status: 'Renamed successfully',
+            },
+          ],
+        }),
+      );
+      component.renameFiles();
+      expect(spy).toHaveBeenCalledWith(undefined, ['Angel Long']);
+    });
+
     it('survives a vocabulary fetch failure', () => {
       spyOn(fileService, 'getCastNames').and.returnValue(
         throwError(() => new Error('offline')),
