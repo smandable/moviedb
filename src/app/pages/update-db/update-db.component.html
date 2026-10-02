@@ -45,9 +45,17 @@
           class="btn btn-warning"
           type="button"
           (click)="processDirectory()"
+          [disabled]="isScanning"
           title="Process Directory"
         >
-          <i class="fas fa-cogs me-2"></i> Process Directory
+          <span
+            *ngIf="isScanning"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          <i *ngIf="!isScanning" class="fas fa-cogs me-2"></i>
+          {{ isScanning ? "Scanning…" : "Process Directory" }}
         </button>
         <button
           *ngIf="showDatabaseOperationsButton"

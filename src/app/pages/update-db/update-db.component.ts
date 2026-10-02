@@ -346,6 +346,15 @@ export class UpdateDbComponent implements OnInit {
   private gridApi: GridApi<any> | undefined;
 
   isLoading: boolean = false;
+
+  /**
+   * A Process Directory scan is in flight; the button is disabled meanwhile.
+   * A drive waking from sleep can take ~20s to answer, and every click in that
+   * window used to start another scan and stack another modal over the same
+   * file list — rename in the top one, let it close, and the one beneath still
+   * listed names already gone from disk.
+   */
+  isScanning: boolean = false;
   public showDatabaseOperationsButton: boolean = false;
 
   constructor(
@@ -379,17 +388,21 @@ export class UpdateDbComponent implements OnInit {
    * Calls the backend to check and normalize filenames.
    */
   processDirectory(): void {
+    // One scan at a time — see isScanning.
+    if (this.isScanning) {
+      return;
+    }
     if (!this.directory.trim()) {
       alert('Please enter a valid directory path.');
       return;
     }
     this.showDatabaseOperationsButton = false;
 
-    this.isLoading = true;
+    this.isScanning = true;
 
     this.fileService.checkFileNamesToNormalize(this.directory).subscribe({
       next: (response) => {
-        this.isLoading = false;
+        this.isScanning = false;
         const files = response.files;
         this.totalItems = files.length;
         this.cdr.detectChanges();
@@ -398,9 +411,12 @@ export class UpdateDbComponent implements OnInit {
         this.openFilesModal(files);
       },
       error: (error) => {
+        this.isScanning = false;
+        // Zoneless: nothing else repaints after an HTTP error, so without
+        // this the button would stay disabled on "Scanning…".
+        this.cdr.detectChanges();
         console.error('Error processing directory:', error);
         alert('Failed to process the directory. See console for details.');
-        this.isLoading = false;
       },
     });
   }

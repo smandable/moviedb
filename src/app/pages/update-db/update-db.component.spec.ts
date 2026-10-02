@@ -5,11 +5,15 @@ import {
 } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { TranslateModule } from '@ngx-translate/core';
-import { PLATFORM_ID } from '@angular/core';
+import { ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
 import { UpdateDbComponent } from './update-db.component';
-import { FileService, ProcessFilesResponse } from '@services/file.service';
+import {
+  FileService,
+  NormalizedFile,
+  ProcessFilesResponse,
+} from '@services/file.service';
 import { environment } from 'src/environments/environment';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 
 describe('UpdateDbComponent', () => {
   let component: UpdateDbComponent;
@@ -75,7 +79,7 @@ describe('UpdateDbComponent', () => {
 
       expect(fileService.checkFileNamesToNormalize).toHaveBeenCalledWith('/test');
       expect(component.totalItems).toBe(1);
-      expect(component.isLoading).toBeFalse();
+      expect(component.isScanning).toBeFalse();
       expect(component.openFilesModal).toHaveBeenCalledWith(mockFiles);
     });
 
@@ -92,7 +96,76 @@ describe('UpdateDbComponent', () => {
       expect(window.alert).toHaveBeenCalledWith(
         'Failed to process the directory. See console for details.',
       );
-      expect(component.isLoading).toBeFalse();
+      expect(component.isScanning).toBeFalse();
+    });
+
+    it('repaints the button after a failed scan', () => {
+      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValue(
+        throwError(() => new Error('fail')),
+      );
+      spyOn(window, 'alert');
+      spyOn(console, 'error');
+      const detectChanges = spyOn(
+        component['cdr'] as ChangeDetectorRef,
+        'detectChanges',
+      );
+
+      component.directory = '/test';
+      component.processDirectory();
+
+      // Zoneless: an HTTP error callback repaints nothing on its own, so the
+      // button would stay disabled on "Scanning…".
+      expect(detectChanges).toHaveBeenCalled();
+    });
+
+    it('shows the scan in flight on the button', () => {
+      const scan = new Subject<{ files: NormalizedFile[] }>();
+      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValue(scan);
+      spyOn(component, 'openFilesModal');
+      fixture.detectChanges();
+      const button = (
+        fixture.nativeElement as HTMLElement
+      ).querySelector<HTMLButtonElement>('button[title="Process Directory"]')!;
+      expect(button.disabled).toBeFalse();
+
+      button.click();
+      fixture.detectChanges();
+      expect(button.disabled).toBeTrue();
+      expect(button.textContent).toContain('Scanning…');
+
+      scan.next({ files: [] });
+      scan.complete();
+      // No fixture.detectChanges(): the response callback must repaint itself.
+      expect(button.disabled).toBeFalse();
+      expect(button.textContent).toContain('Process Directory');
+    });
+
+    it('ignores clicks while a scan is still running', () => {
+      // A drive waking from sleep can take ~20s to answer. A second click in
+      // that window started a second scan, and each scan opened its own modal
+      // over the same file list: renaming in the top one and letting it close
+      // revealed the other, still listing names already gone from disk.
+      const scan = new Subject<{ files: NormalizedFile[] }>();
+      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValues(
+        scan,
+        of({ files: [] }),
+      );
+      spyOn(component, 'openFilesModal');
+
+      component.directory = '/test';
+      component.processDirectory();
+      expect(component.isScanning).toBeTrue();
+      component.processDirectory();
+      expect(fileService.checkFileNamesToNormalize).toHaveBeenCalledTimes(1);
+
+      scan.next({ files: [] });
+      scan.complete();
+      expect(component.openFilesModal).toHaveBeenCalledTimes(1);
+      expect(component.isScanning).toBeFalse();
+
+      // Once the scan has answered, the button works again.
+      component.processDirectory();
+      expect(fileService.checkFileNamesToNormalize).toHaveBeenCalledTimes(2);
     });
   });
 
