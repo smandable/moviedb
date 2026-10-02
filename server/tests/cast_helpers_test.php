@@ -54,6 +54,10 @@ check('clean: collapses whitespace', moviedb_clean_cast_name('  Angel   Long '),
 check('clean: strips wrapping punctuation', moviedb_clean_cast_name('(Lisa Ann),'), 'Lisa Ann');
 check('clean: rejects letterless input', moviedb_clean_cast_name('1080 - 720'), '');
 check('clean: rejects empty', moviedb_clean_cast_name('   '), '');
+check('clean: drops a leading "With"', moviedb_clean_cast_name('With Mira Quell'), 'Mira Quell');
+check('clean: drops "With" inside wrapping punctuation', moviedb_clean_cast_name('(with Mira Quell)'), 'Mira Quell');
+check('clean: keeps "With" that is not a prefix', moviedb_clean_cast_name('Mira Withers'), 'Mira Withers');
+check('clean: a tail split keeps the rest whole', moviedb_split_cast_tail('With Mira Quell, Tess Lumen'), ['Mira Quell', 'Tess Lumen']);
 // A trailing period stays only on a 1-2 letter final word (a final initial);
 // on a full word it is pasted-sentence junk. Interior periods always survive.
 check('clean: keeps the period of a final initial', moviedb_clean_cast_name('Kylie G.'), 'Kylie G.');

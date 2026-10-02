@@ -69,6 +69,9 @@ if (!function_exists('moviedb_clean_cast_name')) {
         // Collapse whitespace, drop wrapping punctuation the paste may carry.
         $collapsed = preg_replace('/\s+/u', ' ', trim($name));
         $name = trim($collapsed, " \t\n\r\0\x0B-_.,;:|/\\\"'()[]");
+        // "Scene_2 - With Juelz Ventura": the "With" is phrasing, not part of
+        // the name (Sean, 2026-10-01) — the filename keeps it, the store doesn't.
+        $name = preg_replace('/^with\s+(?=\S)/iu', '', $name);
         // A trailing period is edge junk on a pasted sentence ("Angel Long.")
         // but part of the name on a final initial ("Kylie G."). Keep it only
         // in the abbreviation shape castDesquash's dot-restore trusts — a
