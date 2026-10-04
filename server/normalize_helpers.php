@@ -1,5 +1,12 @@
 <?php
 
+// A protected period rides the pipeline as this letters-only marker, so every
+// stage treats it as part of the word (and basicFunctions' periods→spaces
+// sweep can't see it); normalizeFileBaseName() turns it back into a period.
+if (!defined('MOVIEDB_DOT_MARKER')) {
+    define('MOVIEDB_DOT_MARKER', 'MDBCASTDOTMARKER');
+}
+
 if (!function_exists('moviedb_db_title_for_base')) {
     /**
      * The database title a file base name is catalogued under: its variant
@@ -52,22 +59,17 @@ if (!function_exists('normalizeFileBaseName')) {
         // a letters-only marker so every other stage treats them as part of
         // the word. The marker also makes the word mixed-case, so titleCase
         // leaves the user's casing alone (the flag only rides user edits).
-        $dotMarker = 'MDBCASTDOTMARKER';
-        $dotsProtected = false;
         if ($keepCastDots) {
             $base = preg_replace_callback(
                 '/^(.*?\bscene[\s._\-]*\d{1,3})(.*)$/i',
-                function ($m) use ($dotMarker, &$dotsProtected) {
-                    if (strpos($m[2], '.') === false) {
-                        return $m[0];
-                    }
-                    $dotsProtected = true;
-                    return $m[1] . str_replace('.', $dotMarker, $m[2]);
-                },
+                fn($m) => $m[1] . str_replace('.', MOVIEDB_DOT_MARKER, $m[2]),
                 $base,
                 1
             );
         }
+        // The title's abbreviation periods ("Mr. Anal", "U.S. Sluts",
+        // "Analized.com") survive the sweep the same way.
+        $base = protectAbbreviationDots($base);
 
         $base = basicFunctions($base);
         $base = titleCase($base, $respectUserCasing);
@@ -103,9 +105,7 @@ if (!function_exists('normalizeFileBaseName')) {
         // "Brazzers"), and the output must be a fixed point of the pipeline.
         $base = titleCase($base, $respectUserCasing);
         $base = finalCleanup($base);
-        if ($dotsProtected) {
-            $base = str_replace($dotMarker, '.', $base);
-        }
+        $base = str_replace(MOVIEDB_DOT_MARKER, '.', $base);
         // Last: titles whose spelling was settled by hand override the rules.
         return applyTitleOverride($base);
     }
@@ -275,6 +275,66 @@ if (!function_exists('moviedb_scan_names_to_normalize')) {
             ];
         }
         return $rows;
+    }
+}
+
+if (!function_exists('protectAbbreviationDots')) {
+    /**
+     * Periods that belong to the title rather than separate its words (Sean,
+     * 2026-10-04), swapped for MOVIEDB_DOT_MARKER ahead of basicFunctions'
+     * periods→spaces sweep and cased here, since titleCase leaves a word
+     * holding the marker alone:
+     *   - a web address: "Analized.Com" → "Analized.com" (.com/.net/.org);
+     *   - an honorific: "Mr. Anal", "St. Valentine's", "Mrs." — also when
+     *     glued ("Mr.Marcus" → "Mr. Marcus") and added when missing
+     *     ("Dr Ava's" → "Dr. Ava's"; title-case or lowercase only, so an
+     *     all-caps "MS"/"DR" is left alone);
+     *   - dotted initials in a spaced title: "U.S. Sluts", "L.A.", "The
+     *     J.O.B". In a fully dotted release name ("Lost.In.L.A.2") those
+     *     dots can't be told from separators, so they still sweep.
+     * Title only: a cast tail's periods are castDesquash's store-backed call
+     * (and keepCastDots'), so the part from "Scene_N" on is untouched.
+     */
+    function protectAbbreviationDots(string $name): string
+    {
+        // The /u patterns return null on invalid UTF-8; never blank a name
+        if (!mb_check_encoding($name, 'UTF-8')) {
+            return $name;
+        }
+        $tail = '';
+        if (preg_match('/\bscene[\s._\-]*\d{1,3}/i', $name, $m, PREG_OFFSET_CAPTURE)) {
+            $tail = substr($name, $m[0][1]);
+            $name = substr($name, 0, $m[0][1]);
+        }
+        $dot = MOVIEDB_DOT_MARKER;
+        $capitalize = fn(string $w) => mb_strtoupper(mb_substr($w, 0, 1)) . mb_substr($w, 1);
+
+        $name = preg_replace_callback(
+            '/(?<![\p{L}\d])([\p{L}\d][\p{L}\d\-]*)\.(com|net|org)(?![\p{L}\d])/iu',
+            fn($m) => ($m[1] === mb_strtolower($m[1]) ? $capitalize($m[1]) : $m[1])
+                . $dot . strtolower($m[2]),
+            $name
+        );
+
+        $honorific = fn($m) => ucfirst(strtolower($m[1])) . $dot . ' ';
+        $name = preg_replace_callback(
+            '/(?<![\p{L}\d\'’])(mr|mrs|ms|dr|st|jr|sr)\.\s*(?=\p{L})/iu',
+            $honorific,
+            $name
+        );
+        $name = preg_replace_callback(
+            '/(?<![\p{L}\d\'’.])(Mr|Mrs|Ms|Dr|St|Jr|Sr|mr|mrs|ms|dr|st|jr|sr)\s+(?=\p{L})/u',
+            $honorific,
+            $name
+        );
+
+        $name = preg_replace_callback(
+            '/(?<![\p{L}\d.])((?:\p{L}\.)+\p{L})(\.?)(?=[\s,)\-#]|$)/u',
+            fn($m) => str_replace('.', $dot, mb_strtoupper($m[1])) . ($m[2] === '' ? '' : $dot),
+            $name
+        );
+
+        return $name . $tail;
     }
 }
 
@@ -1253,7 +1313,8 @@ if (!function_exists('seriesVolumeNumber')) {
             if (substr($prefix, -1) === '#') {
                 continue; // the number is already a "# NN" volume
             }
-            if (!isset($series[mb_strtolower($prefix)])) {
+            // The index holds real periods ("Mr. Anal # 13")
+            if (!isset($series[mb_strtolower(str_replace(MOVIEDB_DOT_MARKER, '.', $prefix))])) {
                 continue;
             }
             $rest = substr($fileName, $m[0][$i][1] + strlen($m[0][$i][0]));
@@ -1287,6 +1348,14 @@ if (!function_exists('finalCleanup')) {
                 '.',
                 '',
             ],
+            $fileName
+        );
+
+        // Ordinal suffixes are lowercase ("1St Time" → "1st Time"); titleCase
+        // keeps any word that isn't all-lowercase, so it can't fix them
+        $fileName = preg_replace_callback(
+            '/\b(\d+)(st|nd|rd|th)\b/i',
+            fn($m) => $m[1] . strtolower($m[2]),
             $fileName
         );
 

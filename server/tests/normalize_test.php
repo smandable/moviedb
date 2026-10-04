@@ -1250,5 +1250,28 @@ rmdir("$scanDir/duplicates");
 rmdir("$scanDir/needs-cast");
 rmdir($scanDir);
 
+echo "abbreviation periods and ordinals:\n";
+check('honorific period kept', normalizeFileBaseName('Mr. Lonelyheart # 13 - Scene_1'), 'Mr. Lonelyheart # 13 - Scene_1');
+check('Saint after a dash keeps its period', normalizeFileBaseName('Velvet Gold # 174 - St. Agatha\'s Night Out'), 'Velvet Gold # 174 - St. Agatha\'s Night Out');
+check('Mrs. kept', normalizeFileBaseName('The Return of Mrs. Quill'), 'The Return of Mrs. Quill');
+check('honorific glued in a release name', normalizeFileBaseName('mr.lonelyheart.13.scene.2.jane.doe'), 'Mr. Lonelyheart # 13 - Scene_2 - Jane Doe');
+check('honorific glued to the next word', normalizeFileBaseName('Mr.Quill Goes to Town'), 'Mr. Quill Goes to Town');
+check('missing honorific period added', normalizeFileBaseName('Dr Quill\'s Clinic'), 'Dr. Quill\'s Clinic');
+check('all-caps MS is not an honorific', normalizeFileBaseName('MS Paint Party'), 'MS Paint Party');
+check('cast tail left to the store', normalizeFileBaseName('Velvet Gold - Scene_1 - Ms Quill'), 'Velvet Gold - Scene_1 - Ms Quill');
+check('dotted initials kept', normalizeFileBaseName('U.S. Road Trip # 03'), 'U.S. Road Trip # 03');
+check('trailing initials keep their last period', normalizeFileBaseName('Lonely in L.A.'), 'Lonely in L.A.');
+check('initials without a final period', normalizeFileBaseName('The J.O.B'), 'The J.O.B');
+check('lowercase initials uppercased', normalizeFileBaseName('lonely in l.a.'), 'Lonely in L.A.');
+check('initials in a fully dotted name still sweep', normalizeFileBaseName('Lonely.In.L.A.2'), 'Lonely in L A # 02');
+check('web address kept, ending lowercased', normalizeFileBaseName('Quillfilms.Com'), 'Quillfilms.com');
+check('dotted web address series', normalizeFileBaseName('quillfilms.com.18'), 'Quillfilms.com # 18');
+check('web address in a tag', normalizeFileBaseName('Velvet Gold # 01 (Quill.com)'), 'Velvet Gold # 01 (Quill.com)');
+check('a word starting with com is not a domain', normalizeFileBaseName('Velvet.Compilation'), 'Velvet Compilation');
+check('ordinal suffix lowercased', normalizeFileBaseName('1St Time Velvet # 04'), '1st Time Velvet # 04');
+check('all-caps ordinal', normalizeFileBaseName('Her 3RD Velvet 03'), 'Her 3rd Velvet # 03');
+check('abbreviation periods survive respect mode', normalizeFileBaseName('Mr. Lonelyheart # 13 - Scene_1 - Jane Doe', true), 'Mr. Lonelyheart # 13 - Scene_1 - Jane Doe');
+check('invalid UTF-8 passes protectAbbreviationDots untouched', protectAbbreviationDots("Amat\xF6r Mr. X"), "Amat\xF6r Mr. X");
+
 echo "\n$checks checks, $failures failure(s)\n";
 exit($failures === 0 ? 0 : 1);
