@@ -607,6 +607,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.files = files;
     modalRef.componentInstance.directory = root;
     modalRef.componentInstance.harvestDirectoryCastNames = false;
+    // Library files are already catalogued: offer to carry renamed titles
+    // into the database (titleUpdates.php).
+    modalRef.componentInstance.offerDbTitleUpdates = true;
 
     // The modal folds each rename's result into these same objects.
     const onClosed = () => {

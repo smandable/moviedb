@@ -5,7 +5,8 @@ import {
   tick,
 } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { DbTitleUpdatesModalComponent } from '@modals/db-title-updates-modal/db-title-updates-modal.component';
 import { of, throwError } from 'rxjs';
 import { FileNormalizationModalComponent } from './file-normalization-modal.component';
 import { FileService, NormalizedFile } from '@services/file.service';
@@ -332,6 +333,94 @@ describe('FileNormalizationModalComponent', () => {
 
       expect(spy).not.toHaveBeenCalled();
       expect(close).toHaveBeenCalledWith('all-done');
+    });
+  });
+
+  describe('database title updates (offerDbTitleUpdates)', () => {
+    const renamed = (from: string, to: string) => ({
+      originalFileName: from,
+      newFileName: to,
+      status: 'Renamed successfully',
+    });
+
+    it('stays open with the landed renames instead of closing', () => {
+      component.offerDbTitleUpdates = true;
+      component.files = [
+        makeFile({ originalFileName: 'Up And Away.mp4', newFileName: 'Up and Away.mp4', exclude: false }),
+      ];
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({ results: [renamed('Up And Away.mp4', 'Up and Away.mp4')] }),
+      );
+      const close = spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      expect(close).not.toHaveBeenCalled();
+      expect(component.landedTitleRenames).toEqual([
+        { path: '/test', originalFileName: 'Up And Away.mp4', newFileName: 'Up and Away.mp4' },
+      ]);
+      fixture.detectChanges();
+      const button = fixture.nativeElement.querySelector('.db-titles-button');
+      expect(button).not.toBeNull();
+    });
+
+    it('records nothing (and closes as before) when the flag is off', () => {
+      component.files = [
+        makeFile({ originalFileName: 'a.mp4', newFileName: 'A.mp4', exclude: false }),
+      ];
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({ results: [renamed('a.mp4', 'A.mp4')] }),
+      );
+      const close = spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      expect(component.landedTitleRenames).toEqual([]);
+      expect(close).toHaveBeenCalledWith('all-done');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.db-titles-button')).toBeNull();
+    });
+
+    it('collapses a file renamed twice into one rename, and drops a round trip', () => {
+      component.offerDbTitleUpdates = true;
+      const file = makeFile({ originalFileName: 'x one.mp4', newFileName: 'X One.mp4', exclude: false });
+      component.files = [file];
+      const spy = spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({ results: [renamed('x one.mp4', 'X One.mp4')] }),
+      );
+      component.renameFiles();
+
+      file.newFileName = 'X 1.mp4';
+      file.needsNormalization = true;
+      spy.and.returnValue(of({ results: [renamed('X One.mp4', 'X 1.mp4')] }));
+      component.renameFiles();
+      expect(component.landedTitleRenames).toEqual([
+        { path: '/test', originalFileName: 'x one.mp4', newFileName: 'X 1.mp4' },
+      ]);
+
+      file.newFileName = 'x one.mp4';
+      file.needsNormalization = true;
+      spy.and.returnValue(of({ results: [renamed('X 1.mp4', 'x one.mp4')] }));
+      component.renameFiles();
+      expect(component.landedTitleRenames).toEqual([]);
+    });
+
+    it('opens the review with a copy of the landed renames', () => {
+      component.offerDbTitleUpdates = true;
+      component.landedTitleRenames = [
+        { path: '/test', originalFileName: 'A.mp4', newFileName: 'B.mp4' },
+      ];
+      const ref = { componentInstance: {} as any };
+      const open = spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(ref as any);
+
+      component.openDbTitleUpdates();
+
+      expect(open).toHaveBeenCalledOnceWith(
+        DbTitleUpdatesModalComponent,
+        jasmine.objectContaining({ scrollable: true }),
+      );
+      expect(ref.componentInstance.renames).toEqual(component.landedTitleRenames);
+      expect(ref.componentInstance.renames[0]).not.toBe(component.landedTitleRenames[0]);
     });
   });
 

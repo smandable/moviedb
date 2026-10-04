@@ -1,0 +1,43 @@
+:host {
+  // Match the other modals' opaque header bar
+  .modal-header {
+    background-color: silver;
+  }
+
+  h6 {
+    font-weight: 600;
+  }
+
+  .col-check {
+    width: 2rem;
+    text-align: center;
+  }
+
+  .col-outcome {
+    width: 12rem;
+  }
+
+  .title-change {
+    overflow-wrap: anywhere;
+  }
+
+  .arrow {
+    margin: 0 0.4rem;
+    color: #6c757d;
+  }
+
+  .old-title {
+    color: #6c757d;
+  }
+
+  .merge-item {
+    padding: 0.5rem 0.6rem;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+    margin-bottom: 0.6rem;
+  }
+
+  .merge-rows {
+    padding-left: 1.1rem;
+  }
+}

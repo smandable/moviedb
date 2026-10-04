@@ -65,6 +65,9 @@ Thumbs.db
 /scripts/stage_scenes_without_cast.php
 /server/scene_separator_renames.tsv
 
+# Generated: undo log of database title updates (titleUpdates.php)
+/server/title_updates_log.jsonl
+
 # Generated: consolidation runtime artifacts (endpoint-spawned runs)
 /server/consolidate_progress.json
 /server/consolidate_progress.json.*

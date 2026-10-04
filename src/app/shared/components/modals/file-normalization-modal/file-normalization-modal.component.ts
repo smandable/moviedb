@@ -6,7 +6,7 @@ import {
   OnInit,
   OnDestroy,
 } from '@angular/core';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -15,6 +15,8 @@ import {
   RenameResult,
 } from '@services/file.service';
 import { endsWithSceneNumber, getBaseTitle } from '@helpers/title';
+import { TitleRename } from '@services/title-update.service';
+import { DbTitleUpdatesModalComponent } from '@modals/db-title-updates-modal/db-title-updates-modal.component';
 
 // Status string emitted by server/renameTheFilesToNormalize.php
 export const RENAME_SUCCESS_STATUS = 'Renamed successfully';
@@ -113,6 +115,21 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    */
   @Input() harvestDirectoryCastNames = true;
 
+  /**
+   * Offer "Update Database Titles" once renames land (Settings → Normalize
+   * Library Filenames: library files are already catalogued, so a renamed
+   * title leaves its row on the old spelling). While any landed rename is
+   * waiting for that review the modal stays open instead of closing itself.
+   */
+  @Input() offerDbTitleUpdates = false;
+
+  /**
+   * Renames that landed on disk, for the database review: one entry per
+   * file, collapsed across passes (A→B then B→C is A→C; renamed back to the
+   * start, it drops out).
+   */
+  landedTitleRenames: TitleRename[] = [];
+
   allSelected: boolean = true;
 
   // Tabs are freely navigable; a rename always lands on "Add Cast".
@@ -161,6 +178,7 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     private fileService: FileService,
     private cdr: ChangeDetectorRef,
     private host: ElementRef<HTMLElement>,
+    private modalService: NgbModal,
   ) {}
 
   /**
@@ -903,7 +921,9 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
    * Where "Rename Files" lands: the Add Cast tab while any work remains —
    * pending normalizations (failed renames keep theirs, so errors stay
    * visible) or scene files without a cast. With both lists empty the modal
-   * closes; the parent page re-enables Update Database on close.
+   * closes; the parent page re-enables Update Database on close — unless
+   * landed renames are waiting for "Update Database Titles"
+   * (offerDbTitleUpdates), in which case it stays open for that button.
    *
    * A lingering renameError also holds it open: a failed move up out of
    * needs-cast staging leaves no pending rename behind, so without this the
@@ -914,6 +934,9 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   private finishRenamePass(): void {
     const hasErrors = this.files.some((file) => !!file.renameError);
     if (!this.hasFilesToRename && this.castFiles.length === 0 && !hasErrors) {
+      if (this.offerDbTitleUpdates && this.landedTitleRenames.length > 0) {
+        return; // stay open for "Update Database Titles"
+      }
       this.activeModal.close('all-done');
       return;
     }
@@ -945,6 +968,14 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
       file.status = result.status;
       if (result.status === RENAME_SUCCESS_STATUS) {
         renamed++;
+        if (this.offerDbTitleUpdates) {
+          this.recordLandedRename(
+            file.path,
+            result.movedTo ?? file.path,
+            file.originalFileName,
+            result.newFileName,
+          );
+        }
         file.originalFileName = result.newFileName;
         file.workingBaseName = this.stripExtension(result.newFileName);
         file.newFileName = '';
@@ -984,6 +1015,46 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
     if (castLanded.length) {
       this.loadCastNames(castLanded);
+    }
+  }
+
+  /** Opens the database review for the renames that landed. */
+  openDbTitleUpdates(): void {
+    if (this.isRenaming || this.landedTitleRenames.length === 0) {
+      return;
+    }
+    const modalRef = this.modalService.open(DbTitleUpdatesModalComponent, {
+      size: 'lg',
+      scrollable: true,
+    });
+    modalRef.componentInstance.renames = this.landedTitleRenames.map((r) => ({
+      ...r,
+    }));
+  }
+
+  private recordLandedRename(
+    fromDir: string,
+    toDir: string,
+    fromName: string,
+    toName: string,
+  ): void {
+    const earlier = this.landedTitleRenames.find(
+      (r) => r.path === fromDir && r.newFileName === fromName,
+    );
+    if (!earlier) {
+      this.landedTitleRenames.push({
+        path: toDir,
+        originalFileName: fromName,
+        newFileName: toName,
+      });
+      return;
+    }
+    earlier.path = toDir;
+    earlier.newFileName = toName;
+    if (earlier.originalFileName === toName) {
+      this.landedTitleRenames = this.landedTitleRenames.filter(
+        (r) => r !== earlier,
+      );
     }
   }
 

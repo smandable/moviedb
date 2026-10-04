@@ -1,5 +1,26 @@
 <?php
 
+if (!function_exists('moviedb_db_title_for_base')) {
+    /**
+     * The database title a file base name is catalogued under: its variant
+     * suffixes stripped (stripTitleVariantSuffixes), then a cast tail after a
+     * volume dropped — "Title # 03 - Cast" → "Title # 03". This is the rule
+     * processFilesForDB.php applies before its DB-aware numbering steps;
+     * titleUpdates.php uses it to map a renamed file to its row.
+     */
+    function moviedb_db_title_for_base(string $base): string
+    {
+        $title = stripTitleVariantSuffixes($base);
+        if (preg_match('/^(.*?\s+#\s+\d+)\s+-\s+/', $title, $castMatch)) {
+            return trim($castMatch[1]);
+        }
+        if (preg_match('/^(.*?)\s+-\s+Scene_\d+/', $title, $sceneMatch)) {
+            return trim($sceneMatch[1]);
+        }
+        return $title;
+    }
+}
+
 if (!function_exists('stripTitleVariantSuffixes')) {
     /**
      * Strip " - Scene...", " - CD..." and " - Bonus..."/" Bonus..." suffixes

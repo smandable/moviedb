@@ -1,0 +1,184 @@
+<div class="modal-header">
+  <h5 class="modal-title">Update Database Titles</h5>
+  <button
+    type="button"
+    class="btn-close"
+    aria-label="Close"
+    title="Close"
+    (click)="activeModal.dismiss('Cross click')"
+  ></button>
+</div>
+
+<div class="modal-body">
+  <div *ngIf="isLoading" class="text-muted small my-3">
+    <span
+      class="spinner-border spinner-border-sm me-2"
+      role="status"
+      aria-hidden="true"
+    ></span>
+    Checking the database…
+  </div>
+  <div *ngIf="loadError" class="text-danger small mb-2 load-error">
+    {{ loadError }}
+  </div>
+
+  <ng-container *ngIf="!isLoading && !loadError">
+    <p *ngIf="indexMissing" class="small text-warning index-missing">
+      The drive index hasn't been built, so copies on other drives weren't
+      checked. Rebuild it on the Settings page for a complete check.
+    </p>
+    <p
+      *ngIf="!updates.length && !merges.length && !skipped.length"
+      class="text-muted empty-state"
+    >
+      None of these renames changed a movie's title — only cast names.
+    </p>
+
+    <!-- Rows to rename -->
+    <section *ngIf="updates.length" class="mb-4 updates">
+      <h6>Rename in the database ({{ updates.length }})</h6>
+      <table class="table table-sm table-bordered align-middle">
+        <tbody>
+          <tr *ngFor="let item of updates" class="update-row">
+            <td class="col-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                [checked]="selected.has(item)"
+                [disabled]="outcomes.get(item)?.ok || isApplying"
+                (change)="toggle(item, $any($event.target).checked)"
+                [attr.aria-label]="'Update ' + item.oldTitle"
+              />
+            </td>
+            <td>
+              <div class="title-change">
+                <span class="old-title">{{ item.row?.title }}</span>
+                <span class="arrow">→</span>
+                <span class="new-title">{{ item.newTitle }}</span>
+              </div>
+              <div class="small text-muted">
+                {{ item.table }} · row {{ item.row?.id }}
+                <span *ngIf="item.note"> · {{ item.note }}</span>
+              </div>
+            </td>
+            <td class="col-outcome small">
+              <span
+                *ngIf="outcomes.get(item) as o"
+                [class.text-success]="o.ok"
+                [class.text-danger]="!o.ok"
+                >{{ o.text }}</span
+              >
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- New title already has a row -->
+    <section *ngIf="merges.length" class="mb-4 merges">
+      <h6>Title already in the database ({{ merges.length }})</h6>
+      <p class="small text-muted">
+        Skipped by the update above. Merge keeps the earlier-catalogued row (and
+        its date added), gives it the new title and the values below, and
+        deletes the other row.
+      </p>
+      <div *ngFor="let item of merges" class="merge-item">
+        <div class="title-change fw-semibold">
+          <span class="old-title">{{ item.oldTitle }}</span>
+          <span class="arrow">→</span>
+          <span class="new-title">{{ item.newTitle }}</span>
+          <span class="small text-muted fw-normal ms-2">{{ item.table }}</span>
+        </div>
+        <ul class="small mb-1 merge-rows">
+          <li>
+            <strong>Keep</strong> row {{ item.keep?.id }} “{{ item.keep?.title }}”
+            — {{ rowSummary(item.keep!) }}
+          </li>
+          <li>
+            <strong>Delete</strong> row {{ item.drop?.id }} “{{ item.drop?.title }}”
+            — {{ rowSummary(item.drop!) }}
+          </li>
+          <li *ngIf="item.merged as m">
+            <strong>After:</strong>
+            {{ size(m.filesize) }}, {{ dims(m.dimensions) }},
+            {{ length(m.duration) }}
+            <span class="text-muted">
+              <ng-container *ngIf="m.source === 'files'">
+                (measured from {{ m.fileCount }}
+                {{ m.fileCount === 1 ? "file" : "files" }})</ng-container
+              >
+              <ng-container *ngIf="m.source === 'rows'">
+                (kept row's values, blanks filled from the deleted row<ng-container
+                  *ngIf="m.elsewhere.length"
+                  >; copies on other drives too</ng-container
+                >)</ng-container
+              >
+            </span>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger merge-button"
+            [disabled]="!!merging || outcomes.get(item)?.ok"
+            (click)="merge(item)"
+          >
+            {{ merging === item ? "Merging…" : "Merge" }}
+          </button>
+          <span
+            *ngIf="outcomes.get(item) as o"
+            class="small"
+            [class.text-success]="o.ok"
+            [class.text-danger]="!o.ok"
+            >{{ o.text }}</span
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- Nothing to do / can't do -->
+    <section *ngIf="skipped.length" class="skipped">
+      <h6>Skipped ({{ skipped.length }})</h6>
+      <ul class="small">
+        <li *ngFor="let item of skipped" class="skipped-item">
+          {{ item.oldTitle }} → {{ item.newTitle }}:
+          <strong>{{ statusLabel(item) }}</strong>
+          <span *ngIf="item.reason" class="text-muted"> — {{ item.reason }}</span>
+          <ul *ngIf="item.status === 'partial'" class="text-muted">
+            <li *ngFor="let p of item.leftovers">{{ p }}</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+  </ng-container>
+</div>
+
+<div class="modal-footer">
+  <button
+    type="button"
+    class="btn btn-success apply-button"
+    [disabled]="isLoading || isApplying || pendingUpdates.length === 0"
+    (click)="applyUpdates()"
+  >
+    <span
+      *ngIf="isApplying"
+      class="spinner-border spinner-border-sm me-2"
+      role="status"
+      aria-hidden="true"
+    ></span>
+    {{
+      isApplying
+        ? "Updating…"
+        : "Update " +
+          pendingUpdates.length +
+          (pendingUpdates.length === 1 ? " Title" : " Titles")
+    }}
+  </button>
+  <button
+    type="button"
+    class="btn btn-secondary"
+    (click)="activeModal.close('done')"
+  >
+    Close
+  </button>
+</div>

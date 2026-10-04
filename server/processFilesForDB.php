@@ -297,12 +297,7 @@ function checkDatabaseForTitle(
 
     // --- Normalize title for DB operations ---
     // Strip cast/scene suffixes: "Title # 03 - Cast" → "Title # 03", "Title - Scene_1 - Cast" → "Title"
-    $dbTitle = $sourceTitle;
-    if (preg_match('/^(.*?\s+#\s+\d+)\s+-\s+/', $dbTitle, $castMatch)) {
-        $dbTitle = trim($castMatch[1]);
-    } elseif (preg_match('/^(.*?)\s+-\s+Scene_\d+/', $dbTitle, $sceneMatch)) {
-        $dbTitle = trim($sceneMatch[1]);
-    }
+    $dbTitle = moviedb_db_title_for_base($sourceTitle);
     $dbTitle = handleNumberedTitle($dbTitle, $db, $table);
     $dbTitle = handleMissingNumberedTitle($dbTitle, $titleItem, $duplicateTitlesMissing01Array, $titlesMissing01Array, $db, $table);
 

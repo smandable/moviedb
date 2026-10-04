@@ -264,6 +264,16 @@
     >
   </div>
   <button
+    *ngIf="offerDbTitleUpdates && landedTitleRenames.length > 0"
+    type="button"
+    class="btn btn-primary db-titles-button"
+    (click)="openDbTitleUpdates()"
+    [disabled]="isRenaming"
+    title="Rename the database rows of the titles these renames changed"
+  >
+    Update Database Titles
+  </button>
+  <button
     type="button"
     class="btn btn-success"
     (click)="renameFiles()"
