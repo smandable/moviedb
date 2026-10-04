@@ -262,6 +262,135 @@
             </li>
           </ul>
         </div>
+
+        <hr />
+
+        <h6 class="mb-1">Normalize Library Filenames</h6>
+        <p class="text-muted small mb-2">
+          Scans one folder and its subfolders (never <code>duplicates</code> or
+          <code>needs-cast</code>) and opens the same rename review as Process
+          Directory, listing only the files whose names would change. Uncheck or
+          edit any row before renaming.
+        </p>
+        <div
+          *ngIf="isConsolidating"
+          class="small text-muted mb-2 normalize-paused"
+        >
+          Paused while the consolidation runs — it is moving these files.
+        </div>
+
+        <div
+          class="accordion-toggle d-flex align-items-center mb-2 normalize-toggle"
+          role="button"
+          [attr.aria-expanded]="normalizeFoldersExpanded"
+          [title]="(normalizeFoldersExpanded ? 'Hide' : 'Show') + ' the folders to normalize'"
+          (click)="normalizeFoldersExpanded = !normalizeFoldersExpanded"
+        >
+          <span class="chevron me-2">{{
+            normalizeFoldersExpanded ? "▾" : "▸"
+          }}</span>
+          <span>Folders ({{ normalizeFolders.length }})</span>
+        </div>
+
+        <ng-container *ngIf="normalizeFoldersExpanded">
+          <div
+            class="mb-2 normalize-row"
+            *ngFor="
+              let folder of normalizeFolders;
+              let i = index;
+              trackBy: trackByIndex
+            "
+          >
+            <div class="d-flex align-items-center">
+              <input
+                type="text"
+                class="form-control me-2 root-input"
+                placeholder="/Volumes/…"
+                [(ngModel)]="normalizeFolders[i]"
+                (ngModelChange)="normalizeFoldersStatus = 'idle'"
+              />
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary me-2 text-nowrap normalize-btn"
+                [disabled]="
+                  !!normalizeScanningRoot ||
+                  isConsolidating ||
+                  !normalizeFolders[i].trim()
+                "
+                [title]="
+                  'Review the renames normalization would make in ' +
+                  normalizeFolders[i]
+                "
+                (click)="normalizeRoot(normalizeFolders[i])"
+              >
+                <span
+                  *ngIf="normalizeScanningRoot === normalizeFolders[i].trim()"
+                  class="spinner-border spinner-border-sm me-1"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                {{
+                  normalizeScanningRoot === normalizeFolders[i].trim()
+                    ? "Scanning…"
+                    : "Normalize…"
+                }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger remove-root"
+                title="Remove this folder"
+                aria-label="Remove this folder"
+                (click)="removeNormalizeFolder(i)"
+              >
+                ✕
+              </button>
+            </div>
+            <div
+              *ngIf="unmountedRoots.includes(normalizeFolders[i].trim())"
+              class="small text-warning mt-1"
+            >
+              Not mounted right now.
+            </div>
+            <div
+              *ngIf="normalizeResults[normalizeFolders[i].trim()] as result"
+              class="small mt-1 normalize-result"
+              [class.text-danger]="result.error"
+              [class.text-muted]="!result.error"
+            >
+              {{ result.text }}
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center mb-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary me-2"
+              (click)="addNormalizeFolder()"
+            >
+              Add folder
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary normalize-save"
+              (click)="saveNormalizeFolders()"
+              [disabled]="normalizeFoldersStatus === 'saving'"
+            >
+              {{ normalizeFoldersStatus === "saving" ? "Saving…" : "Save" }}
+            </button>
+          </div>
+          <div
+            *ngIf="normalizeFoldersStatus === 'saved'"
+            class="small mb-2 text-success"
+          >
+            {{ normalizeFoldersMessage }}
+          </div>
+          <div
+            *ngIf="normalizeFoldersStatus === 'error'"
+            class="small mb-2 text-danger"
+          >
+            {{ normalizeFoldersMessage }}
+          </div>
+        </ng-container>
       </div>
     </div>
 
@@ -414,150 +543,6 @@
         <div *ngIf="rebuildError" class="small mt-2 text-danger">
           {{ rebuildError }}
         </div>
-      </div>
-    </div>
-
-    <!-- Normalize library filenames -->
-    <div class="card mb-4">
-      <div
-        class="card-header card-toggle"
-        role="button"
-        tabindex="0"
-        data-card="normalize"
-        [attr.aria-expanded]="!isCardCollapsed('normalize')"
-        [title]="(isCardCollapsed('normalize') ? 'Show' : 'Hide') + ' this section'"
-        (click)="toggleCard('normalize')"
-        (keydown.enter)="toggleCard('normalize')"
-        (keydown.space)="$event.preventDefault(); toggleCard('normalize')"
-      >
-        <span class="chevron me-2">{{ isCardCollapsed('normalize') ? "▸" : "▾" }}</span>Normalize Library Filenames
-      </div>
-      <div class="card-body" [hidden]="isCardCollapsed('normalize')">
-        <p class="text-muted small mb-2">
-          Scans one folder and its subfolders (never <code>duplicates</code> or
-          <code>needs-cast</code>) and opens the same rename review as Process
-          Directory, listing only the files whose names would change. Uncheck or
-          edit any row before renaming.
-        </p>
-        <div
-          *ngIf="isConsolidating"
-          class="small text-muted mb-2 normalize-paused"
-        >
-          Paused while the consolidation runs — it is moving these files.
-        </div>
-
-        <div
-          class="accordion-toggle d-flex align-items-center mb-2 normalize-toggle"
-          role="button"
-          [attr.aria-expanded]="normalizeFoldersExpanded"
-          [title]="(normalizeFoldersExpanded ? 'Hide' : 'Show') + ' the folders to normalize'"
-          (click)="normalizeFoldersExpanded = !normalizeFoldersExpanded"
-        >
-          <span class="chevron me-2">{{
-            normalizeFoldersExpanded ? "▾" : "▸"
-          }}</span>
-          <span>Folders ({{ normalizeFolders.length }})</span>
-        </div>
-
-        <ng-container *ngIf="normalizeFoldersExpanded">
-          <div
-            class="mb-2 normalize-row"
-            *ngFor="
-              let folder of normalizeFolders;
-              let i = index;
-              trackBy: trackByIndex
-            "
-          >
-            <div class="d-flex align-items-center">
-              <input
-                type="text"
-                class="form-control me-2 root-input"
-                placeholder="/Volumes/…"
-                [(ngModel)]="normalizeFolders[i]"
-                (ngModelChange)="normalizeFoldersStatus = 'idle'"
-              />
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-primary me-2 text-nowrap normalize-btn"
-                [disabled]="
-                  !!normalizeScanningRoot ||
-                  isConsolidating ||
-                  !normalizeFolders[i].trim()
-                "
-                [title]="
-                  'Review the renames normalization would make in ' +
-                  normalizeFolders[i]
-                "
-                (click)="normalizeRoot(normalizeFolders[i])"
-              >
-                <span
-                  *ngIf="normalizeScanningRoot === normalizeFolders[i].trim()"
-                  class="spinner-border spinner-border-sm me-1"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-                {{
-                  normalizeScanningRoot === normalizeFolders[i].trim()
-                    ? "Scanning…"
-                    : "Normalize…"
-                }}
-              </button>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-danger remove-root"
-                title="Remove this folder"
-                aria-label="Remove this folder"
-                (click)="removeNormalizeFolder(i)"
-              >
-                ✕
-              </button>
-            </div>
-            <div
-              *ngIf="unmountedRoots.includes(normalizeFolders[i].trim())"
-              class="small text-warning mt-1"
-            >
-              Not mounted right now.
-            </div>
-            <div
-              *ngIf="normalizeResults[normalizeFolders[i].trim()] as result"
-              class="small mt-1 normalize-result"
-              [class.text-danger]="result.error"
-              [class.text-muted]="!result.error"
-            >
-              {{ result.text }}
-            </div>
-          </div>
-
-          <div class="d-flex align-items-center mb-2">
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-secondary me-2"
-              (click)="addNormalizeFolder()"
-            >
-              Add folder
-            </button>
-            <button
-              type="button"
-              class="btn btn-sm btn-primary normalize-save"
-              (click)="saveNormalizeFolders()"
-              [disabled]="normalizeFoldersStatus === 'saving'"
-            >
-              {{ normalizeFoldersStatus === "saving" ? "Saving…" : "Save" }}
-            </button>
-          </div>
-          <div
-            *ngIf="normalizeFoldersStatus === 'saved'"
-            class="small mb-2 text-success"
-          >
-            {{ normalizeFoldersMessage }}
-          </div>
-          <div
-            *ngIf="normalizeFoldersStatus === 'error'"
-            class="small mb-2 text-danger"
-          >
-            {{ normalizeFoldersMessage }}
-          </div>
-        </ng-container>
       </div>
     </div>
 

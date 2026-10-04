@@ -91,11 +91,23 @@ describe('SettingsComponent', () => {
       const headers = Array.from(
         fixture.nativeElement.querySelectorAll('.card-header.card-toggle'),
       ) as HTMLElement[];
-      expect(headers.length).toBe(6);
+      expect(headers.length).toBe(5);
       headers.forEach((h) => {
         expect(h.getAttribute('aria-expanded')).toBe('true');
         expect((h.nextElementSibling as HTMLElement).hidden).toBeFalse();
       });
+    });
+
+    it('keeps the filename normalizer in the Normalization & Renaming card, not beside the drive index', () => {
+      flushInit({});
+      fixture.detectChanges();
+      const headings = Array.from(body('normalization').querySelectorAll('h6')).map((h) =>
+        (h as HTMLElement).textContent!.trim(),
+      );
+      expect(headings).toEqual(['Cast Name Vocabulary', 'Normalize Library Filenames']);
+      expect(body('normalization').querySelector('.normalize-toggle')).not.toBeNull();
+      expect(header('normalize')).toBeNull();
+      expect(body('index').querySelector('.normalize-toggle')).toBeNull();
     });
 
     it('collapses and expands on click, remembering the state', () => {
