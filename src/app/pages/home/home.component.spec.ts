@@ -156,7 +156,7 @@ describe('HomeComponent', () => {
       component.deleteRow(mockMovies[0]);
 
       expect(window.alert).toHaveBeenCalledWith(
-        'Failed to delete row. See console for details.',
+        'Failed to delete row: Delete failed',
       );
     });
   });

@@ -535,9 +535,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         // Trigger change detection to update the view
         this.cdr.detectChanges();
       },
-      error: (error) => {
+      error: (error: Error) => {
         console.error('Delete failed:', error);
-        alert('Failed to delete row. See console for details.');
+        alert(`Failed to delete row: ${error.message}`);
       },
     });
   }
@@ -576,8 +576,9 @@ export class HomeComponent implements OnInit, OnDestroy {
           console.error('Update failed:', response.error);
         }
       },
-      error: (error) => {
+      error: (error: Error) => {
         console.error('Update request failed:', error);
+        alert(`Couldn't save the change: ${error.message}`);
       },
     });
   }

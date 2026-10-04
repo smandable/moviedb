@@ -12,7 +12,7 @@ require_once __DIR__ . '/title_presence.php';
 require_once __DIR__ . '/ffprobe.php';
 $config = require 'config.php'; // Load configuration
 
-$table = is_object($config) ? ($config->table ?? '') : ($config['table'] ?? '');
+// $table comes from db_connect.php (DB_TABLE or the Settings override)
 $updateMissingDataOnly = is_object($config)
     ? !empty($config->updateMissingDataOnly)
     : !empty($config['updateMissingDataOnly']);
@@ -824,8 +824,11 @@ function renameSessionFilesAddMissing01(
 }
 function returnHTML($titlesArray)
 {
+    global $table;
     echo json_encode([
         'message' => "processFilesForDB is complete",
-        'titles' => $titlesArray
+        'titles' => $titlesArray,
+        // Echoed back on "Update DB" row writes (moviedb_require_loaded_table)
+        'table' => $table,
     ]);
 }

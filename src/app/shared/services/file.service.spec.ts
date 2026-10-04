@@ -160,7 +160,32 @@ describe('FileService', () => {
 
       const req = httpMock.expectOne(`${baseUrl}editCurrentRow.php`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ id: 1, updateFields });
+      expect(req.request.body).toEqual({ id: 1, updateFields, table: null });
+      req.flush({ success: true });
+    });
+
+    it("surfaces the server's refusal after a table switch", (done) => {
+      service.updateRow(1, { dimensions: '640 x 480', filesize: 1, duration: 1 }).subscribe({
+        error: (e: Error) => {
+          expect(e.message).toContain('reload this list');
+          done();
+        },
+      });
+      httpMock.expectOne(`${baseUrl}editCurrentRow.php`).flush(
+        { success: false, tableChanged: true, message: 'The catalog table is now movies_bi — reload this list before changing rows.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+    });
+
+    it('echoes the table processFilesForDB ran against', () => {
+      service.processFilesForDB('/Volumes/X').subscribe();
+      httpMock
+        .expectOne(`${baseUrl}processFilesForDB.php`)
+        .flush({ message: 'done', titles: [], table: 'movies_bi' });
+
+      service.updateRow(2, { dimensions: '640 x 480', filesize: 1, duration: 1 }).subscribe();
+      const req = httpMock.expectOne(`${baseUrl}editCurrentRow.php`);
+      expect(req.request.body.table).toBe('movies_bi');
       req.flush({ success: true });
     });
   });

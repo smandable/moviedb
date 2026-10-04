@@ -5,7 +5,7 @@ import {
   HttpHeaders,
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface NormalizedFile {
@@ -36,6 +36,8 @@ export interface RenameResult {
 export interface ProcessFilesResponse {
   success?: boolean;
   message: string;
+  /** Catalog table the titles were checked against (echoed by updateRow). */
+  table?: string;
   titles: Array<{
     title: string;
     titleSize: number;
@@ -76,6 +78,13 @@ export class FileService {
   private openExternalDriveSearchUrl = `${this.baseUrl}openExternalDriveSearch.php`;
   private normalizeNameUrl = `${this.baseUrl}normalizeName.php`;
   private castNamesUrl = `${this.baseUrl}castNames.php`;
+
+  /**
+   * The catalog table the last processFilesForDB() ran against. "Update DB"
+   * row writes echo it, so after a Settings → Catalog Table switch the server
+   * refuses them instead of hitting the same-numbered row in the other table.
+   */
+  processedTable: string | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -128,7 +137,10 @@ export class FileService {
         { directory },
         { headers },
       )
-      .pipe(catchError(this.handleError));
+      .pipe(
+        tap((res) => (this.processedTable = res?.table ?? this.processedTable)),
+        catchError(this.handleError),
+      );
   }
 
   /**
@@ -196,8 +208,12 @@ export class FileService {
     id: number,
     updateFields: { dimensions: string; filesize: number; duration: number },
   ): Observable<any> {
-    const payload = { id, updateFields };
+    const payload = { id, updateFields, table: this.processedTable };
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post<any>(this.updateRowUrl, payload, { headers });
+    // catchError: surface the server's message (e.g. the 409 "reload this
+    // list" after a Catalog Table switch) rather than Angular's generic one
+    return this.http
+      .post<any>(this.updateRowUrl, payload, { headers })
+      .pipe(catchError(this.handleError));
   }
 }

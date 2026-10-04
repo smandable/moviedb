@@ -18,6 +18,10 @@ try {
     // Retrieve and sanitize the ID
     $id = isset($input['id']) ? (int)$input['id'] : null;
 
+    // Ids overlap between catalogs: refuse an edit from a list loaded before
+    // a Catalog Table switch (db_tables.php)
+    moviedb_require_loaded_table(is_array($input) ? ($input['table'] ?? null) : null, $table);
+
     // Check for "field" and "value" (cell editing)
     if (isset($input['field']) && array_key_exists('value', $input)) {
         $field = $input['field'];

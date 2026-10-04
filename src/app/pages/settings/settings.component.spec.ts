@@ -82,10 +82,11 @@ describe('SettingsComponent', () => {
     names: string[] = ['Anna Example', 'Zoe Example'],
     indexStatus: object = neverBuiltStatus,
     consolidateStatus: object = idleConsolidateStatus,
+    tableInfo: object = { activeDbTable: 'movies_het', dbTables: ['movies_het', 'movies_bi'] },
   ) {
     httpMock
       .expectOne(settingsUrl)
-      .flush({ settings });
+      .flush({ settings, ...tableInfo });
     httpMock
       .expectOne(manageUrl)
       .flush({ names });
@@ -177,6 +178,74 @@ describe('SettingsComponent', () => {
 
     expect(component.directoryStatus).toBe('saved');
     expect(component.directoryMessage).toContain('unmounted');
+  });
+
+  describe('catalog table', () => {
+    const radios = () =>
+      Array.from(
+        fixture.nativeElement.querySelectorAll('input[name="dbTable"]'),
+      ) as HTMLInputElement[];
+
+    it('shows the table in effect', () => {
+      flushInit({}, undefined, undefined, undefined, {
+        activeDbTable: 'movies_bi',
+        dbTables: ['movies_het', 'movies_bi'],
+      });
+      fixture.detectChanges();
+
+      expect(component.dbTable).toBe('movies_bi');
+      expect(radios().map((r) => [r.value, r.checked])).toEqual([
+        ['movies_het', false],
+        ['movies_bi', true],
+      ]);
+    });
+
+    it('saves on change', () => {
+      flushInit({});
+      fixture.detectChanges();
+
+      radios()[1].click();
+
+      const req = httpMock.expectOne(settingsUrl);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ dbTable: 'movies_bi' });
+      req.flush({
+        success: true,
+        settings: { dbTable: 'movies_bi' },
+        directoryExists: null,
+        activeDbTable: 'movies_bi',
+        dbTables: ['movies_het', 'movies_bi'],
+      });
+
+      expect(component.dbTable).toBe('movies_bi');
+      expect(component.dbTableStatus).toBe('saved');
+      expect(component.dbTableMessage).toContain('movies_bi');
+    });
+
+    it('reverts when the save fails', () => {
+      flushInit({});
+
+      component.saveDbTable('movies_bi');
+      httpMock
+        .expectOne(settingsUrl)
+        .flush(
+          { message: 'dbTable must be one of: movies_het, movies_bi' },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      expect(component.dbTable).toBe('movies_het');
+      expect(component.dbTableStatus).toBe('error');
+      expect(component.dbTableMessage).toContain('must be one of');
+    });
+
+    it('does nothing when the choice is unchanged', () => {
+      flushInit({});
+
+      component.saveDbTable('movies_het');
+
+      httpMock.expectNone(settingsUrl);
+      expect(component.dbTableStatus).toBe('idle');
+    });
   });
 
   describe('needs-cast move-up toggle', () => {

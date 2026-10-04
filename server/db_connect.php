@@ -17,8 +17,10 @@ if ($db->connect_error) {
     die('Database connection failed: ' . $db->connect_error);
 }
 
-// Ensure the table name is available
-$table = $config->table;
+// Ensure the table name is available: DB_TABLE, unless Settings → Catalog
+// Table stored an override (db_tables.php)
+require_once __DIR__ . '/db_tables.php';
+$table = moviedb_active_table((string) $config->table);
 
 if (empty($table)) {
     die('Table name is not defined in the configuration.');

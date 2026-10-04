@@ -11,6 +11,7 @@ if (!isset($input['id']) || empty(trim($input['id']))) {
 }
 
 $id = intval(trim($input['id']));
+moviedb_require_loaded_table($input['table'] ?? null, $table);
 
 try {
     // Check if the ID exists in the database using prepared statement

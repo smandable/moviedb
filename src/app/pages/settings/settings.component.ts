@@ -62,6 +62,17 @@ export class SettingsComponent implements OnInit, OnDestroy {
   moveUpStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
   moveUpMessage = '';
 
+  /** Catalog table every endpoint uses (Settings override of DB_TABLE). */
+  dbTable = '';
+  dbTables: string[] = [];
+  dbTableStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
+  dbTableMessage = '';
+  /** Friendly names for the known catalogs; anything else shows as-is. */
+  readonly dbTableLabels: Record<string, string> = {
+    movies_het: 'Het',
+    movies_bi: 'Bi',
+  };
+
   // ---- Cast name vocabulary ----
   castNames: string[] = [];
   castNamesLoaded = false;
@@ -157,7 +168,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.settingsService.getSettings().subscribe({
-      next: ({ settings }) => {
+      next: ({ settings, activeDbTable, dbTables }) => {
+        this.dbTable = activeDbTable ?? '';
+        this.dbTables = dbTables ?? [];
         if (settings.defaultDirectory) {
           this.defaultDirectory = settings.defaultDirectory;
         }
@@ -277,6 +290,33 @@ export class SettingsComponent implements OnInit, OnDestroy {
           this.cdr.markForCheck();
         },
       });
+  }
+
+  /**
+   * The catalog table saves on change, like the move-up checkbox; on a failed
+   * save the choice reverts, so it never shows a table the server isn't using.
+   */
+  saveDbTable(value: string): void {
+    if (value === this.dbTable || this.dbTableStatus === 'saving') {
+      return;
+    }
+    const previous = this.dbTable;
+    this.dbTable = value;
+    this.dbTableStatus = 'saving';
+    this.settingsService.saveSettings({ dbTable: value }).subscribe({
+      next: (res) => {
+        this.dbTable = res.activeDbTable ?? value;
+        this.dbTableStatus = 'saved';
+        this.dbTableMessage = `Now using ${this.dbTable}.`;
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.dbTable = previous;
+        this.dbTableStatus = 'error';
+        this.dbTableMessage = err.message;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   get filteredNames(): string[] {

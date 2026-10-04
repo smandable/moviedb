@@ -35,8 +35,9 @@ try {
     header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
     header('Content-Type: application/json');
 
-    // Output the result as a flat array
-    echo json_encode($data);
+    // A flat array; ?withTable=1 wraps it with the table it came from, which
+    // the grid echoes back on delete/edit (moviedb_require_loaded_table)
+    echo json_encode(isset($_GET['withTable']) ? ['table' => $table, 'movies' => $data] : $data);
 } catch (Exception $e) {
     // Handle exceptions and return an error message
     http_response_code(500);

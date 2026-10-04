@@ -38,6 +38,45 @@
       </div>
     </div>
 
+    <!-- Catalog table -->
+    <div class="card mb-4">
+      <div class="card-header">Catalog Table</div>
+      <div class="card-body">
+        <p class="text-muted small mb-2">
+          The database table the movie grid and the Update DB page read and
+          write. Overrides DB_TABLE in server/.env. Update Database Titles
+          ignores this and goes by folder (Etc/Bi → movies_bi).
+        </p>
+        <div class="db-table-choices">
+          <div *ngFor="let t of dbTables" class="form-check form-check-inline">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="dbTable"
+              [id]="'dbTable-' + t"
+              [value]="t"
+              [checked]="t === dbTable"
+              [disabled]="dbTableStatus === 'saving'"
+              (change)="saveDbTable(t)"
+            />
+            <label class="form-check-label" [for]="'dbTable-' + t">
+              {{ dbTableLabels[t] || t }}
+              <span class="text-muted small">({{ t }})</span>
+            </label>
+          </div>
+        </div>
+        <div *ngIf="!dbTables.length" class="text-muted small">
+          Couldn't load the table choices.
+        </div>
+        <div *ngIf="dbTableStatus === 'saved'" class="small mt-2 text-success db-table-status">
+          {{ dbTableMessage }}
+        </div>
+        <div *ngIf="dbTableStatus === 'error'" class="small mt-2 text-danger db-table-status">
+          {{ dbTableMessage }}
+        </div>
+      </div>
+    </div>
+
     <!-- Normalization & renaming -->
     <div class="card mb-4">
       <div class="card-header">Normalization &amp; Renaming</div>

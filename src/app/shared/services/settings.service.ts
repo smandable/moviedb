@@ -26,9 +26,17 @@ export interface AppSettings {
    * drive-index roots.
    */
   normalizeRoots?: string[];
+  /** Catalog table override (overrides DB_TABLE; see server/db_tables.php). */
+  dbTable?: string;
 }
 
-export interface SaveSettingsResponse {
+/** The catalog table in effect and the choices (appSettings.php GET + POST). */
+export interface DbTableInfo {
+  activeDbTable?: string;
+  dbTables?: string[];
+}
+
+export interface SaveSettingsResponse extends DbTableInfo {
   success: boolean;
   settings: AppSettings;
   /** null when the save didn't touch defaultDirectory */
@@ -53,9 +61,9 @@ export class SettingsService {
 
   constructor(private http: HttpClient) {}
 
-  getSettings(): Observable<{ settings: AppSettings }> {
+  getSettings(): Observable<{ settings: AppSettings } & DbTableInfo> {
     return this.http
-      .get<{ settings: AppSettings }>(this.settingsUrl)
+      .get<{ settings: AppSettings } & DbTableInfo>(this.settingsUrl)
       .pipe(catchError(this.handleError));
   }
 

@@ -443,9 +443,9 @@ export class UpdateDbComponent implements OnInit {
             alert(`Failed to update database: ${response.message}`);
           }
         },
-        error: (err) => {
+        error: (err: Error) => {
           console.error('Update DB error:', err);
-          alert('An error occurred while updating the database.');
+          alert(`Couldn't update the database: ${err.message}`);
         },
       });
   }

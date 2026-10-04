@@ -10,6 +10,7 @@
  * POST { consolidate }                 -> { settings: {...} }
  * POST { moveRenamedUpFromNeedsCast }  -> { settings: {...} }
  * POST { normalizeRoots }              -> { settings: {...} }
+ * POST { dbTable }                     -> { settings: {...} }
  *
  * Only whitelisted keys are stored. defaultDirectory, each driveIndexRoots
  * entry, and each consolidate drive must pass the ALLOWED_BASE_PATH guard
@@ -22,12 +23,17 @@
  * toggle read by renameTheFilesToNormalize.php (absent means ON — see
  * server/rename_helpers.php). normalizeRoots lists the folders the Settings
  * page offers to normalize (absent or empty means the drive-index roots);
- * each entry is guarded like driveIndexRoots.
+ * each entry is guarded like driveIndexRoots. dbTable picks the catalog table
+ * every endpoint uses (one of MOVIEDB_CATALOG_TABLES; overrides DB_TABLE —
+ * see db_tables.php). GET and POST also return activeDbTable (the table in
+ * effect) and dbTables (the choices).
  */
 
 require_once __DIR__ . '/path_guard.php';
 require_once __DIR__ . '/drive_index_lib.php';
 require_once __DIR__ . '/consolidate_lib.php';
+require_once __DIR__ . '/db_tables.php';
+require_once __DIR__ . '/env_loader.php';
 
 ini_set('display_errors', '0');
 header('Content-Type: application/json');
@@ -55,9 +61,16 @@ function moviedb_save_settings(array $settings): bool
     return @rename($tmp, MOVIEDB_SETTINGS_FILE);
 }
 
+/** The catalog table in effect: the stored override, else DB_TABLE. */
+function moviedb_settings_table_info(): array
+{
+    $default = getenv('DB_TABLE') ?: 'movies';
+    return ['activeDbTable' => moviedb_active_table($default, MOVIEDB_SETTINGS_FILE), 'dbTables' => MOVIEDB_CATALOG_TABLES];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // (object) so an empty settings map serializes as {} rather than []
-    echo json_encode(['settings' => (object)moviedb_load_settings()]);
+    echo json_encode(['settings' => (object)moviedb_load_settings()] + moviedb_settings_table_info());
     exit();
 }
 
@@ -201,6 +214,15 @@ if (array_key_exists('moveRenamedUpFromNeedsCast', $data)) {
     $settings['moveRenamedUpFromNeedsCast'] = $data['moveRenamedUpFromNeedsCast'];
 }
 
+if (array_key_exists('dbTable', $data)) {
+    if (!is_string($data['dbTable']) || !in_array($data['dbTable'], MOVIEDB_CATALOG_TABLES, true)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'dbTable must be one of: ' . implode(', ', MOVIEDB_CATALOG_TABLES)]);
+        exit();
+    }
+    $settings['dbTable'] = $data['dbTable'];
+}
+
 if (!moviedb_save_settings($settings)) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Failed to write settings file']);
@@ -211,4 +233,4 @@ echo json_encode([
     'success' => true,
     'settings' => (object)$settings,
     'directoryExists' => $directoryExists,
-]);
+] + moviedb_settings_table_info());
