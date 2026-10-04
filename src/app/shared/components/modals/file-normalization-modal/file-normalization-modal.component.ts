@@ -9,6 +9,7 @@ import {
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { AutoGrowDirective } from './auto-grow.directive';
 import {
   FileService,
   NormalizedFile,
@@ -100,7 +101,7 @@ export type NormalizationModalTab = 'normalize' | 'cast';
   templateUrl: './file-normalization-modal.component.html',
   styleUrls: ['./file-normalization-modal.component.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AutoGrowDirective],
 })
 export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   @Input() files: NormalizedFile[] = [];
@@ -1067,12 +1068,6 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
         (r) => r !== earlier,
       );
     }
-  }
-
-  autoResize(event: Event): void {
-    const textarea = event.target as HTMLTextAreaElement;
-    textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
   }
 
   private stripExtension(name: string): string {

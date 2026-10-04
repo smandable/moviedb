@@ -87,7 +87,7 @@
                 (ngModelChange)="onWorkingNameChange(file)"
                 (focus)="onNameFocus(file)"
                 (blur)="onNameBlur(file)"
-                (input)="autoResize($event)"
+                appAutoGrow
               ></textarea>
               <div *ngIf="subfolderOf(file) as sub" class="small text-muted subfolder">
                 in {{ sub }}/
@@ -205,7 +205,7 @@
                 (ngModelChange)="onCastNameChange(file)"
                 (focus)="onNameFocus(file)"
                 (blur)="onNameBlur(file)"
-                (input)="autoResize($event)"
+                appAutoGrow
               ></textarea>
             </td>
 
