@@ -133,6 +133,10 @@ if (!function_exists('moviedb_title_overrides')) {
             'Anal.Oil.Latex.',
             'Beyond Fucked A Zombie Odyssey',
             'Break Up Blues',
+            // A name or a pun, not the French "de" (2026-10-04)
+            'All About Isabella De Santos',
+            'Life of Salma De Nora',
+            'Victory Over De Feet',
             'Debbie Does Dallas The Next Generation',
             'Debbie Does Dallas The Revenge',
             'Dress Up Dolls',
@@ -291,7 +295,8 @@ if (!function_exists('protectAbbreviationDots')) {
      *     all-caps "MS"/"DR" is left alone);
      *   - dotted initials in a spaced title: "U.S. Sluts", "L.A.", "The
      *     J.O.B". In a fully dotted release name ("Lost.In.L.A.2") those
-     *     dots can't be told from separators, so they still sweep.
+     *     dots can't be told from separators, so they still sweep;
+     *   - an ellipsis ending a word before a space or the end: "Mmm...".
      * Title only: a cast tail's periods are castDesquash's store-backed call
      * (and keepCastDots'), so the part from "Scene_N" on is untouched.
      */
@@ -307,6 +312,11 @@ if (!function_exists('protectAbbreviationDots')) {
             $name = substr($name, 0, $m[0][1]);
         }
         $dot = MOVIEDB_DOT_MARKER;
+
+        // An ellipsis in a spaced title ("Mmm... Foot Lickin' Good!", "Shove
+        // It Up My... # 01"); swept, its three spaces became a " - " break
+        $name = preg_replace('/(?<=\p{L})\.{3}(?=\s|$)/u', str_repeat($dot, 3), $name);
+
         $capitalize = fn(string $w) => mb_strtoupper(mb_substr($w, 0, 1)) . mb_substr($w, 1);
 
         $name = preg_replace_callback(
@@ -491,6 +501,12 @@ if (!function_exists('titleCase')) {
             'vs',
         ];
 
+        // Lowercase like the words above, but in the title only — the French
+        // / Spanish "de" ("Chicas de Porno", "Le Retour de Marilyn"). A cast
+        // name keeps its capital ("Anna De Ville"), so from the first Scene_N
+        // on these are ordinary words. "la"/"le" stay out: "Lost in LA".
+        $titleOnlyLowercase = ['de', 'du', 'des'];
+
         // Words that should always be ALL CAPS
         $uppercaseExceptions = ['BBC', 'CD', 'MILF', 'XXX', 'AJ'];
 
@@ -508,12 +524,21 @@ if (!function_exists('titleCase')) {
         foreach ($delimiters as $delimiter) {
             $words = explode($delimiter, $result);
             $originalWords = $words;
+            $castStart = count($words);
+            foreach ($words as $i => $word) {
+                if (preg_match('/^Scene_\d/i', $word)) {
+                    $castStart = $i;
+                    break;
+                }
+            }
 
             foreach ($words as $i => $word) {
                 $original   = $word;
                 $lower      = mb_strtolower($original, 'UTF-8');
                 $upper      = mb_strtoupper($original, 'UTF-8');
                 $isAllLower = ($original === $lower);
+                $isTitleOnlySmall = $i < $castStart && in_array($lower, $titleOnlyLowercase, true);
+                $isSmallWord = $isTitleOnlySmall || in_array($lower, $lowercaseExceptions, true);
 
                 // 1) Mixed-case special words
                 if (isset($mixedCaseExceptions[$lower])) {
@@ -530,7 +555,9 @@ if (!function_exists('titleCase')) {
                 // 3) If the word is NOT all-lowercase and NOT a "small word", assume user chose the case.
                 //    A user-edited name keeps capitalized small words too ("Back To The Start").
                 if (!$isAllLower) {
-                    if ($respectUserCasing || !in_array($lower, $lowercaseExceptions, true)) {
+                    // ...except a title-only word: a capital "De" kept here
+                    // would be re-flagged by the next default-mode scan
+                    if (($respectUserCasing && !$isTitleOnlySmall) || !$isSmallWord) {
                         $words[$i] = $original;
                         continue;
                     }
@@ -560,7 +587,7 @@ if (!function_exists('titleCase')) {
                     $i > 0 &&
                     !$isLastInSegment &&
                     !$isSpelledInitial &&
-                    in_array($lower, $lowercaseExceptions, true) &&
+                    $isSmallWord &&
                     $prevWord !== '-'
                 ) {
                     $words[$i] = $lower;
@@ -785,7 +812,8 @@ if (!function_exists('protectTitleNumbers')) {
      */
     function moviedb_numbered_titles(): array
     {
-        return ['Kill Code 87'];
+        // A year, not a volume (Sean, 2026-10-04): "Class of 88", "Jenna 95"
+        return ['Kill Code 87', 'Debbie Class of 88', 'Jenna 95'];
     }
 
     /**

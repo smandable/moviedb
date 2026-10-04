@@ -1244,6 +1244,7 @@ check(
     true
 );
 unlink("$scanDir/convert_helper.php");
+
 array_map('unlink', glob("$scanDir/*.mp4"));
 unlink("$scanDir/.DS_Store");
 rmdir("$scanDir/duplicates");
@@ -1270,6 +1271,15 @@ check('web address in a tag', normalizeFileBaseName('Velvet Gold # 01 (Quill.com
 check('a word starting with com is not a domain', normalizeFileBaseName('Velvet.Compilation'), 'Velvet Compilation');
 check('ordinal suffix lowercased', normalizeFileBaseName('1St Time Velvet # 04'), '1st Time Velvet # 04');
 check('all-caps ordinal', normalizeFileBaseName('Her 3RD Velvet 03'), 'Her 3rd Velvet # 03');
+check('ellipsis kept mid-title', normalizeFileBaseName('Hmm... Quiet Please!'), 'Hmm... Quiet Please!');
+check('ellipsis before a volume is not a break', normalizeFileBaseName('Wait for It... # 02'), 'Wait for It... # 02');
+check('title-only de lowercased', normalizeFileBaseName('Le Retour De Quill'), 'Le Retour de Quill');
+check('du and des too', normalizeFileBaseName('Chateau Des Quills Du Nord'), 'Chateau des Quills du Nord');
+check('de first word stays capitalized', normalizeFileBaseName('De Quill Returns'), 'De Quill Returns');
+check('cast name keeps its De', normalizeFileBaseName('Velvet Gold # 02 - Scene_1 - Jane De Quill'), 'Velvet Gold # 02 - Scene_1 - Jane De Quill');
+check('LA is not a French article', normalizeFileBaseName('Lonely in LA # 01'), 'Lonely in LA # 01');
+check('title-only de lowercased in respect mode too', normalizeFileBaseName('Le Retour De Quill - Scene_1 - Jane Doe', true), 'Le Retour de Quill - Scene_1 - Jane Doe');
+check('a listed year is not a volume', normalizeFileBaseName('Debbie Class of 88'), 'Debbie Class of 88');
 check('abbreviation periods survive respect mode', normalizeFileBaseName('Mr. Lonelyheart # 13 - Scene_1 - Jane Doe', true), 'Mr. Lonelyheart # 13 - Scene_1 - Jane Doe');
 check('invalid UTF-8 passes protectAbbreviationDots untouched', protectAbbreviationDots("Amat\xF6r Mr. X"), "Amat\xF6r Mr. X");
 
