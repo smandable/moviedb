@@ -89,6 +89,9 @@
                 (blur)="onNameBlur(file)"
                 (input)="autoResize($event)"
               ></textarea>
+              <div *ngIf="subfolderOf(file) as sub" class="small text-muted subfolder">
+                in {{ sub }}/
+              </div>
             </td>
 
             <!-- RIGHT: only shown when it actually differs -->

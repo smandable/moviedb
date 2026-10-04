@@ -82,6 +82,13 @@ describe('FileService', () => {
       req.flush(mockResponse);
     });
 
+    it('asks for a recursive video-only scan when told to', () => {
+      service.checkFileNamesToNormalize('/lib', true, true).subscribe();
+      const req = httpMock.expectOne(`${baseUrl}checkFileNamesToNormalize.php`);
+      expect(req.request.body).toEqual({ directory: '/lib', videoOnly: true, recursive: true });
+      req.flush({ files: [] });
+    });
+
     it('should handle HTTP errors via catchError', () => {
       let capturedMessage = '';
       service.checkFileNamesToNormalize('/bad').subscribe({

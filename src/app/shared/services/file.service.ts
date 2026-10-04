@@ -108,14 +108,21 @@ export class FileService {
    * @param directory The directory path to process.
    * @param videoOnly List video files only (the drive index's types) — for
    *   library folders, which also hold scripts and notes.
+   * @param recursive Walk subfolders too (never duplicates/ or needs-cast/);
+   *   each file's `path` is then its own folder.
    * @returns An observable containing the list of files.
    */
   checkFileNamesToNormalize(
     directory: string,
     videoOnly = false,
+    recursive = false,
   ): Observable<{ files: NormalizedFile[] }> {
     const headers = jsonHeaders();
-    const body = videoOnly ? { directory, videoOnly } : { directory };
+    const body = {
+      directory,
+      ...(videoOnly ? { videoOnly } : {}),
+      ...(recursive ? { recursive } : {}),
+    };
     return this.http
       .post<{
         files: NormalizedFile[];

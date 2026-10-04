@@ -505,6 +505,23 @@ describe('FileNormalizationModalComponent', () => {
     });
   });
 
+  describe('subfolderOf', () => {
+    const at = (path: string) =>
+      ({ path, originalFileName: 'a.mp4' }) as NormalizedFile;
+
+    it('names a subfolder relative to the scanned folder', () => {
+      component.directory = '/Volumes/Etc/Extra/';
+      expect(component.subfolderOf(at('/Volumes/Etc/Extra/Keep'))).toBe('Keep');
+      expect(component.subfolderOf(at('/Volumes/Etc/Extra/Keep/Older'))).toBe('Keep/Older');
+    });
+
+    it('is empty for the folder itself and for a sibling sharing its prefix', () => {
+      component.directory = '/Volumes/Etc/Extra';
+      expect(component.subfolderOf(at('/Volumes/Etc/Extra'))).toBe('');
+      expect(component.subfolderOf(at('/Volumes/Etc/ExtraMore'))).toBe('');
+    });
+  });
+
   describe('file-name length cap', () => {
     // The filesystem refuses names over 255 bytes (NAME_MAX); the modal warns
     // at the same threshold so the user sees it before a rename ever runs.

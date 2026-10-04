@@ -691,7 +691,7 @@ describe('SettingsComponent', () => {
 
       component.normalizeRoot(rootA);
       const req = httpMock.expectOne(checkUrl);
-      expect(req.request.body).toEqual({ directory: rootA, videoOnly: true });
+      expect(req.request.body).toEqual({ directory: rootA, videoOnly: true, recursive: true });
       req.flush({
         files: [
           scanFile('kept me up.mp4', 'Kept Me Up.mp4'),

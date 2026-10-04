@@ -44,7 +44,9 @@ try {
     // videoOnly (the Settings page): list video files only, the same types
     // the drive index catalogs — library folders also hold scripts and notes.
     $onlyExtensions = !empty($data['videoOnly']) ? MOVIEDB_DRIVE_INDEX_VIDEO_EXTS : null;
-    $normalizedFiles = moviedb_scan_names_to_normalize($directory, $onlyExtensions);
+    // recursive (the Settings page) walks subfolders too, skipping
+    // duplicates/ and needs-cast/ (moviedb_scan_names_to_normalize)
+    $normalizedFiles = moviedb_scan_names_to_normalize($directory, $onlyExtensions, !empty($data['recursive']));
     if ($normalizedFiles === null) {
         ob_clean();
         http_response_code(500);

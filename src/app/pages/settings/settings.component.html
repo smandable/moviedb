@@ -434,9 +434,10 @@
       </div>
       <div class="card-body" [hidden]="isCardCollapsed('normalize')">
         <p class="text-muted small mb-2">
-          Scans one folder (the files directly in it, not subfolders) and opens
-          the same rename review as Process Directory, listing only the files
-          whose names would change. Uncheck or edit any row before renaming.
+          Scans one folder and its subfolders (never <code>duplicates</code> or
+          <code>needs-cast</code>) and opens the same rename review as Process
+          Directory, listing only the files whose names would change. Uncheck or
+          edit any row before renaming.
         </p>
         <div
           *ngIf="isConsolidating"

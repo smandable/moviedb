@@ -599,8 +599,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Scans one folder and opens the Process Directory rename review on the
-   * files whose names would change. Ignored while another scan runs (a
+   * Scans one folder and its subfolders and opens the Process Directory
+   * rename review on the files whose names would change. Ignored while
+   * another scan runs (a
    * sleeping drive can take ~20s to answer, and a second click used to stack a
    * second modal over a stale list) or while a consolidation is moving files.
    */
@@ -612,7 +613,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.normalizeScanningRoot = root;
     delete this.normalizeResults[root];
 
-    this.fileService.checkFileNamesToNormalize(root, true).subscribe({
+    this.fileService.checkFileNamesToNormalize(root, true, true).subscribe({
       next: ({ files }) => {
         this.normalizeScanningRoot = null;
         const candidates = files.filter((f) => f.needsNormalization);

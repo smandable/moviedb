@@ -371,6 +371,17 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     return tail && !base.endsWith(tail) ? base + tail : base;
   }
 
+  /**
+   * The file's folder relative to the scanned `directory` ("Keep" for
+   * .../Extra/Keep), or '' when it sits directly in it — a Settings scan
+   * walks subfolders, so one list can span several folders.
+   */
+  subfolderOf(file: NormalizedFile): string {
+    const root = this.directory.replace(/\/+$/, '');
+    const dir = (file.path ?? '').replace(/\/+$/, '');
+    return root && dir.startsWith(root + '/') ? dir.slice(root.length + 1) : '';
+  }
+
   readonly maxFileNameLength = MAX_FILENAME_BYTES;
 
   /**

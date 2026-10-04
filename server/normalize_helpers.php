@@ -231,19 +231,29 @@ if (!function_exists('applyTitleOverride')) {
     }
 }
 
+if (!defined('MOVIEDB_NORMALIZE_SCAN_MAX_DEPTH')) {
+    // Same cap as the drive index (MOVIEDB_DRIVE_INDEX_MAX_DEPTH)
+    define('MOVIEDB_NORMALIZE_SCAN_MAX_DEPTH', 4);
+}
+
 if (!function_exists('moviedb_scan_names_to_normalize')) {
     /**
      * The rename modal's file list for one directory: each regular file in it
-     * with its normalized name. Dot-files and subfolders are skipped — the list
-     * is offered for renaming as-is, and a library root holds "needs-cast" and
-     * "duplicates" folders that other code finds by exactly those names.
-     * $onlyExtensions (lowercase) narrows the list to those file types — the
-     * Settings page passes the video extensions, because a library folder can
-     * also hold scripts and notes ("convert_to_mp4.php") that normalizing
-     * would mangle. Returns null when the directory can't be listed
-     * (error_get_last() says why).
+     * with its normalized name, "path" being the file's own folder. Dot-files
+     * are skipped. $onlyExtensions (lowercase) narrows the list to those file
+     * types — the Settings page passes the video extensions, because a
+     * library folder can also hold scripts and notes ("convert_to_mp4.php")
+     * that normalizing would mangle. Returns null when the directory can't be
+     * listed (error_get_last() says why).
+     *
+     * $recursive (the Settings page) also walks subfolders, files before
+     * subfolders, down to MOVIEDB_NORMALIZE_SCAN_MAX_DEPTH levels, skipping
+     * what the drive index skips (dot-folders such as .Trashes, symlinks)
+     * plus "duplicates" and "needs-cast": other code finds those folders by
+     * exactly those names, so their files are never offered for renaming. A
+     * subfolder that can't be listed is skipped, like the index does.
      */
-    function moviedb_scan_names_to_normalize(string $directory, ?array $onlyExtensions = null): ?array
+    function moviedb_scan_names_to_normalize(string $directory, ?array $onlyExtensions = null, bool $recursive = false, int $depth = 0): ?array
     {
         $entries = @scandir($directory);
         if ($entries === false) {
@@ -251,8 +261,21 @@ if (!function_exists('moviedb_scan_names_to_normalize')) {
         }
 
         $rows = [];
+        $subfolders = [];
         foreach ($entries as $fileName) {
-            if ($fileName[0] === '.' || !is_file($directory . '/' . $fileName)) {
+            if ($fileName[0] === '.') {
+                continue;
+            }
+            $fullPath = $directory . '/' . $fileName;
+            if (!is_file($fullPath)) {
+                if ($recursive
+                    && $depth < MOVIEDB_NORMALIZE_SCAN_MAX_DEPTH
+                    && is_dir($fullPath)
+                    && !is_link($fullPath)
+                    && strcasecmp($fileName, 'duplicates') !== 0
+                    && strcasecmp($fileName, 'needs-cast') !== 0) {
+                    $subfolders[] = $fullPath;
+                }
                 continue;
             }
 
@@ -277,6 +300,12 @@ if (!function_exists('moviedb_scan_names_to_normalize')) {
                 'needsNormalization'  => $needsNormalization,
                 'status'              => $needsNormalization ? 'Needs Renaming' : '',
             ];
+        }
+        foreach ($subfolders as $subfolder) {
+            $nested = moviedb_scan_names_to_normalize($subfolder, $onlyExtensions, true, $depth + 1);
+            if ($nested !== null) {
+                array_push($rows, ...$nested);
+            }
         }
         return $rows;
     }

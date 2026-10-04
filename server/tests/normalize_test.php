@@ -1245,6 +1245,58 @@ check(
 );
 unlink("$scanDir/convert_helper.php");
 
+// Recursive (the Settings page): subfolders walked, files first, each row's
+// path its own folder; duplicates/, needs-cast/, dot-folders and symlinks
+// never entered; the depth cap holds.
+mkdir("$scanDir/Keep/Older", 0777, true);
+mkdir("$scanDir/.Trashes");
+touch("$scanDir/Keep/velvet.gold.2.mp4");
+touch("$scanDir/Keep/Older/Velvet Gold # 03.mp4");
+touch("$scanDir/duplicates/velvet.gold.4.mp4");
+touch("$scanDir/needs-cast/velvet.gold.5.scene.1.mp4");
+touch("$scanDir/.Trashes/velvet.gold.6.mp4");
+symlink("$scanDir/Keep", "$scanDir/KeepLink");
+$deep = "$scanDir/d1/d2/d3/d4/d5";
+mkdir($deep, 0777, true);
+touch("$scanDir/d1/d2/d3/d4/at.depth.four.mp4");
+touch("$deep/past.the.cap.mp4");
+$recRows = moviedb_scan_names_to_normalize($scanDir, ['mp4'], true) ?? [];
+$recNames = array_map(fn($r) => substr($r['path'], strlen($scanDir)) . '/' . $r['originalFileName'], $recRows);
+check(
+    'recursive scan walks subfolders, files first, and skips the reserved ones',
+    $recNames,
+    [
+        '/Quietly and Slowly - Scene_1 - Mira Quell.mp4',
+        '/movie.scene.1.mira.quell.mp4',
+        '/Keep/velvet.gold.2.mp4',
+        '/Keep/Older/Velvet Gold # 03.mp4',
+        '/d1/d2/d3/d4/at.depth.four.mp4',
+    ]
+);
+check(
+    'a subfolder row carries its own folder and normalized name',
+    [$recRows[2]['path'] ?? null, $recRows[2]['newFileName'] ?? null],
+    ["$scanDir/Keep", 'Velvet Gold # 02.mp4']
+);
+check(
+    'without recursive the subfolders stay unlisted',
+    count(moviedb_scan_names_to_normalize($scanDir, ['mp4']) ?? []),
+    2
+);
+unlink("$scanDir/KeepLink");
+unlink("$deep/past.the.cap.mp4");
+unlink("$scanDir/d1/d2/d3/d4/at.depth.four.mp4");
+foreach (['d1/d2/d3/d4/d5', 'd1/d2/d3/d4', 'd1/d2/d3', 'd1/d2', 'd1'] as $d) {
+    rmdir("$scanDir/$d");
+}
+unlink("$scanDir/Keep/Older/Velvet Gold # 03.mp4");
+unlink("$scanDir/Keep/velvet.gold.2.mp4");
+rmdir("$scanDir/Keep/Older");
+rmdir("$scanDir/Keep");
+unlink("$scanDir/duplicates/velvet.gold.4.mp4");
+unlink("$scanDir/needs-cast/velvet.gold.5.scene.1.mp4");
+unlink("$scanDir/.Trashes/velvet.gold.6.mp4");
+rmdir("$scanDir/.Trashes");
 array_map('unlink', glob("$scanDir/*.mp4"));
 unlink("$scanDir/.DS_Store");
 rmdir("$scanDir/duplicates");
