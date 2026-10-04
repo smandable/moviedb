@@ -35,6 +35,18 @@
   white-space: nowrap;
 }
 
+// Card headers collapse their card (state remembered per browser)
+.card-toggle {
+  cursor: pointer;
+  user-select: none;
+
+  .chevron {
+    width: 1em;
+    display: inline-block;
+    text-align: center;
+  }
+}
+
 // Collapsed-by-default section headers (roots editor, consolidation
 // options, run log): a plain toggle row with a text chevron
 .accordion-toggle {

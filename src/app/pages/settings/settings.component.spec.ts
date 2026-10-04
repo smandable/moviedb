@@ -20,6 +20,7 @@ import {
 } from '@modals/file-normalization-modal/file-normalization-modal.component';
 
 import {
+  SETTINGS_COLLAPSED_CARDS_KEY,
   SettingsComponent,
 } from './settings.component';
 
@@ -58,6 +59,7 @@ describe('SettingsComponent', () => {
   };
 
   beforeEach(async () => {
+    localStorage.removeItem(SETTINGS_COLLAPSED_CARDS_KEY);
     await TestBed.configureTestingModule({
       imports: [
         SettingsComponent,
@@ -75,6 +77,69 @@ describe('SettingsComponent', () => {
 
   afterEach(() => {
     httpMock.verify();
+    localStorage.removeItem(SETTINGS_COLLAPSED_CARDS_KEY);
+  });
+
+  describe('collapsible cards', () => {
+    const header = (id: string) =>
+      fixture.nativeElement.querySelector(`.card-header[data-card="${id}"]`) as HTMLElement;
+    const body = (id: string) => header(id).nextElementSibling as HTMLElement;
+
+    it('starts with every card open', () => {
+      flushInit({});
+      fixture.detectChanges();
+      const headers = Array.from(
+        fixture.nativeElement.querySelectorAll('.card-header.card-toggle'),
+      ) as HTMLElement[];
+      expect(headers.length).toBe(6);
+      headers.forEach((h) => {
+        expect(h.getAttribute('aria-expanded')).toBe('true');
+        expect((h.nextElementSibling as HTMLElement).hidden).toBeFalse();
+      });
+    });
+
+    it('collapses and expands on click, remembering the state', () => {
+      flushInit({});
+      fixture.detectChanges();
+
+      header('index').click();
+      fixture.detectChanges();
+      expect(body('index').hidden).toBeTrue();
+      expect(header('index').getAttribute('aria-expanded')).toBe('false');
+      expect(JSON.parse(localStorage.getItem(SETTINGS_COLLAPSED_CARDS_KEY)!)).toEqual(['index']);
+
+      header('index').click();
+      fixture.detectChanges();
+      expect(body('index').hidden).toBeFalse();
+      expect(JSON.parse(localStorage.getItem(SETTINGS_COLLAPSED_CARDS_KEY)!)).toEqual([]);
+    });
+
+    it('toggles from the keyboard', () => {
+      flushInit({});
+      fixture.detectChanges();
+
+      header('table').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      fixture.detectChanges();
+      expect(body('table').hidden).toBeTrue();
+    });
+
+    it('restores the remembered state on the next visit', () => {
+      flushInit({});
+      localStorage.setItem(SETTINGS_COLLAPSED_CARDS_KEY, JSON.stringify(['consolidation', 'directory']));
+
+      const next = TestBed.createComponent(SettingsComponent);
+      expect(next.componentInstance.isCardCollapsed('consolidation')).toBeTrue();
+      expect(next.componentInstance.isCardCollapsed('directory')).toBeTrue();
+      expect(next.componentInstance.isCardCollapsed('index')).toBeFalse();
+    });
+
+    it('ignores unreadable stored state', () => {
+      flushInit({});
+      localStorage.setItem(SETTINGS_COLLAPSED_CARDS_KEY, '{not json');
+
+      const next = TestBed.createComponent(SettingsComponent);
+      expect(next.componentInstance.collapsedCards.size).toBe(0);
+    });
   });
 
   function flushInit(

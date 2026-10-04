@@ -4,8 +4,20 @@
 
     <!-- Default directory -->
     <div class="card mb-4">
-      <div class="card-header">Default Directory</div>
-      <div class="card-body">
+      <div
+        class="card-header card-toggle"
+        role="button"
+        tabindex="0"
+        data-card="directory"
+        [attr.aria-expanded]="!isCardCollapsed('directory')"
+        [title]="(isCardCollapsed('directory') ? 'Show' : 'Hide') + ' this section'"
+        (click)="toggleCard('directory')"
+        (keydown.enter)="toggleCard('directory')"
+        (keydown.space)="$event.preventDefault(); toggleCard('directory')"
+      >
+        <span class="chevron me-2">{{ isCardCollapsed('directory') ? "▸" : "▾" }}</span>Default Directory
+      </div>
+      <div class="card-body" [hidden]="isCardCollapsed('directory')">
         <p class="text-muted small mb-2">
           The directory the Update DB page starts with.
         </p>
@@ -40,8 +52,20 @@
 
     <!-- Catalog table -->
     <div class="card mb-4">
-      <div class="card-header">Catalog Table</div>
-      <div class="card-body">
+      <div
+        class="card-header card-toggle"
+        role="button"
+        tabindex="0"
+        data-card="table"
+        [attr.aria-expanded]="!isCardCollapsed('table')"
+        [title]="(isCardCollapsed('table') ? 'Show' : 'Hide') + ' this section'"
+        (click)="toggleCard('table')"
+        (keydown.enter)="toggleCard('table')"
+        (keydown.space)="$event.preventDefault(); toggleCard('table')"
+      >
+        <span class="chevron me-2">{{ isCardCollapsed('table') ? "▸" : "▾" }}</span>Catalog Table
+      </div>
+      <div class="card-body" [hidden]="isCardCollapsed('table')">
         <p class="text-muted small mb-2">
           The database table the movie grid and the Update DB page read and
           write. Overrides DB_TABLE in server/.env. Update Database Titles
@@ -79,8 +103,20 @@
 
     <!-- Normalization & renaming -->
     <div class="card mb-4">
-      <div class="card-header">Normalization &amp; Renaming</div>
-      <div class="card-body">
+      <div
+        class="card-header card-toggle"
+        role="button"
+        tabindex="0"
+        data-card="normalization"
+        [attr.aria-expanded]="!isCardCollapsed('normalization')"
+        [title]="(isCardCollapsed('normalization') ? 'Show' : 'Hide') + ' this section'"
+        (click)="toggleCard('normalization')"
+        (keydown.enter)="toggleCard('normalization')"
+        (keydown.space)="$event.preventDefault(); toggleCard('normalization')"
+      >
+        <span class="chevron me-2">{{ isCardCollapsed('normalization') ? "▸" : "▾" }}</span>Normalization &amp; Renaming
+      </div>
+      <div class="card-body" [hidden]="isCardCollapsed('normalization')">
         <div class="form-check">
           <input
             class="form-check-input"
@@ -231,8 +267,20 @@
 
     <!-- Drive index -->
     <div class="card mb-4">
-      <div class="card-header">Drive Index</div>
-      <div class="card-body">
+      <div
+        class="card-header card-toggle"
+        role="button"
+        tabindex="0"
+        data-card="index"
+        [attr.aria-expanded]="!isCardCollapsed('index')"
+        [title]="(isCardCollapsed('index') ? 'Show' : 'Hide') + ' this section'"
+        (click)="toggleCard('index')"
+        (keydown.enter)="toggleCard('index')"
+        (keydown.space)="$event.preventDefault(); toggleCard('index')"
+      >
+        <span class="chevron me-2">{{ isCardCollapsed('index') ? "▸" : "▾" }}</span>Drive Index
+      </div>
+      <div class="card-body" [hidden]="isCardCollapsed('index')">
         <p class="text-muted small mb-2">
           Library roots indexed for drive-wide search
           (server/drive_index.json).
@@ -371,8 +419,20 @@
 
     <!-- Normalize library filenames -->
     <div class="card mb-4">
-      <div class="card-header">Normalize Library Filenames</div>
-      <div class="card-body">
+      <div
+        class="card-header card-toggle"
+        role="button"
+        tabindex="0"
+        data-card="normalize"
+        [attr.aria-expanded]="!isCardCollapsed('normalize')"
+        [title]="(isCardCollapsed('normalize') ? 'Show' : 'Hide') + ' this section'"
+        (click)="toggleCard('normalize')"
+        (keydown.enter)="toggleCard('normalize')"
+        (keydown.space)="$event.preventDefault(); toggleCard('normalize')"
+      >
+        <span class="chevron me-2">{{ isCardCollapsed('normalize') ? "▸" : "▾" }}</span>Normalize Library Filenames
+      </div>
+      <div class="card-body" [hidden]="isCardCollapsed('normalize')">
         <p class="text-muted small mb-2">
           Scans one folder (the files directly in it, not subfolders) and opens
           the same rename review as Process Directory, listing only the files
@@ -502,8 +562,20 @@
 
     <!-- Consolidation -->
     <div class="card mb-4">
-      <div class="card-header">Consolidation</div>
-      <div class="card-body">
+      <div
+        class="card-header card-toggle"
+        role="button"
+        tabindex="0"
+        data-card="consolidation"
+        [attr.aria-expanded]="!isCardCollapsed('consolidation')"
+        [title]="(isCardCollapsed('consolidation') ? 'Show' : 'Hide') + ' this section'"
+        (click)="toggleCard('consolidation')"
+        (keydown.enter)="toggleCard('consolidation')"
+        (keydown.space)="$event.preventDefault(); toggleCard('consolidation')"
+      >
+        <span class="chevron me-2">{{ isCardCollapsed('consolidation') ? "▸" : "▾" }}</span>Consolidation
+      </div>
+      <div class="card-body" [hidden]="isCardCollapsed('consolidation')">
         <p class="text-muted small mb-2">
           Consolidates each title's scattered episodes onto one drive, shelving
           duplicates under &lt;drive&gt;/duplicates/.

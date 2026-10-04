@@ -29,6 +29,12 @@ import {
 import { formatBytes, formatDurationHuman } from '@helpers/formatters';
 import { environment } from 'src/environments/environment';
 
+/**
+ * localStorage key for which Settings cards are collapsed (an array of card
+ * ids). Per-browser view state, deliberately not in app_settings.json.
+ */
+export const SETTINGS_COLLAPSED_CARDS_KEY = 'moviedb.settings.collapsedCards';
+
 /** One parsed row of the consolidation TSV log, ready for display. */
 export interface ConsolidateLogRow {
   time: string;
@@ -52,6 +58,9 @@ export interface ConsolidateLogRow {
 })
 export class SettingsComponent implements OnInit, OnDestroy {
   // ---- Default directory ----
+  /** Cards whose body is hidden; remembered per browser (all open by default). */
+  readonly collapsedCards = new Set<string>(SettingsComponent.loadCollapsedCards());
+
   defaultDirectory: string = environment.defaultDirectory;
   directoryStatus: 'idle' | 'saving' | 'saved' | 'error' = 'idle';
   directoryMessage: string = '';
@@ -317,6 +326,36 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  isCardCollapsed(id: string): boolean {
+    return this.collapsedCards.has(id);
+  }
+
+  /** Collapse or expand a card, and remember it for next time. */
+  toggleCard(id: string): void {
+    if (!this.collapsedCards.delete(id)) {
+      this.collapsedCards.add(id);
+    }
+    try {
+      localStorage.setItem(
+        SETTINGS_COLLAPSED_CARDS_KEY,
+        JSON.stringify([...this.collapsedCards]),
+      );
+    } catch {
+      // Storage unavailable (private window, blocked site data): the toggle
+      // still works for this visit, it just isn't remembered.
+    }
+  }
+
+  private static loadCollapsedCards(): string[] {
+    try {
+      const raw = localStorage.getItem(SETTINGS_COLLAPSED_CARDS_KEY);
+      const ids = raw ? JSON.parse(raw) : [];
+      return Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : [];
+    } catch {
+      return [];
+    }
   }
 
   get filteredNames(): string[] {
