@@ -1332,6 +1332,7 @@ check('cast name keeps its De', normalizeFileBaseName('Velvet Gold # 02 - Scene_
 check('LA is not a French article', normalizeFileBaseName('Lonely in LA # 01'), 'Lonely in LA # 01');
 check('title-only de lowercased in respect mode too', normalizeFileBaseName('Le Retour De Quill - Scene_1 - Jane Doe', true), 'Le Retour de Quill - Scene_1 - Jane Doe');
 check('a listed year is not a volume', normalizeFileBaseName('Debbie Class of 88'), 'Debbie Class of 88');
+check('a listed year survives a dotted release name', normalizeFileBaseName('debbie.does.dallas.99'), 'Debbie Does Dallas 99');
 check('abbreviation periods survive respect mode', normalizeFileBaseName('Mr. Lonelyheart # 13 - Scene_1 - Jane Doe', true), 'Mr. Lonelyheart # 13 - Scene_1 - Jane Doe');
 check('invalid UTF-8 passes protectAbbreviationDots untouched', protectAbbreviationDots("Amat\xF6r Mr. X"), "Amat\xF6r Mr. X");
 

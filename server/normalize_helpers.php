@@ -841,8 +841,12 @@ if (!function_exists('protectTitleNumbers')) {
      */
     function moviedb_numbered_titles(): array
     {
-        // A year, not a volume (Sean, 2026-10-04): "Class of 88", "Jenna 95"
-        return ['Kill Code 87', 'Debbie Class of 88', 'Jenna 95'];
+        // A year, not a volume (Sean, 2026-10-04): "Class of 88", "Jenna 95",
+        // "Debbie Does Dallas 99" (1999) — none of them is a numbered series
+        return [
+            'Kill Code 87', 'Debbie Class of 88', 'Jenna 95',
+            'Debbie Does Dallas 99', 'Debbie 99', 'Circa 82',
+        ];
     }
 
     /**
