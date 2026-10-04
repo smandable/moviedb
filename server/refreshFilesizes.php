@@ -1,5 +1,13 @@
 <?php
 
+// CLI only: the whole repo sits under httpd's DocumentRoot, so without this
+// guard a bare GET to this file would execute it via mod_php — and rewrite
+// catalog filesizes (an <img> on any web page could trigger it).
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit(1);
+}
+
 /**
  * CLI script to refresh all filesizes in the database by scanning directories.
  *
