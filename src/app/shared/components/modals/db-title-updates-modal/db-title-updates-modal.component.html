@@ -60,14 +60,17 @@
                 {{ item.table }} · row {{ item.row?.id }}
                 <span *ngIf="item.note"> · {{ item.note }}</span>
               </div>
-            </td>
-            <td class="col-outcome small">
-              <span
+              <!-- Under the title, not a column of its own: an outcome only
+                   exists after Update, and an empty column narrowed every
+                   title until then -->
+              <div
                 *ngIf="outcomes.get(item) as o"
+                class="small outcome"
                 [class.text-success]="o.ok"
                 [class.text-danger]="!o.ok"
-                >{{ o.text }}</span
               >
+                {{ o.text }}
+              </div>
             </td>
           </tr>
         </tbody>

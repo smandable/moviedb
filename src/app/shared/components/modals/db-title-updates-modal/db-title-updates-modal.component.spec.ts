@@ -119,6 +119,20 @@ describe('DbTitleUpdatesModalComponent', () => {
     expect(el('.load-error')!.textContent).toContain('boom');
   });
 
+  it('gives the titles the full width: an outcome shows under its title once it exists', () => {
+    const item = update(5, 'Up And Away', 'Up and Away');
+    open([item]);
+    expect(all('.update-row td').length).toBe(2); // checkbox + title, no outcome column
+    expect(el('.update-row .outcome')).toBeNull();
+
+    spyOn(service, 'apply').and.returnValue(of({ results: [{ id: 5, ok: true, logged: true }] }));
+    component.applyUpdates(); // marks the OnPush view for check itself
+    fixture.detectChanges();
+    const outcome = el('.update-row td:nth-child(2) .outcome');
+    expect(outcome?.textContent?.trim()).toBe(component.outcomes.get(item)!.text);
+    expect(outcome?.classList).toContain('text-success');
+  });
+
   it('maps results by position, so two items on one row both get an outcome', () => {
     const a = update(5, 'Up And Away', 'Up and Away');
     const b = update(5, 'Up And Away', 'Up & Away');
