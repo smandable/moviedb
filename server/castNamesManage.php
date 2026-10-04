@@ -38,6 +38,14 @@ $data = json_decode(file_get_contents('php://input') ?: '', true);
 $data = is_array($data) ? $data : [];
 $action = isset($data['action']) && is_string($data['action']) ? $data['action'] : '';
 
+// Only 'list' is read-only. A custom header forces a CORS preflight a hostile
+// page won't be granted, killing blind cross-site POSTs (see driveIndex.php).
+if ($action !== 'list' && empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Missing X-Requested-With header']);
+    exit();
+}
+
 $names = moviedb_load_cast_store();
 
 switch ($action) {

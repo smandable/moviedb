@@ -32,6 +32,29 @@ describe('FileService', () => {
     expect(service).toBeTruthy();
   });
 
+  it('sends the CSRF header on every request', () => {
+    // rename, process, edit, Finder search and cast merges are server-gated;
+    // the read-only calls send it too, so no call site has to choose
+    const calls: Array<[string, () => void]> = [
+      ['checkFileNamesToNormalize.php', () => service.checkFileNamesToNormalize('/test').subscribe()],
+      ['renameTheFilesToNormalize.php', () => service.renameTheFilesToNormalize([]).subscribe()],
+      ['processFilesForDB.php', () => service.processFilesForDB('/test').subscribe()],
+      ['openExternalDriveSearch.php', () => service.openExternalDriveSearch('q').subscribe()],
+      ['normalizeName.php', () => service.normalizeName('x', false).subscribe()],
+      ['castNames.php', () => service.getCastNames('/test', ['Marla Vex']).subscribe()],
+      ['editCurrentRow.php', () =>
+        service.updateRow(1, { dimensions: '', filesize: 0, duration: 0 }).subscribe()],
+    ];
+    for (const [endpoint, call] of calls) {
+      call();
+      const req = httpMock.expectOne(`${baseUrl}${endpoint}`);
+      expect(req.request.headers.get('X-Requested-With'))
+        .withContext(endpoint)
+        .toBe('XMLHttpRequest');
+      req.flush({});
+    }
+  });
+
   describe('checkFileNamesToNormalize', () => {
     it('should POST directory and return normalized files', () => {
       const mockResponse = {

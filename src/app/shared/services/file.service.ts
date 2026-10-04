@@ -63,6 +63,21 @@ export interface ProcessFilesResponse {
   }>;
 }
 
+/**
+ * Every FileService POST sends the CSRF header: rename, process, edit, the
+ * Finder search, and cast-name merges all refuse requests without it. It's
+ * sent on the read-only calls too, so no call site has to pick.
+ * X-Requested-With specifically because httpd.conf's CORS
+ * Access-Control-Allow-Headers already permits it — a novel header name
+ * would fail the preflight and every request would "Failed to fetch".
+ */
+function jsonHeaders(): HttpHeaders {
+  return new HttpHeaders({
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  });
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -99,7 +114,7 @@ export class FileService {
     directory: string,
     videoOnly = false,
   ): Observable<{ files: NormalizedFile[] }> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = jsonHeaders();
     const body = videoOnly ? { directory, videoOnly } : { directory };
     return this.http
       .post<{
@@ -116,7 +131,7 @@ export class FileService {
   renameTheFilesToNormalize(
     files: NormalizedFile[],
   ): Observable<{ results: RenameResult[] }> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = jsonHeaders();
     return this.http
       .post<{
         results: RenameResult[];
@@ -130,7 +145,7 @@ export class FileService {
    * @returns An observable containing the processing results.
    */
   processFilesForDB(directory: string): Observable<ProcessFilesResponse> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = jsonHeaders();
     return this.http
       .post<ProcessFilesResponse>(
         this.processFilesForDBUrl,
@@ -147,7 +162,7 @@ export class FileService {
    * Opens a Finder Smart Folder search scoped to external volumes (server-side).
    */
   openExternalDriveSearch(query: string): Observable<any> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = jsonHeaders();
     return this.http
       .post<any>(this.openExternalDriveSearchUrl, { query }, { headers })
       .pipe(catchError(this.handleError));
@@ -166,7 +181,7 @@ export class FileService {
     respectUserCasing: boolean,
     keepCastDots: boolean = false,
   ): Observable<{ normalized: string }> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = jsonHeaders();
     return this.http
       .post<{ normalized: string }>(
         this.normalizeNameUrl,
@@ -184,7 +199,7 @@ export class FileService {
    * @param add Names newly used, to merge into the store.
    */
   getCastNames(directory?: string, add?: string[]): Observable<{ names: string[] }> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = jsonHeaders();
     return this.http
       .post<{ names: string[] }>(this.castNamesUrl, { directory, add }, { headers })
       .pipe(catchError(this.handleError));
@@ -209,7 +224,7 @@ export class FileService {
     updateFields: { dimensions: string; filesize: number; duration: number },
   ): Observable<any> {
     const payload = { id, updateFields, table: this.processedTable };
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = jsonHeaders();
     // catchError: surface the server's message (e.g. the 409 "reload this
     // list" after a Catalog Table switch) rather than Angular's generic one
     return this.http

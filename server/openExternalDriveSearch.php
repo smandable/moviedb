@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 header('Content-Type: application/json');
 
+// Writes a saved search and drives Finder via osascript: a custom header
+// forces a CORS preflight a hostile page won't be granted, killing blind
+// cross-site POSTs (see driveIndex.php).
+if (empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Missing X-Requested-With header']);
+    exit();
+}
+
 $input = json_decode(file_get_contents('php://input') ?: '', true);
 $query = is_array($input) ? trim((string)($input['query'] ?? '')) : '';
 

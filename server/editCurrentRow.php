@@ -1,4 +1,14 @@
 <?php
+header('Content-Type: application/json');
+
+// Writes catalog rows: a custom header forces a CORS preflight a hostile page
+// won't be granted, killing blind cross-site POSTs (see driveIndex.php).
+if (empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Missing X-Requested-With header']);
+    exit();
+}
+
 // Include the database connection (provides $db and the validated $table)
 require 'db_connect.php';
 

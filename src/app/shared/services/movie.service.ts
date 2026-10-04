@@ -62,8 +62,9 @@ export class MovieService {
    */
   updateRow(id: number, field: string, value: any): Observable<any> {
     const body = { id, field, value, table: this.loadedTable };
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post<any>(this.updateMovieUrl, body, { headers }).pipe(catchError(this.handleError));
+    return this.http
+      .post<any>(this.updateMovieUrl, body, { headers: this.writeHeaders() })
+      .pipe(catchError(this.handleError));
   }
 
   /**
@@ -73,8 +74,21 @@ export class MovieService {
    */
   deleteRow(id: number): Observable<any> {
     return this.http
-      .post(this.deleteMovieUrl, { id, table: this.loadedTable })
+      .post(this.deleteMovieUrl, { id, table: this.loadedTable }, { headers: this.writeHeaders() })
       .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * CSRF gate: editCurrentRow.php and deleteRow.php refuse writes without
+   * this header. X-Requested-With specifically because httpd.conf's CORS
+   * Access-Control-Allow-Headers already permits it — a novel header name
+   * would fail the preflight and every request would "Failed to fetch".
+   */
+  private writeHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    });
   }
 
   private handleError(error: HttpErrorResponse) {

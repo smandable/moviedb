@@ -38,6 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
+// Renames library files: a custom header forces a CORS preflight a hostile
+// page won't be granted, killing blind cross-site POSTs (see driveIndex.php).
+if (empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Missing X-Requested-With header']);
+    exit();
+}
+
 // Get the raw POST data
 $data = json_decode(file_get_contents('php://input'), true);
 

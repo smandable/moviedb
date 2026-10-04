@@ -28,6 +28,18 @@ describe('MovieService', () => {
     expect(service).toBeTruthy();
   });
 
+  it('sends the CSRF header on edits and deletes', () => {
+    service.updateRow(1, 'title', 'Updated Title').subscribe();
+    const edit = httpMock.expectOne(`${baseUrl}editCurrentRow.php`);
+    expect(edit.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
+    edit.flush({ success: true });
+
+    service.deleteRow(5).subscribe();
+    const del = httpMock.expectOne(`${baseUrl}deleteRow.php`);
+    expect(del.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
+    del.flush({ success: true });
+  });
+
   describe('getAllMovies', () => {
     it('should fetch all movies via GET', () => {
       const mockMovies: Movie[] = [

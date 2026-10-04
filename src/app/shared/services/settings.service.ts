@@ -96,7 +96,11 @@ export class SettingsService {
   }
 
   private castNamesAction(body: object): Observable<CastNamesResponse> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      // CSRF gate — castNamesManage.php refuses add/rename/delete without it
+      'X-Requested-With': 'XMLHttpRequest',
+    });
     return this.http
       .post<CastNamesResponse>(this.castNamesManageUrl, body, { headers })
       .pipe(catchError(this.handleError));

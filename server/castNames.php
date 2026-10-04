@@ -10,9 +10,13 @@
  *      scripts/harvest_cast_names.php and grown here as renames land, so the
  *      vocabulary survives a batch moving off the staging SSD.
  *
- * POST { directory }   -> { names: [...] }   read the vocabulary
+ * POST {}              -> { names: [...] }   read the store
+ * POST { directory }   -> { names: [...] }   also mine the directory (saved)
  * POST { add: [...] }  -> { names: [...] }   merge new names into the store
  * (both keys may be sent together; `add` is merged before the list is returned)
+ *
+ * Both keys write the store, so either one requires the X-Requested-With
+ * header; a bare read needs none and writes nothing.
  */
 
 require_once __DIR__ . '/path_guard.php';
@@ -29,6 +33,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $data = json_decode(file_get_contents('php://input') ?: '', true);
 $data = is_array($data) ? $data : [];
+
+// Mining a directory and merging `add` both save the store. A custom header
+// forces a CORS preflight a hostile page won't be granted, killing blind
+// cross-site POSTs (see driveIndex.php).
+$writes = !empty($data['add']) || !empty($data['directory']);
+if ($writes && empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Missing X-Requested-With header']);
+    exit();
+}
 
 $names = moviedb_load_cast_store();
 
@@ -63,4 +77,4 @@ if (isset($data['directory']) && is_string($data['directory']) && $data['directo
     }
 }
 
-echo json_encode(['names' => moviedb_save_cast_store($names)]);
+echo json_encode(['names' => $writes ? moviedb_save_cast_store($names) : moviedb_merge_cast_names($names)]);
