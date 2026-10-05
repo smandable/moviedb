@@ -348,14 +348,14 @@
                             >{{ entry.uses }}
                             {{ entry.uses === 1 ? "file" : "files" }}</span
                           >
-                          <span
+                          <a
                             *ngIf="finding.kind === 'duplicate' || finding.kind === 'variant'"
-                            class="action-icon ms-1 cast-audit-use"
-                            role="button"
+                            href="#"
+                            class="small ms-1 cast-audit-use"
                             title="Use this spelling — rename the files that use the others"
                             aria-label="Use this spelling"
-                            (click)="castRespellBusy || isConsolidating || previewRespell(finding, entry)"
-                            >✅</span
+                            (click)="$event.preventDefault(); castRespellBusy || isConsolidating || previewRespell(finding, entry)"
+                            >use</a
                           >
                           <span
                             class="action-icon ms-1"
@@ -373,8 +373,8 @@
                           *ngIf="castRespell?.findingKey === finding.key && castRespell as plan"
                           class="cast-respell small mt-2 p-2 border rounded"
                         >
-                          <div class="mb-2 cast-respell-spellings" *ngIf="plan.candidates.length > 1">
-                            <span class="me-2">Spellings to replace:</span>
+                          <div class="mb-2 pb-2 border-bottom cast-respell-spellings" *ngIf="plan.candidates.length > 1">
+                            <div class="fw-bold mb-1">Spellings to replace with {{ plan.to }}</div>
                             <label class="form-check form-check-inline mb-0" *ngFor="let name of plan.candidates">
                               <input
                                 type="checkbox"
