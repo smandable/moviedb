@@ -569,7 +569,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
    */
   deleteAllInSection(section: CastAuditSection): void {
     // Never the ones marked "Not a problem" — the women it caught
-    const names = section.findings.filter((f) => !f.hidden).flatMap((f) => f.names.map((n) => n.name));
+    const names = section.findings
+      .filter((f) => !f.hidden && !this.isResolved(f))
+      .flatMap((f) => f.names.map((n) => n.name));
     if (names.length === 0) {
       return;
     }
@@ -611,14 +613,23 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** A section's findings not marked "Not a problem". */
-  sectionToReview(section: CastAuditSection): number {
-    return section.findings.filter((f) => !f.hidden).length;
+  /**
+   * A group finding with one spelling left after a delete or respell: the
+   * kept name stays on screen (it's still in the list), but there's nothing
+   * left to compare. The next check drops it.
+   */
+  isResolved(finding: CastAuditFinding): boolean {
+    return (finding.kind === 'duplicate' || finding.kind === 'variant') && finding.names.length < 2;
   }
 
-  /** Findings still to review — the ones not marked "Not a problem". */
+  /** A section's findings still to review: not hidden, not resolved. */
+  sectionToReview(section: CastAuditSection): number {
+    return section.findings.filter((f) => !f.hidden && !this.isResolved(f)).length;
+  }
+
+  /** Findings still to review — not marked "Not a problem", not resolved. */
   get castAuditToReview(): number {
-    return this.castAudit?.findings.filter((f) => !f.hidden).length ?? 0;
+    return this.castAudit?.findings.filter((f) => !f.hidden && !this.isResolved(f)).length ?? 0;
   }
 
   /** Hide a finding from this and future checks. */
@@ -837,12 +848,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.castRespell = null;
       this.castRespellMessage = '';
     }
-    // Duplicates and variants compare spellings, so need two left; junk and
-    // male findings are about one name and stand while it does.
-    const isGroup = (f: CastAuditFinding) => f.kind === 'duplicate' || f.kind === 'variant';
+    // A finding goes once none of its names is left. A group down to one
+    // spelling stays, so the name that was kept doesn't vanish from view
+    // along with the one deleted (isResolved).
     const findings = this.castAudit.findings
       .map((f) => ({ ...f, names: f.names.filter((n) => n.name.toLowerCase() !== gone) }))
-      .filter((f) => f.names.length >= (isGroup(f) ? 2 : 1));
+      .filter((f) => f.names.length > 0);
     this.castAudit = { ...this.castAudit, findings };
     this.rebuildCastAuditSections();
   }

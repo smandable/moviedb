@@ -343,7 +343,7 @@ describe('SettingsComponent', () => {
       expect(component.castAuditRunning).toBeFalse();
     });
 
-    it('deleting a pair member drops the finding and lists the name as deleted', () => {
+    it('deleting a pair member keeps the other spelling on screen, resolved', () => {
       runAudit();
       spyOn(window, 'confirm').and.returnValue(true);
 
@@ -354,14 +354,21 @@ describe('SettingsComponent', () => {
 
       expect(component.castNames).toEqual(['Intro', 'MarlaVex']);
       expect(component.castBlocked).toEqual(['Marla Vex']);
-      expect(component.castAudit!.findings.map((f) => f.key)).toEqual([
-        'variant|orlena rain|orlena rains|orlenna rains',
-        'junk|intro',
-        'male|brock hale',
-      ]);
-      expect(component.castAuditSections.find((s) => s.kind === 'duplicate')!.findings)
-        .toEqual([]);
+      const duplicate = component.castAudit!.findings.find((f) => f.kind === 'duplicate')!;
+      expect(duplicate.names.map((n) => n.name)).toEqual(['MarlaVex']);
+      expect(component.isResolved(duplicate)).toBeTrue();
       expect(component.castAuditStatus).toBe('Deleted “Marla Vex”.');
+
+      fixture.detectChanges();
+      const row = auditEl().querySelector('.cast-audit-resolved') as HTMLElement;
+      expect(row.textContent).toContain('MarlaVex');
+      expect(row.querySelector('.cast-audit-resolved-note')!.textContent).toContain('The only spelling left');
+      // Nothing left to compare: no "use", no "Not a problem"; delete stays
+      expect(row.querySelector('.cast-audit-use')).toBeNull();
+      expect(row.querySelector('.cast-audit-dismiss')).toBeNull();
+      expect(row.querySelector('[title="Delete"]')).not.toBeNull();
+      // And it no longer counts as one to review
+      expect(component.castAuditToReview).toBe(3);
     });
 
     describe('Delete all (Possibly male)', () => {
@@ -613,7 +620,7 @@ describe('SettingsComponent', () => {
         expect(box.querySelector('.cast-respell-confirm')!.textContent).toContain('Rename 1 file');
       });
 
-      it('confirming renames only the unblocked files and drops the finding when the spellings are gone', () => {
+      it('confirming renames only the unblocked files and leaves the kept spelling, resolved', () => {
         preview([previewFiles[0]]);
         (respellEl()!.querySelector('.cast-respell-confirm') as HTMLButtonElement).click();
         const req = httpMock.expectOne(auditUrl);
@@ -636,7 +643,9 @@ describe('SettingsComponent', () => {
         fixture.detectChanges();
 
         expect(component.castNames).toContain('Orlena Rains');
-        expect(component.castAudit!.findings.some((f) => f.kind === 'variant')).toBeFalse();
+        const variant = component.castAudit!.findings.find((f) => f.kind === 'variant')!;
+        expect(variant.names.map((n) => n.name)).toEqual(['Orlena Rains']);
+        expect(component.isResolved(variant)).toBeTrue();
         expect(respellEl()).toBeNull();
         expect(component.castAuditStatus).toBe(
           'Renamed 1 file to “Orlena Rains”. Removed “Orlena Rain”, “Orlenna Rains” from the list.',

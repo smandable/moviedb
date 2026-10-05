@@ -368,6 +368,7 @@
                     <li
                       class="list-group-item d-flex align-items-start cast-audit-row"
                       [class.cast-audit-hidden]="finding.hidden"
+                      [class.cast-audit-resolved]="isResolved(finding)"
                       *ngFor="let finding of section.findings; trackBy: trackByFindingKey"
                     >
                       <div class="flex-grow-1">
@@ -388,7 +389,7 @@
                             {{ entry.uses === 1 ? "file" : "files" }}</span
                           >
                           <a
-                            *ngIf="finding.kind === 'duplicate' || finding.kind === 'variant'"
+                            *ngIf="(finding.kind === 'duplicate' || finding.kind === 'variant') && !isResolved(finding)"
                             href="#"
                             class="small ms-1 cast-audit-use"
                             title="Use this spelling — rename the files that use the others"
@@ -407,6 +408,9 @@
                         </span>
                         <div *ngIf="finding.kind === 'junk' || finding.kind === 'male'" class="small text-muted">
                           {{ finding.reason }}
+                        </div>
+                        <div *ngIf="isResolved(finding)" class="small text-success cast-audit-resolved-note">
+                          ✓ The only spelling left — still in the list
                         </div>
                         <div
                           *ngIf="castRespell?.findingKey === finding.key && castRespell as plan"
@@ -501,7 +505,7 @@
                         Not a problem ✓ undo
                       </button>
                       <button
-                        *ngIf="!finding.hidden"
+                        *ngIf="!finding.hidden && !isResolved(finding)"
                         type="button"
                         class="btn btn-sm btn-link p-0 ms-2 text-nowrap cast-audit-dismiss"
                         title="Hide this from future checks"
