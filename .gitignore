@@ -49,7 +49,7 @@ Thumbs.db
 /server/cast_names.json
 
 # Generated: cast names deleted on the Settings page, kept from coming back
-/server/cast_names_blocked.json
+/server/cast_names_blocked.json*
 
 # Generated: cast-name audit findings dismissed on the Settings page
 /server/cast_audit_dismissed.json*

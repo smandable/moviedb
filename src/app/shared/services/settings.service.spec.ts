@@ -33,6 +33,8 @@ describe('SettingsService', () => {
       ['delete', () => service.deleteCastName('Marla Vexx').subscribe()],
       ['deleteMany', () => service.deleteCastNames(['Marla Vexx']).subscribe()],
       ['restore', () => service.restoreCastName('Marla Vexx').subscribe()],
+      ['forgetBlocked', () => service.forgetBlockedCastNames().subscribe()],
+      ['undoForget', () => service.undoForgetBlockedCastNames().subscribe()],
     ];
     for (const [action, call] of calls) {
       call();

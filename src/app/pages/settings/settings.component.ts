@@ -140,6 +140,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   castBlocked: string[] = [];
   /** The blocked names live in a collapsed-by-default accordion. */
   castBlockedExpanded = false;
+  /** How many "Forget all" just let go — offers the undo until the next action. */
+  castBlockedForgotten = 0;
   castNamesLoaded = false;
   castNamesError = '';
   filterText = '';
@@ -456,6 +458,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
           this.castNames.some((n) => n.toLowerCase() === added.toLowerCase());
         this.castNames = names;
         this.castBlocked = blocked ?? this.castBlocked;
+        // A later write replaces the backup "Forget all" would undo from
+        this.castBlockedForgotten = 0;
         this.newName = '';
         this.castStatus = added
           ? alreadyListed
@@ -492,6 +496,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       next: ({ names, renamed, blocked }) => {
         this.castNames = names;
         this.castBlocked = blocked ?? this.castBlocked;
+        // A later write replaces the backup "Forget all" would undo from
+        this.castBlockedForgotten = 0;
         this.castStatus = renamed ? `Renamed to “${renamed}”.` : '';
         this.cancelEdit();
         this.pruneCastAudit(original);
@@ -519,6 +525,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       next: ({ names, blocked }) => {
         this.castNames = names;
         this.castBlocked = blocked ?? this.castBlocked;
+        // A later write replaces the backup "Forget all" would undo from
+        this.castBlockedForgotten = 0;
         report(`Deleted “${name}”.`);
         this.pruneCastAudit(name);
         this.cdr.markForCheck();
@@ -585,6 +593,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       next: ({ names: remaining, blocked, deleted }) => {
         this.castNames = remaining;
         this.castBlocked = blocked ?? this.castBlocked;
+        // A later write replaces the backup "Forget all" would undo from
+        this.castBlockedForgotten = 0;
         names.forEach((name) => this.pruneCastAudit(name));
         const count = typeof deleted === 'number' ? deleted : names.length;
         this.castAuditStatus = `Deleted ${count} ${count === 1 ? 'name' : 'names'}.`;
@@ -597,12 +607,59 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Empty the deleted-names list without restoring anything. Names that
+   * filenames still use come back when Add Cast next reads their folder —
+   * the confirm says so — and undo is offered right after.
+   */
+  forgetAllBlocked(): void {
+    const n = this.castBlocked.length;
+    const prompt =
+      `Forget all ${n} deleted ${n === 1 ? 'name' : 'names'}? They stay out of the list for now, ` +
+      'but any that filenames still use (like the men in the Bi scenes) come back when Add Cast ' +
+      'next reads that folder.';
+    if (n === 0 || !confirm(prompt)) {
+      return;
+    }
+    this.settingsService.forgetBlockedCastNames().subscribe({
+      next: ({ blocked, forgotten }) => {
+        this.castBlocked = blocked ?? [];
+        this.castBlockedForgotten = forgotten ?? n;
+        this.castStatus = '';
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castStatus = err.message;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Undo "Forget all": the deleted names are blocked again. */
+  undoForgetBlocked(): void {
+    this.settingsService.undoForgetBlockedCastNames().subscribe({
+      next: ({ names, blocked }) => {
+        this.castNames = names;
+        this.castBlocked = blocked ?? this.castBlocked;
+        this.castBlockedForgotten = 0;
+        this.castStatus = `Deleted names are back (${this.castBlocked.length}).`;
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castStatus = err.message;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   /** Unblock a deleted name and put it back in the vocabulary. */
   restoreName(name: string): void {
     this.settingsService.restoreCastName(name).subscribe({
       next: ({ names, blocked, restored }) => {
         this.castNames = names;
         this.castBlocked = blocked ?? this.castBlocked;
+        // A later write replaces the backup "Forget all" would undo from
+        this.castBlockedForgotten = 0;
         this.castStatus = `Restored “${restored ?? name}”.`;
         this.cdr.markForCheck();
       },
@@ -771,6 +828,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.castNames = res.names;
         this.castBlocked = res.blocked ?? this.castBlocked;
+        this.castBlockedForgotten = 0;
         const renamed = `Renamed ${res.renamed} ${res.renamed === 1 ? 'file' : 'files'} to “${plan.to}”.`;
         const staleIndex = res.indexUpdated
           ? ''

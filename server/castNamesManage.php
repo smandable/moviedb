@@ -11,12 +11,16 @@
  * POST { action: 'delete', name }              -> { names, blocked, deleted }
  * POST { action: 'deleteMany', names: [...] }  -> { names, blocked, deleted: n }
  * POST { action: 'restore', name }             -> { names, blocked, restored }
+ * POST { action: 'forgetBlocked' }             -> { names, blocked: [], forgotten: n }
+ * POST { action: 'undoForget' }                -> { names, blocked, restored: n }
  *
  * Deleting is permanent: the name joins the blocklist
  * (server/cast_names_blocked.json), which every store write honours, so
  * filenames that still use it can't bring it back. A rename blocks the old
  * spelling the same way. Adding a blocked name by hand, or 'restore', takes
- * it off the blocklist again.
+ * it off the blocklist again. 'forgetBlocked' empties the blocklist without
+ * restoring anything (names filenames still use can then come back);
+ * 'undoForget' brings the list from just before it back (the .bak beside it).
  *
  * Names pass through moviedb_clean_cast_name (whitespace/punctuation cleanup +
  * homoglyph folding) so hand-typed entries obey the same hygiene as harvested
@@ -157,6 +161,22 @@ switch ($action) {
         moviedb_unblock_cast_name($blockedName);
         $names = moviedb_save_cast_store(moviedb_add_cast_name($names, $blockedName));
         echo moviedb_cast_manage_body($names, ['restored' => $blockedName]);
+        break;
+
+    case 'forgetBlocked':
+        $forgotten = count(moviedb_load_cast_blocklist());
+        moviedb_save_cast_blocklist([]);
+        echo moviedb_cast_manage_body($names, ['forgotten' => $forgotten]);
+        break;
+
+    case 'undoForget':
+        $previous = moviedb_load_cast_blocklist(MOVIEDB_CAST_BLOCKLIST . '.bak');
+        $current = moviedb_load_cast_blocklist();
+        $blocked = moviedb_save_cast_blocklist(array_merge($current, $previous));
+        // Anything a filename brought back in the meantime goes out again
+        echo moviedb_cast_manage_body(moviedb_save_cast_store($names), [
+            'restored' => count($blocked) - count($current),
+        ]);
         break;
 
     default:

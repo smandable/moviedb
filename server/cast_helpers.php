@@ -169,9 +169,14 @@ if (!function_exists('moviedb_save_cast_blocklist')) {
     /** Write the blocklist deduped and sorted like the store; the list as saved. */
     function moviedb_save_cast_blocklist(array $names, ?string $path = null): array
     {
+        $path = $path ?? MOVIEDB_CAST_BLOCKLIST;
         $merged = moviedb_merge_cast_names(array_filter($names, fn($n) => is_string($n) && $n !== ''));
+        // The previous list stays beside it, so "Forget all" can be undone
+        if (is_file($path)) {
+            @copy($path, $path . '.bak');
+        }
         @file_put_contents(
-            $path ?? MOVIEDB_CAST_BLOCKLIST,
+            $path,
             json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
         return $merged;

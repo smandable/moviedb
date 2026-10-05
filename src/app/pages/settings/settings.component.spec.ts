@@ -860,6 +860,53 @@ describe('SettingsComponent', () => {
       expect(component.castBlocked).toEqual(['Marla Vex']);
     });
 
+    it('"Forget all" empties the list after a confirm, and undo brings it back', () => {
+      flushInit({}, ['Anna Example']);
+      component.castBlocked = ['Marla Vex', 'Tobin Quarry'];
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      const el: HTMLElement = fixture.nativeElement;
+      const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
+
+      (el.querySelector('.cast-blocked-forget') as HTMLElement).click();
+      expect(confirmSpy.calls.mostRecent().args[0]).toContain('come back when Add Cast');
+      // The link sits in the toggle row but must not toggle it
+      expect(component.castBlockedExpanded).toBeFalse();
+      const req = httpMock.expectOne(manageUrl);
+      expect(req.request.body).toEqual({ action: 'forgetBlocked' });
+      expect(req.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
+      req.flush({ names: ['Anna Example'], blocked: [], forgotten: 2 });
+      fixture.detectChanges();
+
+      expect(el.querySelector('.cast-blocked')).toBeNull();
+      expect(el.querySelector('.cast-blocked-forgotten')!.textContent).toContain('Forgot 2 deleted names.');
+
+      (el.querySelector('.cast-blocked-undo') as HTMLElement).click();
+      const undo = httpMock.expectOne(manageUrl);
+      expect(undo.request.body).toEqual({ action: 'undoForget' });
+      undo.flush({ names: ['Anna Example'], blocked: ['Marla Vex', 'Tobin Quarry'], restored: 2 });
+      fixture.detectChanges();
+      expect(component.castBlocked).toEqual(['Marla Vex', 'Tobin Quarry']);
+      expect(el.querySelector('.cast-blocked-forgotten')).toBeNull();
+    });
+
+    it('declining the confirm forgets nothing', () => {
+      flushInit({}, ['Anna Example']);
+      component.castBlocked = ['Marla Vex'];
+      spyOn(window, 'confirm').and.returnValue(false);
+      component.forgetAllBlocked(); // afterEach's verify() fails on any request
+      expect(component.castBlocked).toEqual(['Marla Vex']);
+    });
+
+    it('a later delete withdraws the undo (its backup is gone)', () => {
+      flushInit({}, ['Anna Example']);
+      component.castBlockedForgotten = 2;
+      spyOn(window, 'confirm').and.returnValue(true);
+      component.deleteName('Anna Example');
+      httpMock.expectOne(manageUrl).flush({ names: [], blocked: ['Anna Example'], deleted: true });
+      expect(component.castBlockedForgotten).toBe(0);
+    });
+
     it('is hidden when nothing has been deleted', () => {
       flushInit({});
       fixture.detectChanges();

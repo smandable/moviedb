@@ -263,6 +263,12 @@
           </ul>
         </div>
 
+        <div class="small text-muted mt-2 cast-blocked-forgotten" *ngIf="castBlockedForgotten">
+          Forgot {{ castBlockedForgotten }} deleted
+          {{ castBlockedForgotten === 1 ? "name" : "names" }}.
+          <a href="#" class="cast-blocked-undo" (click)="$event.preventDefault(); undoForgetBlocked()">undo</a>
+        </div>
+
         <div class="cast-blocked mt-2" *ngIf="castBlocked.length">
           <div
             class="accordion-toggle d-flex align-items-center small text-muted cast-blocked-toggle"
@@ -273,6 +279,13 @@
           >
             <span class="chevron me-1">{{ castBlockedExpanded ? "▾" : "▸" }}</span>
             <span>Deleted names ({{ castBlocked.length }}) — kept from coming back from filenames</span>
+            <a
+              href="#"
+              class="ms-2 cast-blocked-forget"
+              title="Empty this list (nothing is put back); undo is offered right after"
+              (click)="$event.preventDefault(); $event.stopPropagation(); forgetAllBlocked()"
+              >Forget all</a
+            >
           </div>
           <ul class="list-group mt-1 cast-blocked-list" *ngIf="castBlockedExpanded">
             <li

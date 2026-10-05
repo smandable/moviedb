@@ -51,7 +51,10 @@ export interface CastNamesResponse {
   renamed?: string;
   /** true/false for one delete; how many for deleteMany. */
   deleted?: boolean | number;
-  restored?: string;
+  /** The name for 'restore'; how many came back for 'undoForget'. */
+  restored?: string | number;
+  /** How many deleted names 'forgetBlocked' let go. */
+  forgotten?: number;
 }
 
 /** One spelling in a cast-audit finding, with how many indexed files use it. */
@@ -156,6 +159,16 @@ export class SettingsService {
   /** Delete (and block) several names at once. */
   deleteCastNames(names: string[]): Observable<CastNamesResponse> {
     return this.castNamesAction({ action: 'deleteMany', names });
+  }
+
+  /** Empty the deleted-names list without restoring anything. */
+  forgetBlockedCastNames(): Observable<CastNamesResponse> {
+    return this.castNamesAction({ action: 'forgetBlocked' });
+  }
+
+  /** Bring back the deleted-names list from just before "Forget all". */
+  undoForgetBlockedCastNames(): Observable<CastNamesResponse> {
+    return this.castNamesAction({ action: 'undoForget' });
   }
 
   /** Unblock a deleted name and put it back in the vocabulary. */
