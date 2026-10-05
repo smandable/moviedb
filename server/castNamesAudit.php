@@ -68,7 +68,7 @@ switch ($action) {
 
     case 'dismiss':
         $key = is_string($data['key'] ?? null) ? $data['key'] : '';
-        if ($key === '' || mb_strlen($key) > 2000 || !preg_match('/^(duplicate|variant|junk)\|/', $key)) {
+        if ($key === '' || mb_strlen($key) > 2000 || !preg_match('/^(duplicate|variant|junk|male)\|/', $key)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Not a finding key']);
             break;

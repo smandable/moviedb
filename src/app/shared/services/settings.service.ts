@@ -61,7 +61,7 @@ export interface CastAuditName {
 export interface CastAuditFinding {
   /** Stable id — what a dismissal remembers. */
   key: string;
-  kind: 'duplicate' | 'variant' | 'junk';
+  kind: 'duplicate' | 'variant' | 'junk' | 'male';
   reason: string;
   names: CastAuditName[];
 }

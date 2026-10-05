@@ -92,6 +92,7 @@ $names = [
     'Dallas C', 'Dallas D',              // initials: not a variant
     'Marla Vex',
     'Intro',
+    'Marcus Vellow',
 ];
 $audit = moviedb_cast_audit($names);
 // Each group is in the store's own natural order
@@ -104,8 +105,12 @@ check('audit: variants chain into one finding', groups($audit, 'variant'), [
     ['Orlena Rain', 'Orlena Rains', 'Orlenna Rains'],
 ]);
 check('audit: junk', groups($audit, 'junk'), [['Intro']]);
+check('audit: male', groups($audit, 'male'), [['Marcus Vellow']]);
+check('audit: male reason names the first name',
+    array_values(array_filter($audit['findings'], fn($f) => $f['kind'] === 'male'))[0]['reason'],
+    'Male first name “Marcus”');
 check('audit: kinds in order', array_values(array_unique(array_column($audit['findings'], 'kind'))),
-    ['duplicate', 'variant', 'junk']);
+    ['duplicate', 'variant', 'junk', 'male']);
 check('audit: nothing hidden', $audit['hidden'], 0);
 check('audit: key is kind + sorted lowercase names',
     $audit['findings'][0]['key'], 'duplicate|abby lee brack|abbylee brack');
@@ -121,6 +126,16 @@ check('dismissed: grown chain shows again', groups($grown, 'variant'),
 check('dismissed: grown chain not counted hidden', $grown['hidden'], 0);
 
 check('audit: empty store', moviedb_cast_audit([]), ['findings' => [], 'hidden' => 0]);
+
+// --- male first names ---------------------------------------------------------
+check('male: first name', moviedb_cast_audit_male_first_name('Marcus Vellow'), 'Marcus');
+check('male: mononym', moviedb_cast_audit_male_first_name('Michel'), 'Michel');
+check('male: case-insensitive', moviedb_cast_audit_male_first_name('peter Quillon'), 'peter');
+check('male: whole first word only', moviedb_cast_audit_male_first_name('Michelle Vale'), '');
+check('male: surname does not count', moviedb_cast_audit_male_first_name('Juna Peter'), '');
+check('male: names women go by are left out', moviedb_cast_audit_male_first_name('Ryan Vale'), '');
+check('male: nor Spencer', moviedb_cast_audit_male_first_name('Spencer Brack'), '');
+check('male: empty', moviedb_cast_audit_male_first_name(''), '');
 
 // --- usage --------------------------------------------------------------------
 $entries = [

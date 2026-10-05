@@ -34,7 +34,12 @@ $audit = moviedb_cast_audit($names, $all ? [] : moviedb_cast_audit_load_dismisse
 $index = moviedb_load_drive_index();
 $usage = moviedb_cast_audit_usage($index['entries'] ?? []);
 
-$labels = ['duplicate' => 'Duplicates', 'variant' => 'Likely misspellings', 'junk' => 'Not name-shaped'];
+$labels = [
+    'duplicate' => 'Duplicates',
+    'variant' => 'Likely misspellings',
+    'junk' => 'Not name-shaped',
+    'male' => 'Possibly male',
+];
 $byKind = [];
 foreach ($audit['findings'] as $finding) {
     $byKind[$finding['kind']][] = $finding;

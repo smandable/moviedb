@@ -267,6 +267,12 @@ describe('SettingsComponent', () => {
           reason: 'Contains the word “Intro”',
           names: [{ name: 'Intro', uses: 3, files: [] }],
         },
+        {
+          key: 'male|brock hale',
+          kind: 'male',
+          reason: 'Male first name “Brock”',
+          names: [{ name: 'Brock Hale', uses: 1, files: [] }],
+        },
       ],
       hidden: 2,
       total: 6,
@@ -296,15 +302,16 @@ describe('SettingsComponent', () => {
       const sections = Array.from(
         auditEl().querySelectorAll<HTMLElement>('.cast-audit-section'),
       ).map((el) => el.dataset['kind']);
-      expect(sections).toEqual(['duplicate', 'variant', 'junk']);
-      expect(auditEl().querySelectorAll('.cast-audit-row').length).toBe(3);
+      expect(sections).toEqual(['duplicate', 'variant', 'junk', 'male']);
+      expect(auditEl().querySelectorAll('.cast-audit-row').length).toBe(4);
       expect(auditEl().querySelector('.cast-audit-summary')!.textContent)
-        .toContain('3 to review');
+        .toContain('4 to review');
       expect(auditEl().querySelector('.cast-audit-summary')!.textContent)
         .toContain('2 marked not a problem');
       // A junk finding says why; a pair doesn't need to
       const rows = auditEl().querySelectorAll('.cast-audit-row');
       expect(rows[2].textContent).toContain('Contains the word “Intro”');
+      expect(rows[3].querySelector('.cast-audit-name')!.textContent).toContain('Brock Hale');
       expect(rows[0].textContent).not.toContain('Same name apart');
       expect(rows[0].textContent).toContain('4 files');
     });
@@ -349,6 +356,7 @@ describe('SettingsComponent', () => {
       expect(component.castAudit!.findings.map((f) => f.key)).toEqual([
         'variant|orlena rain|orlena rains|orlenna rains',
         'junk|intro',
+        'male|brock hale',
       ]);
       expect(component.castAuditSections.find((s) => s.kind === 'duplicate')!.findings)
         .toEqual([]);
@@ -371,7 +379,7 @@ describe('SettingsComponent', () => {
       runAudit();
       spyOn(window, 'confirm').and.returnValue(false);
       component.deleteAuditName(auditResponse.findings[2].names[0]);
-      expect(component.castAudit!.findings.length).toBe(3);
+      expect(component.castAudit!.findings.length).toBe(4);
     });
 
     it('renaming a name from the list drops it from the findings', () => {
@@ -392,7 +400,7 @@ describe('SettingsComponent', () => {
       expect(req.request.body).toEqual({ action: 'dismiss', key: 'junk|intro' });
       req.flush({ success: true });
 
-      expect(component.castAudit!.findings.length).toBe(2);
+      expect(component.castAudit!.findings.length).toBe(3);
       expect(component.castAudit!.hidden).toBe(3);
       // The name itself stays in the vocabulary
       expect(component.castNames).toContain('Intro');

@@ -64,6 +64,11 @@ const CAST_AUDIT_SECTIONS: ReadonlyArray<Omit<CastAuditSection, 'findings'>> = [
     label: 'Not name-shaped',
     help: 'A digit, a symbol, a filename word like “Intro” or “Girl”, or two names run together.',
   },
+  {
+    kind: 'male',
+    label: 'Possibly male',
+    help: 'A man’s first name. Some women go by one — mark those “Not a problem”.',
+  },
 ];
 
 /** One parsed row of the consolidation TSV log, ready for display. */
@@ -587,9 +592,12 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return;
     }
     const gone = name.toLowerCase();
+    // Duplicates and variants compare spellings, so need two left; junk and
+    // male findings are about one name and stand while it does.
+    const isGroup = (f: CastAuditFinding) => f.kind === 'duplicate' || f.kind === 'variant';
     const findings = this.castAudit.findings
       .map((f) => ({ ...f, names: f.names.filter((n) => n.name.toLowerCase() !== gone) }))
-      .filter((f) => f.names.length >= (f.kind === 'junk' ? 1 : 2));
+      .filter((f) => f.names.length >= (isGroup(f) ? 2 : 1));
     this.castAudit = { ...this.castAudit, findings };
     this.rebuildCastAuditSections();
   }

@@ -14,6 +14,8 @@
  *              grouped, so three spellings of one name show as one finding
  *   junk       not shaped like a performer name (a digit, a symbol, a word
  *              like "Intro" or "Girl", two stored names run together, ...)
+ *   male       a man's first name — the vocabulary is the women in each
+ *              scene, so these are usually male talent that slipped in
  *
  * Precision is tuned for periodic use: anything that turns out fine can be
  * dismissed once (server/cast_audit_dismissed.json) and stays hidden until the
@@ -40,6 +42,60 @@ const MOVIEDB_CAST_AUDIT_JUNK_WORDS = [
     'interview', 'intro', 'lesbian', 'me', 'milf', 'outro', 'part', 'pov',
     'scene', 'scenes', 'sex', 'sexy', 'solo', 'squirt', 'teen', 'teens', 'the',
     'trailer', 'unknown', 'various', 'vs', 'with', 'xxx',
+];
+
+/**
+ * First names that mark a man (lowercase). Deliberately leaves out names
+ * women in the library go by — Ryan, Tyler, Spencer, Blake, Jordan, Cameron,
+ * Carter, Ryder, Mason, Austin, Max, Charlie, Alex, ... — so the list stays
+ * precise; the few women it still catches (a "Tommy") are dismissed once.
+ */
+const MOVIEDB_CAST_AUDIT_MALE_FIRST_NAMES = [
+    'aaron', 'abel', 'adam', 'adrian', 'al', 'alan', 'albert', 'alberto', 'alec',
+    'alejandro', 'alexander', 'alfred', 'andre', 'andrei', 'andrew', 'angelo',
+    'anthony', 'anton', 'antonio', 'archie', 'arnold', 'arthur', 'axel', 'barry',
+    'ben', 'benjamin', 'benny', 'bill', 'billy', 'bob', 'bobby', 'boris', 'brad',
+    'brandon', 'brendan', 'brent', 'brian', 'bruce', 'bruno', 'bryan', 'buck',
+    'byron', 'caleb', 'calvin', 'carl', 'carlo', 'carlos', 'chad', 'charles',
+    'chris', 'christian', 'christopher', 'chuck', 'clark', 'clay', 'cliff',
+    'clint', 'codey', 'colin', 'connor', 'conor', 'craig', 'curtis', 'damian',
+    'damien', 'damon', 'dan', 'daniel', 'danny', 'dante', 'darius', 'darren',
+    'darryl', 'dave', 'david', 'dean', 'dennis', 'derek', 'derrick', 'diego',
+    'dimitri', 'dirk', 'dmitri', 'dominic', 'don', 'donald', 'donny', 'donte',
+    'doug', 'douglas', 'duncan', 'dustin', 'dwayne', 'earl', 'ed', 'eddie',
+    'edgar', 'edward', 'eli', 'elijah', 'elliot', 'emilio', 'enrique', 'eric',
+    'erik', 'ernest', 'ethan', 'eugene', 'evan', 'ezra', 'felipe', 'felix',
+    'fernando', 'francisco', 'franco', 'frank', 'fred', 'freddie', 'freddy',
+    'gabriel', 'gareth', 'garrett', 'gary', 'gavin', 'geoff', 'george', 'gerald',
+    'gino', 'giovanni', 'glen', 'glenn', 'gordon', 'graham', 'greg', 'gregory',
+    'gus', 'guy', 'hank', 'hans', 'harold', 'harry', 'harvey', 'hector', 'henry',
+    'herman', 'howard', 'hugo', 'ian', 'igor', 'isaac', 'isaiah', 'isiah', 'ivan',
+    'jack', 'jacob', 'jacques', 'jake', 'jamal', 'james', 'jared', 'jason',
+    'javier', 'jax', 'jeff', 'jeffrey', 'jeremy', 'jerome', 'jerry', 'jim',
+    'jimmy', 'jmac', 'joe', 'joel', 'johan', 'johhny', 'john', 'johnny', 'jon',
+    'jonah', 'jonathan', 'jonny', 'jorge', 'jose', 'joseph', 'josh', 'joshua',
+    'juan', 'julio', 'justin', 'karl', 'keith', 'keiran', 'ken', 'kenneth',
+    'kenny', 'kevin', 'kieran', 'kirk', 'klaus', 'kristof', 'kurt', 'kyle',
+    'lance', 'larry', 'lars', 'lawrence', 'leon', 'leonard', 'leroy', 'lewis',
+    'lexington', 'lionel', 'lloyd', 'lorenzo', 'louie', 'louis', 'luca', 'lucas',
+    'luigi', 'luis', 'luke', 'malcolm', 'manny', 'manuel', 'marc', 'marcel',
+    'marco', 'marcus', 'mario', 'mark', 'markus', 'martin', 'marty', 'marvin',
+    'matt', 'matthew', 'maurice', 'maxim', 'michael', 'michel', 'mick', 'miguel',
+    'mike', 'mikey', 'miles', 'mitch', 'nacho', 'nate', 'nathan', 'neil',
+    'nelson', 'nicholas', 'nick', 'nicolas', 'nigel', 'noah', 'norman', 'oliver',
+    'omar', 'oscar', 'owen', 'pablo', 'patrick', 'paul', 'pedro', 'percy', 'pete',
+    'peter', 'phil', 'philip', 'phillip', 'pierre', 'preston', 'prince',
+    'rafael', 'ralph', 'ramon', 'randy', 'raul', 'ray', 'raymond', 'reggie',
+    'ricardo', 'richard', 'rick', 'ricky', 'rico', 'rob', 'robert', 'roberto',
+    'rocco', 'rocky', 'rod', 'rodney', 'roger', 'roland', 'roman', 'romeo', 'ron',
+    'ronald', 'roy', 'ruben', 'rudy', 'russ', 'russell', 'salvatore', 'samuel',
+    'scott', 'sean', 'sebastian', 'sergei', 'sergio', 'seth', 'shane', 'shaun',
+    'shawn', 'sherman', 'stan', 'stanley', 'stefan', 'stephen', 'steve',
+    'steven', 'stuart', 'ted', 'teddy', 'thomas', 'tim', 'timothy', 'toby',
+    'todd', 'tom', 'tommy', 'tony', 'travis', 'trent', 'trevor', 'troy', 'victor',
+    'vince', 'vincent', 'vinnie', 'vito', 'wade', 'walter', 'warren', 'wayne',
+    'wes', 'wesley', 'will', 'william', 'willie', 'wolf', 'xander', 'xavier',
+    'zach', 'zachary', 'zack',
 ];
 
 /** Lowercase name particles that are fine mid-name ("Alba de Silva"). */
@@ -187,6 +243,16 @@ if (!function_exists('moviedb_cast_audit_junk_reasons')) {
     }
 }
 
+if (!function_exists('moviedb_cast_audit_male_first_name')) {
+    /** The name's first word when it is a man's first name, else ''. */
+    function moviedb_cast_audit_male_first_name(string $name): string
+    {
+        $first = strtok(trim($name), " \t") ?: '';
+        $bare = moviedb_cast_audit_ascii(trim($first, ".'-"));
+        return in_array($bare, MOVIEDB_CAST_AUDIT_MALE_FIRST_NAMES, true) ? $first : '';
+    }
+}
+
 if (!function_exists('moviedb_cast_audit_usage')) {
     /**
      * How often each name appears in indexed filenames' cast tails, keyed by
@@ -229,7 +295,7 @@ if (!function_exists('moviedb_cast_audit')) {
     /**
      * Audit a name list. Returns ['findings' => [...], 'hidden' => n], each
      * finding ['key', 'kind', 'reason', 'names' => [string, ...]], ordered
-     * duplicates, variants, junk; findings whose key is in $dismissed are
+     * duplicates, variants, junk, male; findings whose key is in $dismissed are
      * left out and counted in 'hidden'.
      */
     function moviedb_cast_audit(array $names, array $dismissed = []): array
@@ -240,7 +306,7 @@ if (!function_exists('moviedb_cast_audit')) {
             $known[mb_strtolower($name)] = $name;
         }
 
-        $findings = ['duplicate' => [], 'variant' => [], 'junk' => []];
+        $findings = ['duplicate' => [], 'variant' => [], 'junk' => [], 'male' => []];
         $add = function (string $kind, string $reason, array $group) use (&$findings): void {
             sort($group, SORT_NATURAL | SORT_FLAG_CASE);
             $key = moviedb_cast_audit_key($kind, $group);
@@ -319,6 +385,10 @@ if (!function_exists('moviedb_cast_audit')) {
             $reasons = moviedb_cast_audit_junk_reasons($name, $known);
             if ($reasons) {
                 $add('junk', implode('; ', $reasons), [$name]);
+            }
+            $male = moviedb_cast_audit_male_first_name($name);
+            if ($male !== '') {
+                $add('male', "Male first name “{$male}”", [$name]);
             }
         }
 
