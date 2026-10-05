@@ -647,6 +647,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
     modalRef.componentInstance.files = files;
     modalRef.componentInstance.directory = root;
     modalRef.componentInstance.harvestDirectoryCastNames = false;
+    // Normalizing the library is its own job: don't jump to Add Cast after a
+    // rename (Process Directory still does — staged scenes get cast next)
+    modalRef.componentInstance.landOnAddCastAfterRename = false;
     // Library files are already catalogued: offer to carry renamed titles
     // into the database (titleUpdates.php).
     modalRef.componentInstance.offerDbTitleUpdates = true;

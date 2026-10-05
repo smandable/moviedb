@@ -294,6 +294,53 @@ describe('FileNormalizationModalComponent', () => {
       expect(component.renameSummary).toBeNull();
     });
 
+    it('from Settings (landOnAddCastAfterRename off) stays on Files to Normalize', () => {
+      const a = makeFile({
+        originalFileName: 'a scene_1.mp4',
+        newFileName: 'A - Scene_1.mp4',
+        exclude: false,
+      });
+      component.files = [a];
+      component.landOnAddCastAfterRename = false;
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({
+          results: [
+            { originalFileName: 'a scene_1.mp4', newFileName: 'A - Scene_1.mp4', status: 'Renamed successfully' },
+          ],
+        }),
+      );
+      spyOn(component.activeModal, 'close');
+
+      component.renameFiles();
+
+      // A scene still lacks a cast: the modal stays open, on the same tab
+      expect(component.activeModal.close).not.toHaveBeenCalled();
+      expect(component.activeTab).toBe('normalize');
+    });
+
+    it('from Settings stays on Add Cast when the rename is run from there', () => {
+      const a = makeFile({
+        originalFileName: 'a scene_1.mp4',
+        newFileName: 'A - Scene_1.mp4',
+        exclude: false,
+      });
+      const b = makeFile({ originalFileName: 'b - Scene_2.mp4', newFileName: '' });
+      component.files = [a, b];
+      component.landOnAddCastAfterRename = false;
+      component.activeTab = 'cast';
+      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
+        of({
+          results: [
+            { originalFileName: 'a scene_1.mp4', newFileName: 'A - Scene_1.mp4', status: 'Renamed successfully' },
+          ],
+        }),
+      );
+
+      component.renameFiles();
+
+      expect(component.activeTab).toBe('cast');
+    });
+
     it('closes the modal when the rename leaves nothing to normalize and no cast work', () => {
       const a = makeFile({
         originalFileName: 'a.mp4',
@@ -471,6 +518,8 @@ describe('FileNormalizationModalComponent', () => {
         exclude: false,
       });
       component.files = [a];
+      component.landOnAddCastAfterRename = false;
+      component.activeTab = 'cast'; // run from Add Cast: the error row isn't listed there
       spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
         of({
           results: [

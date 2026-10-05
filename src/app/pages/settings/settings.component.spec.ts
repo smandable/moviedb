@@ -724,6 +724,7 @@ describe('SettingsComponent', () => {
       expect(instance.directory).toBe(rootA);
       // A whole root must not be mined into the cast store
       expect(instance.harvestDirectoryCastNames).toBeFalse();
+      expect(instance.landOnAddCastAfterRename).toBeFalse();
       // Library files are catalogued: offer to update their database titles
       expect(instance.offerDbTitleUpdates).toBeTrue();
     });

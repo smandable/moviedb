@@ -125,6 +125,15 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   @Input() offerDbTitleUpdates = false;
 
   /**
+   * After "Rename Files", switch to the Add Cast tab while scenes still lack
+   * a cast — right for a staging batch (Process Directory), where casts are
+   * worked through next. The Settings page turns it off (Sean, 2026-10-04):
+   * normalizing library folders is its own job, so the modal stays on the
+   * tab the rename was run from.
+   */
+  @Input() landOnAddCastAfterRename = true;
+
+  /**
    * Renames that landed on disk, for the database review: one entry per
    * file, collapsed across passes (A→B then B→C is A→C; renamed back to the
    * start, it drops out).
@@ -133,7 +142,8 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
   allSelected: boolean = true;
 
-  // Tabs are freely navigable; a rename always lands on "Add Cast".
+  // Tabs are freely navigable; see landOnAddCastAfterRename for where a
+  // rename lands.
   activeTab: NormalizationModalTab = 'normalize';
 
   isRenaming: boolean = false;
@@ -891,7 +901,8 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
 
   /**
    * Renames the included files on the server, then lands on the "Add Cast"
-   * tab so scene files can be worked on — unless nothing needs normalizing
+   * tab so scene files can be worked on (landOnAddCastAfterRename; from
+   * Settings it stays on the current tab) — unless nothing needs normalizing
    * AND no scene file is waiting for a cast, in which case the work is done
    * and the modal closes itself.
    */
@@ -930,18 +941,21 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Where "Rename Files" lands: the Add Cast tab while any work remains —
-   * pending normalizations (failed renames keep theirs, so errors stay
-   * visible) or scene files without a cast. With both lists empty the modal
-   * closes; the parent page re-enables Update Database on close — unless
-   * landed renames are waiting for "Update Database Titles"
-   * (offerDbTitleUpdates), in which case it stays open for that button.
+   * Where "Rename Files" lands while any work remains — pending
+   * normalizations (failed renames keep theirs, so errors stay visible) or
+   * scene files without a cast: the Add Cast tab, or with
+   * landOnAddCastAfterRename off (Settings) the tab it was run from. With
+   * both lists empty the modal closes; the parent page re-enables Update
+   * Database on close — unless landed renames are waiting for "Update
+   * Database Titles" (offerDbTitleUpdates), in which case it stays open for
+   * that button.
    *
    * A lingering renameError also holds it open: a failed move up out of
    * needs-cast staging leaves no pending rename behind, so without this the
    * modal would close over the one red message that says a file is stuck.
    * And since such a row already carries its cast, the Add Cast list no
-   * longer shows it — with no cast work left, land where the row is visible.
+   * longer shows it — with no cast work left, switch to where the row is
+   * visible, whichever mode.
    */
   private finishRenamePass(): void {
     const hasErrors = this.files.some((file) => !!file.renameError);
@@ -955,7 +969,11 @@ export class FileNormalizationModalComponent implements OnInit, OnDestroy {
     const onlyOffListErrors =
       this.castFiles.length === 0 &&
       this.files.some((file) => !!file.renameError && !file.needsNormalization);
-    this.activeTab = onlyOffListErrors ? 'normalize' : 'cast';
+    if (onlyOffListErrors) {
+      this.activeTab = 'normalize';
+    } else if (this.landOnAddCastAfterRename) {
+      this.activeTab = 'cast';
+    }
   }
 
   /**
