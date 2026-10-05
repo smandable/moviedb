@@ -8,17 +8,63 @@
  * POST { action: 'run' }          -> { findings: [...], hidden, total, index }
  * POST { action: 'dismiss', key } -> { success }  hide one finding from now on
  * POST { action: 'reset' }        -> { success }  show every finding again
+ * POST { action: 'respellPreview', from: [...], to }
+ *                                 -> { files: [{path, dir, file, newFile, conflict}] }
+ * POST { action: 'respell', from: [...], to, files: [paths] }
+ *                                 -> { results, renamed, failed, notPreviewed,
+ *                                      indexUpdated, names, removed }
+ *
+ * 'respell' renames the previewed files whose cast tail carries a "from"
+ * spelling to "to" (cast_respell_lib.php), then — only once no indexed file
+ * still carries one — drops the "from" spellings from the vocabulary.
  *
  * Each finding's names carry how many indexed files use that spelling in a
  * cast tail (plus a few sample paths): the drive index only covers its roots,
  * so 0 means "not in the indexed folders", not "unused anywhere".
  *
- * 'run' is read-only. The writes go to server/cast_audit_dismissed.json only;
- * fixing a name goes through castNamesManage.php like any other edit.
+ * 'run' and 'respellPreview' only read; every action but 'run' needs the
+ * X-Requested-With header anyway.
  */
 
 require_once __DIR__ . '/cast_audit_lib.php';
+require_once __DIR__ . '/cast_respell_lib.php';
 require_once __DIR__ . '/drive_index_lib.php';
+
+/**
+ * The respelling request's names: 'from' as a list of distinct non-empty
+ * strings other than 'to', and 'to' cleaned the store's way. null when
+ * unusable.
+ */
+function moviedb_cast_respell_request(array $data): ?array
+{
+    $to = moviedb_clean_cast_name(is_string($data['to'] ?? null) ? $data['to'] : '');
+    $from = [];
+    foreach (is_array($data['from'] ?? null) ? $data['from'] : [] as $name) {
+        if (is_string($name) && trim($name) !== '' && $name !== $to) {
+            $from[] = $name;
+        }
+    }
+    $from = array_values(array_unique($from));
+    if ($to === '' || $from === [] || count($from) > 20) {
+        return null;
+    }
+    return ['from' => $from, 'to' => $to];
+}
+
+/** True while scripts/consolidate_movies.php holds its lock (it moves files). */
+function moviedb_cast_respell_consolidating(): bool
+{
+    $fh = @fopen(__DIR__ . '/consolidate_progress.json.lock', 'c');
+    if ($fh === false) {
+        return false;
+    }
+    $free = flock($fh, LOCK_EX | LOCK_NB);
+    if ($free) {
+        flock($fh, LOCK_UN);
+    }
+    fclose($fh);
+    return !$free;
+}
 
 ini_set('display_errors', '0');
 header('Content-Type: application/json');
@@ -90,6 +136,52 @@ switch ($action) {
             break;
         }
         echo json_encode(['success' => true]);
+        break;
+
+    case 'respellPreview':
+        $request = moviedb_cast_respell_request($data);
+        if ($request === null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Need the spellings to replace and the one to use']);
+            break;
+        }
+        $index = moviedb_load_drive_index();
+        echo json_encode([
+            'files' => moviedb_cast_respell_plan($index['entries'] ?? [], $request['from'], $request['to']),
+        ], JSON_UNESCAPED_UNICODE);
+        break;
+
+    case 'respell':
+        $request = moviedb_cast_respell_request($data);
+        if ($request === null) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Need the spellings to replace and the one to use']);
+            break;
+        }
+        if (moviedb_cast_respell_consolidating()) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'message' => 'A consolidation is moving files — try again when it finishes']);
+            break;
+        }
+        $approved = array_values(array_filter(is_array($data['files'] ?? null) ? $data['files'] : [], 'is_string'));
+        $outcome = moviedb_cast_respell_apply($request['from'], $request['to'], $approved);
+        if (isset($outcome['error'])) {
+            http_response_code(409);
+            echo json_encode(['success' => false, 'message' => $outcome['error']]);
+            break;
+        }
+        // Drop the old spellings only when no indexed file still carries one;
+        // otherwise Add Cast would just bring them back from those files.
+        $names = moviedb_load_cast_store();
+        $removed = false;
+        if ($outcome['failed'] === 0 && $outcome['notPreviewed'] === 0 && $outcome['indexUpdated']) {
+            foreach ($request['from'] as $old) {
+                $names = moviedb_rename_cast_name($names, $old, $request['to']);
+            }
+            $names = moviedb_save_cast_store($names);
+            $removed = true;
+        }
+        echo json_encode($outcome + ['names' => $names, 'removed' => $removed], JSON_UNESCAPED_UNICODE);
         break;
 
     default:

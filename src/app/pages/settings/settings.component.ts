@@ -12,6 +12,7 @@ import {
   CastAuditFinding,
   CastAuditName,
   CastAuditResponse,
+  CastRespellFile,
   SettingsService,
 } from '@services/settings.service';
 import {
@@ -70,6 +71,16 @@ const CAST_AUDIT_SECTIONS: ReadonlyArray<Omit<CastAuditSection, 'findings'>> = [
     help: 'A man’s first name. Some women go by one — mark those “Not a problem”.',
   },
 ];
+
+/** A previewed "use this spelling", awaiting confirmation under its finding. */
+export interface CastRespellPlan {
+  findingKey: string;
+  /** The spelling to keep. */
+  to: string;
+  /** The spellings to rename away and drop from the vocabulary. */
+  from: string[];
+  files: CastRespellFile[];
+}
 
 /** One parsed row of the consolidation TSV log, ready for display. */
 export interface ConsolidateLogRow {
@@ -141,6 +152,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
   castAuditStatus = '';
   /** The findings list folds away under its "N to review" toggle. */
   castAuditExpanded = true;
+  /** The "use this spelling" being previewed, if any. */
+  castRespell: CastRespellPlan | null = null;
+  castRespellBusy = false;
 
   // ---- Drive index ----
   // Populated from stored settings, else from the status endpoint's effective
@@ -577,6 +591,86 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Preview keeping `entry`'s spelling: the files the finding's other
+   * spellings would be renamed in. Shown under the finding to confirm.
+   */
+  previewRespell(finding: CastAuditFinding, entry: CastAuditName): void {
+    const from = finding.names.map((n) => n.name).filter((n) => n !== entry.name);
+    this.castRespellBusy = true;
+    this.castAuditStatus = '';
+    this.cdr.markForCheck();
+    this.settingsService.previewCastRespell(from, entry.name).subscribe({
+      next: ({ files }) => {
+        this.castRespell = { findingKey: finding.key, to: entry.name, from, files };
+        this.castRespellBusy = false;
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castAuditStatus = err.message;
+        this.castRespellBusy = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  cancelRespell(): void {
+    this.castRespell = null;
+  }
+
+  /** The previewed files that will be renamed (not blocked by an existing name). */
+  respellRenamable(plan: CastRespellPlan): CastRespellFile[] {
+    return plan.files.filter((f) => !f.conflict);
+  }
+
+  /** "“A”, “B”" for a status line. */
+  quoteNames(names: string[]): string {
+    return names.map((n) => `“${n}”`).join(', ');
+  }
+
+  /** Rename the previewed files, then drop the old spellings when none remain. */
+  confirmRespell(): void {
+    const plan = this.castRespell;
+    if (!plan || this.castRespellBusy) {
+      return;
+    }
+    const files = this.respellRenamable(plan).map((f) => f.path);
+    this.castRespellBusy = true;
+    this.cdr.markForCheck();
+    this.settingsService.respellCastName(plan.from, plan.to, files).subscribe({
+      next: (res) => {
+        this.castNames = res.names;
+        this.castRespell = null;
+        this.castRespellBusy = false;
+        const renamed = `Renamed ${res.renamed} ${res.renamed === 1 ? 'file' : 'files'} to “${plan.to}”.`;
+        if (res.removed) {
+          plan.from.forEach((name) => this.pruneCastAudit(name));
+          this.castAuditStatus = `${res.renamed > 0 ? renamed + ' ' : ''}Removed ${this.quoteNames(plan.from)} from the list.`;
+        } else {
+          const left: string[] = [];
+          if (res.failed > 0) {
+            const why = res.results.find((r) => !r.renamed)?.error;
+            left.push(`${res.failed} couldn't be renamed${why ? ` (${why})` : ''}`);
+          }
+          if (res.notPreviewed > 0) {
+            left.push(`${res.notPreviewed} ${res.notPreviewed === 1 ? 'was' : 'were'} left alone`);
+          }
+          this.castAuditStatus =
+            `${renamed} ${left.join('; ')}. ${this.quoteNames(plan.from)} stays in the list while files still use it.`;
+        }
+        if (!res.indexUpdated) {
+          this.castAuditStatus += ' The drive index couldn’t be updated — rebuild it under Drive Index.';
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castAuditStatus = err.message;
+        this.castRespellBusy = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   /** Show a name in the vocabulary list (where it can be edited). */
   findInList(name: string): void {
     this.filterText = name;
@@ -595,6 +689,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return;
     }
     const gone = name.toLowerCase();
+    // A preview that renames to or from the gone name no longer applies
+    if (this.castRespell && [this.castRespell.to, ...this.castRespell.from]
+      .some((n) => n.toLowerCase() === gone)) {
+      this.castRespell = null;
+    }
     // Duplicates and variants compare spellings, so need two left; junk and
     // male findings are about one name and stand while it does.
     const isGroup = (f: CastAuditFinding) => f.kind === 'duplicate' || f.kind === 'variant';

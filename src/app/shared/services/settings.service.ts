@@ -76,6 +76,30 @@ export interface CastAuditResponse {
   index: { builtAt: string | null; roots: string[]; fileCount: number } | null;
 }
 
+/** One file a respelling would rename (castNamesAudit.php 'respellPreview'). */
+export interface CastRespellFile {
+  path: string;
+  dir: string;
+  file: string;
+  newFile: string;
+  /** Another indexed file already has the new name — it will be left alone. */
+  conflict: boolean;
+}
+
+/** castNamesAudit.php 'respell'. */
+export interface CastRespellResponse {
+  results: { path: string; newFile: string; renamed: boolean; error?: string }[];
+  renamed: number;
+  failed: number;
+  /** Files carrying a spelling that weren't in the preview, so were left alone. */
+  notPreviewed: number;
+  indexUpdated: boolean;
+  /** The vocabulary afterwards. */
+  names: string[];
+  /** Whether the old spellings left the vocabulary (only once no file uses them). */
+  removed: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -137,10 +161,20 @@ export class SettingsService {
     return this.castAuditAction({ action: 'reset' });
   }
 
+  /** The renames respelling `from` as `to` would make (read-only). */
+  previewCastRespell(from: string[], to: string): Observable<{ files: CastRespellFile[] }> {
+    return this.castAuditAction({ action: 'respellPreview', from, to });
+  }
+
+  /** Rename the previewed `files` from the `from` spellings to `to`. */
+  respellCastName(from: string[], to: string, files: string[]): Observable<CastRespellResponse> {
+    return this.castAuditAction({ action: 'respell', from, to, files });
+  }
+
   private castAuditAction<T>(body: object): Observable<T> {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
-      // CSRF gate — castNamesAudit.php refuses dismiss/reset without it
+      // CSRF gate — castNamesAudit.php refuses everything but 'run' without it
       'X-Requested-With': 'XMLHttpRequest',
     });
     return this.http

@@ -441,6 +441,173 @@ describe('SettingsComponent', () => {
       expect(auditEl().querySelector('.cast-audit-results')).not.toBeNull();
     });
 
+    describe('use this spelling', () => {
+      const previewFiles = [
+        {
+          path: '/Volumes/X/Sample # 01 - Scene_1 - Orlena Rain.mp4',
+          dir: '/Volumes/X',
+          file: 'Sample # 01 - Scene_1 - Orlena Rain.mp4',
+          newFile: 'Sample # 01 - Scene_1 - Orlena Rains.mp4',
+          conflict: false,
+        },
+        {
+          path: '/Volumes/X/Sample # 02 - Scene_1 - Orlenna Rains.mp4',
+          dir: '/Volumes/X',
+          file: 'Sample # 02 - Scene_1 - Orlenna Rains.mp4',
+          newFile: 'Sample # 02 - Scene_1 - Orlena Rains.mp4',
+          conflict: true,
+        },
+      ];
+
+      /** Click ✅ on "Orlena Rains" (the variant finding's 2nd name) and answer the preview. */
+      function preview(files: object[] = previewFiles) {
+        runAudit();
+        const variantRow = auditEl().querySelectorAll('.cast-audit-row')[1];
+        (variantRow.querySelectorAll('.cast-audit-use')[1] as HTMLElement).click();
+        const req = httpMock.expectOne(auditUrl);
+        expect(req.request.body).toEqual({
+          action: 'respellPreview',
+          from: ['Orlena Rain', 'Orlenna Rains'],
+          to: 'Orlena Rains',
+        });
+        req.flush({ files });
+        fixture.detectChanges();
+      }
+
+      function respellEl(): HTMLElement | null {
+        return auditEl().querySelector('.cast-respell');
+      }
+
+      it('offers ✅ on duplicates and variants only', () => {
+        runAudit();
+        const rows = auditEl().querySelectorAll('.cast-audit-row');
+        expect(rows[0].querySelectorAll('.cast-audit-use').length).toBe(2);
+        expect(rows[1].querySelectorAll('.cast-audit-use').length).toBe(3);
+        expect(rows[2].querySelectorAll('.cast-audit-use').length).toBe(0);
+        expect(rows[3].querySelectorAll('.cast-audit-use').length).toBe(0);
+      });
+
+      it('previews the renames under the finding, flagging blocked ones', () => {
+        preview();
+        const box = respellEl()!;
+        expect(box.closest('.cast-audit-row')).toBe(auditEl().querySelectorAll('.cast-audit-row')[1]);
+        expect(box.textContent).toContain('Rename 1 file to Orlena Rains');
+        const items = box.querySelectorAll('.cast-respell-files li');
+        expect(items.length).toBe(2);
+        expect(items[1].classList).toContain('text-danger');
+        expect(items[1].textContent).toContain('already exists');
+        expect(box.querySelector('.cast-respell-confirm')!.textContent).toContain('Rename 1 file');
+      });
+
+      it('confirming renames only the unblocked files and drops the finding when the spellings are gone', () => {
+        preview([previewFiles[0]]);
+        (respellEl()!.querySelector('.cast-respell-confirm') as HTMLButtonElement).click();
+        const req = httpMock.expectOne(auditUrl);
+        expect(req.request.body).toEqual({
+          action: 'respell',
+          from: ['Orlena Rain', 'Orlenna Rains'],
+          to: 'Orlena Rains',
+          files: [previewFiles[0].path],
+        });
+        expect(req.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
+        req.flush({
+          results: [{ path: previewFiles[0].path, newFile: previewFiles[0].newFile, renamed: true }],
+          renamed: 1,
+          failed: 0,
+          notPreviewed: 0,
+          indexUpdated: true,
+          names: ['Intro', 'Marla Vex', 'MarlaVex', 'Orlena Rains'],
+          removed: true,
+        });
+        fixture.detectChanges();
+
+        expect(component.castNames).toContain('Orlena Rains');
+        expect(component.castAudit!.findings.some((f) => f.kind === 'variant')).toBeFalse();
+        expect(respellEl()).toBeNull();
+        expect(component.castAuditStatus).toBe(
+          'Renamed 1 file to “Orlena Rains”. Removed “Orlena Rain”, “Orlenna Rains” from the list.',
+        );
+      });
+
+      it('keeps the finding and says why when some files are left', () => {
+        preview();
+        component.confirmRespell();
+        const req = httpMock.expectOne(auditUrl);
+        // The blocked file is never sent
+        expect(req.request.body.files).toEqual([previewFiles[0].path]);
+        req.flush({
+          results: [{ path: previewFiles[0].path, newFile: previewFiles[0].newFile, renamed: true }],
+          renamed: 1,
+          failed: 0,
+          notPreviewed: 1,
+          indexUpdated: true,
+          names: ['Orlena Rain', 'Orlena Rains', 'Orlenna Rains'],
+          removed: false,
+        });
+        expect(component.castAudit!.findings.some((f) => f.kind === 'variant')).toBeTrue();
+        expect(component.castAuditStatus).toBe(
+          'Renamed 1 file to “Orlena Rains”. 1 was left alone. ' +
+            '“Orlena Rain”, “Orlenna Rains” stays in the list while files still use it.',
+        );
+      });
+
+      it('reports a failed rename and a stale index', () => {
+        preview([previewFiles[0]]);
+        component.confirmRespell();
+        httpMock.expectOne(auditUrl).flush({
+          results: [{ path: previewFiles[0].path, newFile: previewFiles[0].newFile, renamed: false, error: 'Rename failed: Permission denied' }],
+          renamed: 0,
+          failed: 1,
+          notPreviewed: 0,
+          indexUpdated: false,
+          names: ['Orlena Rain', 'Orlena Rains', 'Orlenna Rains'],
+          removed: false,
+        });
+        expect(component.castAuditStatus).toContain("1 couldn't be renamed (Rename failed: Permission denied)");
+        expect(component.castAuditStatus).toContain('rebuild it under Drive Index');
+      });
+
+      it('with no files to rename, offers to just remove the spellings', () => {
+        preview([]);
+        expect(respellEl()!.textContent).toContain('No indexed file uses');
+        expect(respellEl()!.querySelector('.cast-respell-confirm')!.textContent).toContain('Remove from list');
+      });
+
+      it('cancel closes the preview without renaming', () => {
+        preview();
+        (respellEl()!.querySelector('.cast-respell-cancel') as HTMLButtonElement).click();
+        fixture.detectChanges();
+        expect(respellEl()).toBeNull();
+      });
+
+      it('a refused respell (consolidation running) surfaces inline and keeps the preview', () => {
+        preview();
+        component.confirmRespell();
+        httpMock
+          .expectOne(auditUrl)
+          .flush({ message: 'A consolidation is moving files' }, { status: 409, statusText: 'Conflict' });
+        expect(component.castAuditStatus).toBe('A consolidation is moving files');
+        expect(component.castRespell).not.toBeNull();
+        expect(component.castRespellBusy).toBeFalse();
+      });
+
+      it('is unavailable while a consolidation runs', () => {
+        runAudit();
+        component.isConsolidating = true;
+        (auditEl().querySelectorAll('.cast-audit-use')[0] as HTMLElement).click();
+        // afterEach's verify() fails on any preview request
+        expect(component.castRespell).toBeNull();
+      });
+
+      it('deleting a spelling closes a preview that involves it', () => {
+        preview();
+        spyOn(window, 'confirm').and.returnValue(true);
+        component.deleteAuditName(auditResponse.findings[1].names[0]);
+        httpMock.expectOne(manageUrl).flush({ names: [], deleted: true });
+        expect(component.castRespell).toBeNull();
+      });
+    });
+
     it('clicking a name shows it in the list above', () => {
       runAudit();
       (auditEl().querySelector('.cast-audit-name a') as HTMLElement).click();

@@ -52,6 +52,14 @@ describe('SettingsService', () => {
         () => service.dismissCastAuditFinding('junk|intro').subscribe(),
       ],
       [{ action: 'reset' }, () => service.resetCastAuditDismissals().subscribe()],
+      [
+        { action: 'respellPreview', from: ['Marla Vexx'], to: 'Marla Vex' },
+        () => service.previewCastRespell(['Marla Vexx'], 'Marla Vex').subscribe(),
+      ],
+      [
+        { action: 'respell', from: ['Marla Vexx'], to: 'Marla Vex', files: ['/Volumes/X/a.mp4'] },
+        () => service.respellCastName(['Marla Vexx'], 'Marla Vex', ['/Volumes/X/a.mp4']).subscribe(),
+      ],
     ];
     for (const [body, call] of calls) {
       call();

@@ -37,6 +37,13 @@
   display: inline-block;
 }
 
+// A long respelling preview scrolls inside its box
+.cast-respell-files {
+  max-height: 30vh;
+  overflow-y: auto;
+  word-break: break-word;
+}
+
 // The ✕ that clears the search field, overlaid on the input's right edge
 .clear-filter {
   position: absolute;

@@ -349,6 +349,15 @@
                             {{ entry.uses === 1 ? "file" : "files" }}</span
                           >
                           <span
+                            *ngIf="finding.kind === 'duplicate' || finding.kind === 'variant'"
+                            class="action-icon ms-1 cast-audit-use"
+                            role="button"
+                            title="Use this spelling — rename the files that use the others"
+                            aria-label="Use this spelling"
+                            (click)="castRespellBusy || isConsolidating || previewRespell(finding, entry)"
+                            >✅</span
+                          >
+                          <span
                             class="action-icon ms-1"
                             role="button"
                             title="Delete"
@@ -357,8 +366,69 @@
                             >🗑️</span
                           >
                         </span>
-                        <div *ngIf="finding.kind === 'junk'" class="small text-muted">
+                        <div *ngIf="finding.kind === 'junk' || finding.kind === 'male'" class="small text-muted">
                           {{ finding.reason }}
+                        </div>
+                        <div
+                          *ngIf="castRespell?.findingKey === finding.key && castRespell as plan"
+                          class="cast-respell small mt-2 p-2 border rounded"
+                        >
+                          <div class="mb-1">
+                            <ng-container *ngIf="plan.files.length; else noRespellFiles">
+                              Rename {{ respellRenamable(plan).length }}
+                              {{ respellRenamable(plan).length === 1 ? "file" : "files" }}
+                              to <strong>{{ plan.to }}</strong>, then remove
+                              {{ quoteNames(plan.from) }} from the list:
+                            </ng-container>
+                            <ng-template #noRespellFiles>
+                              No indexed file uses {{ quoteNames(plan.from) }} — remove
+                              it from the list?
+                            </ng-template>
+                          </div>
+                          <ul class="list-unstyled mb-1 cast-respell-files" *ngIf="plan.files.length">
+                            <li
+                              *ngFor="let f of plan.files"
+                              [class.text-danger]="f.conflict"
+                              [title]="f.dir"
+                            >
+                              {{ f.file }} <span class="text-muted">→</span> {{ f.newFile }}<span
+                                *ngIf="f.conflict"
+                              >
+                                — a file with that name already exists; left alone</span
+                              >
+                            </li>
+                          </ul>
+                          <div class="text-muted mb-2">
+                            Only files in the drive index are renamed; each rename is
+                            logged to server/cast_respell_log.jsonl.
+                          </div>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-primary me-2 cast-respell-confirm"
+                            [disabled]="castRespellBusy || isConsolidating"
+                            (click)="confirmRespell()"
+                          >
+                            <span
+                              *ngIf="castRespellBusy"
+                              class="spinner-border spinner-border-sm me-1"
+                              role="status"
+                              aria-hidden="true"
+                            ></span>
+                            {{
+                              respellRenamable(plan).length
+                                ? "Rename " + respellRenamable(plan).length +
+                                  (respellRenamable(plan).length === 1 ? " file" : " files")
+                                : "Remove from list"
+                            }}
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-secondary cast-respell-cancel"
+                            [disabled]="castRespellBusy"
+                            (click)="cancelRespell()"
+                          >
+                            Cancel
+                          </button>
                         </div>
                       </div>
                       <button

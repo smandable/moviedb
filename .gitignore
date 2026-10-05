@@ -51,6 +51,9 @@ Thumbs.db
 # Generated: cast-name audit findings dismissed on the Settings page
 /server/cast_audit_dismissed.json
 
+# Generated: undo log of cast-name respelling renames (Settings audit)
+/server/cast_respell_log.jsonl
+
 # Generated: app settings edited on the Settings page (machine-local)
 /server/app_settings.json
 
