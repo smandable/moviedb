@@ -193,5 +193,20 @@ check('rename + merge: the typed casing survives the save-path merge',
         moviedb_rename_cast_name(['marla vex', 'With Marla Vex'], 'With Marla Vex', 'Marla Vex')),
     ['Marla Vex']);
 
+
+// --- blocklist ------------------------------------------------------------------
+check('without_blocked: case-insensitive', moviedb_without_blocked(['Marla Vex', 'Juna Quist', 'orlena rain'], ['marla vex', 'Orlena Rain']), ['Juna Quist']);
+check('without_blocked: empty blocklist', moviedb_without_blocked(['Marla Vex'], []), ['Marla Vex']);
+$blockPath = sys_get_temp_dir() . '/cast_blocked_' . getmypid() . '.json';
+check('blocklist: missing file = empty', moviedb_load_cast_blocklist($blockPath), []);
+check('block: adds, deduped and sorted', moviedb_block_cast_names(['Marla Vex', 'Juna Quist', 'marla vex'], $blockPath), ['Juna Quist', 'Marla Vex']);
+check('block: keeps what was there', moviedb_block_cast_names(['Orlena Rain'], $blockPath), ['Juna Quist', 'Marla Vex', 'Orlena Rain']);
+check('unblock: case-insensitive', moviedb_unblock_cast_name('MARLA VEX', $blockPath), ['Juna Quist', 'Orlena Rain']);
+check('unblock: unknown name is a no-op', moviedb_unblock_cast_name('Nobody', $blockPath), ['Juna Quist', 'Orlena Rain']);
+check('blocklist: round trip', moviedb_load_cast_blocklist($blockPath), ['Juna Quist', 'Orlena Rain']);
+file_put_contents($blockPath, '{broken');
+check('blocklist: corrupt = empty', moviedb_load_cast_blocklist($blockPath), []);
+unlink($blockPath);
+
 echo "\n{$pass} passed, {$fail} failed\n";
 exit($fail === 0 ? 0 : 1);

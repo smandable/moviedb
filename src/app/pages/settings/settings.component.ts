@@ -136,6 +136,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   // ---- Cast name vocabulary ----
   castNames: string[] = [];
+  /** Deleted names, kept from coming back from filenames (restorable). */
+  castBlocked: string[] = [];
+  /** The blocked names live in a collapsed-by-default accordion. */
+  castBlockedExpanded = false;
   castNamesLoaded = false;
   castNamesError = '';
   filterText = '';
@@ -301,8 +305,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
 
     this.settingsService.listCastNames().subscribe({
-      next: ({ names }) => {
+      next: ({ names, blocked }) => {
         this.castNames = names;
+        this.castBlocked = blocked ?? [];
         this.castNamesLoaded = true;
         this.cdr.markForCheck();
       },
@@ -439,7 +444,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return;
     }
     this.settingsService.addCastName(name).subscribe({
-      next: ({ names, added }) => {
+      next: ({ names, added, blocked }) => {
         // The server echoes the spelling the store KEPT, which for a name that
         // already existed in another casing is not the one just typed. Say so,
         // rather than claiming an add that didn't happen — the differing casing
@@ -448,6 +453,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
           !!added &&
           this.castNames.some((n) => n.toLowerCase() === added.toLowerCase());
         this.castNames = names;
+        this.castBlocked = blocked ?? this.castBlocked;
         this.newName = '';
         this.castStatus = added
           ? alreadyListed
@@ -481,8 +487,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return;
     }
     this.settingsService.renameCastName(original, next).subscribe({
-      next: ({ names, renamed }) => {
+      next: ({ names, renamed, blocked }) => {
         this.castNames = names;
+        this.castBlocked = blocked ?? this.castBlocked;
         this.castStatus = renamed ? `Renamed to “${renamed}”.` : '';
         this.cancelEdit();
         this.pruneCastAudit(original);
@@ -502,15 +509,15 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private confirmAndDeleteName(
     name: string,
     report: (message: string) => void,
-    deletedMessage = `Deleted “${name}”.`,
   ): void {
-    if (!confirm(`Delete “${name}” from the cast vocabulary?`)) {
+    if (!confirm(`Delete “${name}”? It won't come back from filenames; adding it again restores it.`)) {
       return;
     }
     this.settingsService.deleteCastName(name).subscribe({
-      next: ({ names }) => {
+      next: ({ names, blocked }) => {
         this.castNames = names;
-        report(deletedMessage);
+        this.castBlocked = blocked ?? this.castBlocked;
+        report(`Deleted “${name}”.`);
         this.pruneCastAudit(name);
         this.cdr.markForCheck();
       },
@@ -549,20 +556,56 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Delete one spelling from the vocabulary. A spelling still used in
-   * filenames comes back the next time Add Cast reads that folder, so say so
-   * rather than let it look like the delete didn't stick.
-   */
+  /** Delete one spelling from the vocabulary (blocked, like any delete). */
   deleteAuditName(entry: CastAuditName): void {
-    const files = entry.uses === 1 ? '1 indexed file still uses' : `${entry.uses} indexed files still use`;
-    this.confirmAndDeleteName(
-      entry.name,
-      (message) => (this.castAuditStatus = message),
-      entry.uses > 0
-        ? `Deleted “${entry.name}”. ${files} it, so Add Cast will suggest it again from those folders until they're renamed.`
-        : `Deleted “${entry.name}”.`,
-    );
+    this.confirmAndDeleteName(entry.name, (message) => (this.castAuditStatus = message));
+  }
+
+  /**
+   * Delete (and block) every name left in a section — for "Possibly male",
+   * once the women it caught are marked "Not a problem".
+   */
+  deleteAllInSection(section: CastAuditSection): void {
+    const names = section.findings.flatMap((f) => f.names.map((n) => n.name));
+    if (names.length === 0) {
+      return;
+    }
+    const prompt =
+      `Delete all ${names.length} names under “${section.label}”? They won't come back from ` +
+      'filenames. Mark any that belong “Not a problem” first.';
+    if (!confirm(prompt)) {
+      return;
+    }
+    this.settingsService.deleteCastNames(names).subscribe({
+      next: ({ names: remaining, blocked, deleted }) => {
+        this.castNames = remaining;
+        this.castBlocked = blocked ?? this.castBlocked;
+        names.forEach((name) => this.pruneCastAudit(name));
+        const count = typeof deleted === 'number' ? deleted : names.length;
+        this.castAuditStatus = `Deleted ${count} ${count === 1 ? 'name' : 'names'}.`;
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castAuditStatus = err.message;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Unblock a deleted name and put it back in the vocabulary. */
+  restoreName(name: string): void {
+    this.settingsService.restoreCastName(name).subscribe({
+      next: ({ names, blocked, restored }) => {
+        this.castNames = names;
+        this.castBlocked = blocked ?? this.castBlocked;
+        this.castStatus = `Restored “${restored ?? name}”.`;
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castStatus = err.message;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   /** Hide a finding from this and future checks. */
@@ -685,6 +728,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.settingsService.respellCastName(plan.from, plan.to, files).subscribe({
       next: (res) => {
         this.castNames = res.names;
+        this.castBlocked = res.blocked ?? this.castBlocked;
         const renamed = `Renamed ${res.renamed} ${res.renamed === 1 ? 'file' : 'files'} to “${plan.to}”.`;
         const staleIndex = res.indexUpdated
           ? ''

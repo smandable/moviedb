@@ -7,6 +7,12 @@
 }
 
 // The vocabulary runs ~3k names; keep the list in its own scroll area
+// Deleted names scroll like the vocabulary list
+.cast-blocked-list {
+  max-height: 21vh;
+  overflow-y: auto;
+}
+
 .cast-name-list ul {
   max-height: 21vh;
   overflow-y: auto;

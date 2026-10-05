@@ -343,16 +343,17 @@ describe('SettingsComponent', () => {
       expect(component.castAuditRunning).toBeFalse();
     });
 
-    it('deleting a pair member drops the finding, and warns when files still use it', () => {
+    it('deleting a pair member drops the finding and lists the name as deleted', () => {
       runAudit();
       spyOn(window, 'confirm').and.returnValue(true);
 
       component.deleteAuditName(auditResponse.findings[0].names[1]);
       const req = httpMock.expectOne(manageUrl);
       expect(req.request.body).toEqual({ action: 'delete', name: 'Marla Vex' });
-      req.flush({ names: ['Intro', 'MarlaVex'], deleted: true });
+      req.flush({ names: ['Intro', 'MarlaVex'], blocked: ['Marla Vex'], deleted: true });
 
       expect(component.castNames).toEqual(['Intro', 'MarlaVex']);
+      expect(component.castBlocked).toEqual(['Marla Vex']);
       expect(component.castAudit!.findings.map((f) => f.key)).toEqual([
         'variant|orlena rain|orlena rains|orlenna rains',
         'junk|intro',
@@ -360,7 +361,52 @@ describe('SettingsComponent', () => {
       ]);
       expect(component.castAuditSections.find((s) => s.kind === 'duplicate')!.findings)
         .toEqual([]);
-      expect(component.castAuditStatus).toContain('4 indexed files still use it');
+      expect(component.castAuditStatus).toBe('Deleted “Marla Vex”.');
+    });
+
+    describe('Delete all (Possibly male)', () => {
+      const maleResponse = {
+        ...auditResponse,
+        findings: [
+          ...auditResponse.findings,
+          {
+            key: 'male|tobin quarry',
+            kind: 'male',
+            reason: 'Male first name “Tobin”',
+            names: [{ name: 'Tobin Quarry', uses: 0, files: [] }],
+          },
+        ],
+      };
+
+      it('is offered on the male section only', () => {
+        runAudit(maleResponse);
+        const buttons = auditEl().querySelectorAll('.cast-audit-delete-all');
+        expect(buttons.length).toBe(1);
+        expect(buttons[0].closest('.cast-audit-section')!.getAttribute('data-kind')).toBe('male');
+        expect(buttons[0].textContent).toContain('Delete all 2');
+      });
+
+      it('deletes every name in the section in one request, after confirming', () => {
+        runAudit(maleResponse);
+        spyOn(window, 'confirm').and.returnValue(true);
+        (auditEl().querySelector('.cast-audit-delete-all') as HTMLButtonElement).click();
+        const req = httpMock.expectOne(manageUrl);
+        expect(req.request.body).toEqual({ action: 'deleteMany', names: ['Brock Hale', 'Tobin Quarry'] });
+        expect(req.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
+        req.flush({ names: ['Intro'], blocked: ['Brock Hale', 'Tobin Quarry'], deleted: 2 });
+
+        expect(component.castAudit!.findings.some((f) => f.kind === 'male')).toBeFalse();
+        expect(component.castAudit!.findings.length).toBe(3);
+        expect(component.castBlocked).toEqual(['Brock Hale', 'Tobin Quarry']);
+        expect(component.castAuditStatus).toBe('Deleted 2 names.');
+      });
+
+      it('declining the confirm deletes nothing', () => {
+        runAudit(maleResponse);
+        spyOn(window, 'confirm').and.returnValue(false);
+        component.deleteAllInSection(component.castAuditSections.find((s) => s.kind === 'male')!);
+        expect(component.castAudit!.findings.length).toBe(5);
+      });
     });
 
     it('deleting one of three spellings keeps the rest of the finding', () => {
@@ -701,6 +747,46 @@ describe('SettingsComponent', () => {
       runAudit();
       (auditEl().querySelector('.cast-audit-name a') as HTMLElement).click();
       expect(component.filterText).toBe('MarlaVex');
+    });
+  });
+
+  describe('deleted names', () => {
+    it('lists them collapsed, and restores one', () => {
+      flushInit({}, ['Anna Example']);
+      // flushInit answers the list without a blocklist; deletes bring one in
+      component.castBlocked = ['Marla Vex', 'Tobin Quarry'];
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      const el: HTMLElement = fixture.nativeElement;
+      expect(el.querySelector('.cast-blocked-toggle')!.textContent).toContain('Deleted names (2)');
+      expect(el.querySelector('.cast-blocked-list')).toBeNull();
+
+      (el.querySelector('.cast-blocked-toggle') as HTMLElement).click();
+      fixture.detectChanges();
+      const restore = el.querySelectorAll<HTMLElement>('.cast-blocked-restore');
+      expect(restore.length).toBe(2);
+      restore[1].click();
+      const req = httpMock.expectOne(manageUrl);
+      expect(req.request.body).toEqual({ action: 'restore', name: 'Tobin Quarry' });
+      req.flush({ names: ['Anna Example', 'Tobin Quarry'], blocked: ['Marla Vex'], restored: 'Tobin Quarry' });
+
+      expect(component.castNames).toEqual(['Anna Example', 'Tobin Quarry']);
+      expect(component.castBlocked).toEqual(['Marla Vex']);
+      expect(component.castStatus).toBe('Restored “Tobin Quarry”.');
+    });
+
+    it('loads the blocklist with the names', () => {
+      httpMock.expectOne(settingsUrl).flush({ settings: {} });
+      httpMock.expectOne(manageUrl).flush({ names: ['Anna Example'], blocked: ['Marla Vex'] });
+      httpMock.expectOne(driveIndexUrl).flush(neverBuiltStatus);
+      httpMock.expectOne(consolidateUrl).flush(idleConsolidateStatus);
+      expect(component.castBlocked).toEqual(['Marla Vex']);
+    });
+
+    it('is hidden when nothing has been deleted', () => {
+      flushInit({});
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.cast-blocked')).toBeNull();
     });
   });
 

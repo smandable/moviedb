@@ -263,6 +263,34 @@
           </ul>
         </div>
 
+        <div class="cast-blocked mt-2" *ngIf="castBlocked.length">
+          <div
+            class="accordion-toggle d-flex align-items-center small text-muted cast-blocked-toggle"
+            role="button"
+            [attr.aria-expanded]="castBlockedExpanded"
+            [title]="(castBlockedExpanded ? 'Hide' : 'Show') + ' the deleted names'"
+            (click)="castBlockedExpanded = !castBlockedExpanded"
+          >
+            <span class="chevron me-1">{{ castBlockedExpanded ? "▾" : "▸" }}</span>
+            <span>Deleted names ({{ castBlocked.length }}) — kept from coming back from filenames</span>
+          </div>
+          <ul class="list-group mt-1 cast-blocked-list" *ngIf="castBlockedExpanded">
+            <li
+              class="list-group-item d-flex align-items-center cast-name-row"
+              *ngFor="let name of castBlocked"
+            >
+              <span class="flex-grow-1 text-muted">{{ name }}</span>
+              <a
+                href="#"
+                class="small cast-blocked-restore"
+                title="Put it back in the list"
+                (click)="$event.preventDefault(); restoreName(name)"
+                >restore</a
+              >
+            </li>
+          </ul>
+        </div>
+
         <div class="cast-audit mt-3">
           <div class="d-flex align-items-center flex-wrap mb-1">
             <button
@@ -299,11 +327,11 @@
             </span>
           </div>
           <p class="text-muted small mb-2">
-            Deleting removes a suggestion only; a spelling still used in
-            filenames returns when Add Cast next reads that folder. File counts
-            come from the drive index<span *ngIf="castAudit?.index as index">
+            A deleted name stays deleted, even where filenames still use it
+            (it's listed under Deleted names, to restore). File counts come from
+            the drive index<span *ngIf="castAudit?.index as index">
               ({{ index.fileCount }} files)</span
-            >; hover one for paths.
+            >, so files outside its folders count as 0; hover a count for paths.
           </p>
           <div *ngIf="castAuditError" class="text-danger small mb-2">
             {{ castAuditError }}
@@ -322,8 +350,17 @@
             <div class="cast-audit-results" *ngIf="castAudit.findings.length">
               <ng-container *ngFor="let section of castAuditSections">
                 <div *ngIf="section.findings.length" class="cast-audit-section" [attr.data-kind]="section.kind">
-                  <div class="small fw-semibold mt-2">
-                    {{ section.label }} ({{ section.findings.length }})
+                  <div class="small fw-semibold mt-2 d-flex align-items-center">
+                    <span>{{ section.label }} ({{ section.findings.length }})</span>
+                    <button
+                      *ngIf="section.kind === 'male'"
+                      type="button"
+                      class="btn btn-sm btn-outline-danger py-0 ms-2 cast-audit-delete-all"
+                      title="Delete every name in this section; they won't come back from filenames"
+                      (click)="deleteAllInSection(section)"
+                    >
+                      Delete all {{ section.findings.length }}
+                    </button>
                   </div>
                   <div class="small text-muted mb-1">{{ section.help }}</div>
                   <ul class="list-group mb-2">

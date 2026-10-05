@@ -12,7 +12,7 @@
  *                                 -> { files: [{path, dir, file, newFile, conflict}] }
  * POST { action: 'respell', from: [...], to, files: [paths] }
  *                                 -> { results, renamed, failed, notPreviewed,
- *                                      indexUpdated, names, removed }
+ *                                      indexUpdated, names, blocked, removed }
  *
  * 'respell' renames the previewed files whose cast tail carries a "from"
  * spelling to "to" (cast_respell_lib.php), then — only once no indexed file
@@ -184,10 +184,21 @@ switch ($action) {
             foreach ($request['from'] as $old) {
                 $names = moviedb_rename_cast_name($names, $old, $request['to']);
             }
+            // Removed spellings stay removed, like a delete (a casing fix
+            // shares the kept name's key, so it's not blocked)
+            moviedb_block_cast_names(array_filter(
+                $request['from'],
+                fn($old) => mb_strtolower($old) !== mb_strtolower($request['to'])
+            ));
+            moviedb_unblock_cast_name($request['to']);
             $names = moviedb_save_cast_store($names);
             $removed = true;
         }
-        echo json_encode($outcome + ['names' => $names, 'removed' => $removed], JSON_UNESCAPED_UNICODE);
+        echo json_encode($outcome + [
+            'names' => $names,
+            'blocked' => moviedb_load_cast_blocklist(),
+            'removed' => $removed,
+        ], JSON_UNESCAPED_UNICODE);
         break;
 
     default:

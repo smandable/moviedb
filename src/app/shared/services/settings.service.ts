@@ -45,9 +45,13 @@ export interface SaveSettingsResponse extends DbTableInfo {
 
 export interface CastNamesResponse {
   names: string[];
+  /** Deleted names, kept from coming back from filenames. */
+  blocked?: string[];
   added?: string;
   renamed?: string;
-  deleted?: boolean;
+  /** true/false for one delete; how many for deleteMany. */
+  deleted?: boolean | number;
+  restored?: string;
 }
 
 /** One spelling in a cast-audit finding, with how many indexed files use it. */
@@ -96,6 +100,7 @@ export interface CastRespellResponse {
   indexUpdated: boolean;
   /** The vocabulary afterwards. */
   names: string[];
+  blocked?: string[];
   /** Whether the old spellings left the vocabulary (only once no file uses them). */
   removed: boolean;
 }
@@ -144,6 +149,16 @@ export class SettingsService {
 
   deleteCastName(name: string): Observable<CastNamesResponse> {
     return this.castNamesAction({ action: 'delete', name });
+  }
+
+  /** Delete (and block) several names at once. */
+  deleteCastNames(names: string[]): Observable<CastNamesResponse> {
+    return this.castNamesAction({ action: 'deleteMany', names });
+  }
+
+  /** Unblock a deleted name and put it back in the vocabulary. */
+  restoreCastName(name: string): Observable<CastNamesResponse> {
+    return this.castNamesAction({ action: 'restore', name });
   }
 
   /** Look for junk and duplicates in the vocabulary (read-only). */

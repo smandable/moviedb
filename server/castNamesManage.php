@@ -5,10 +5,18 @@
  * Settings page's editor. The autocomplete union endpoint is castNames.php;
  * this one manages the persisted store only.
  *
- * POST { action: 'list' }                      -> { names: [...] }
- * POST { action: 'add', name }                 -> { names: [...], added }
- * POST { action: 'rename', name, newName }     -> { names: [...], renamed }
- * POST { action: 'delete', name }              -> { names: [...], deleted }
+ * POST { action: 'list' }                      -> { names: [...], blocked: [...] }
+ * POST { action: 'add', name }                 -> { names, blocked, added }
+ * POST { action: 'rename', name, newName }     -> { names, blocked, renamed }
+ * POST { action: 'delete', name }              -> { names, blocked, deleted }
+ * POST { action: 'deleteMany', names: [...] }  -> { names, blocked, deleted: n }
+ * POST { action: 'restore', name }             -> { names, blocked, restored }
+ *
+ * Deleting is permanent: the name joins the blocklist
+ * (server/cast_names_blocked.json), which every store write honours, so
+ * filenames that still use it can't bring it back. A rename blocks the old
+ * spelling the same way. Adding a blocked name by hand, or 'restore', takes
+ * it off the blocklist again.
  *
  * Names pass through moviedb_clean_cast_name (whitespace/punctuation cleanup +
  * homoglyph folding) so hand-typed entries obey the same hygiene as harvested
@@ -48,9 +56,15 @@ if ($action !== 'list' && empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
 
 $names = moviedb_load_cast_store();
 
+/** The response body every action shares: the store and the blocklist. */
+function moviedb_cast_manage_body(array $names, array $extra = []): string
+{
+    return json_encode(['names' => $names, 'blocked' => moviedb_load_cast_blocklist()] + $extra);
+}
+
 switch ($action) {
     case 'list':
-        echo json_encode(['names' => $names]);
+        echo moviedb_cast_manage_body($names);
         break;
 
     case 'add':
@@ -61,14 +75,15 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Not a usable name']);
             break;
         }
+        // Typing a blocked name back in is the way to un-delete it
+        moviedb_unblock_cast_name($clean);
         $names = moviedb_save_cast_store(moviedb_add_cast_name($names, $raw));
         // Echo the spelling the STORE holds, not the one that was typed. Adding
         // a name that already exists in another casing keeps the stored spelling
         // (add isn't authoritative about casing — rename is), and the old code
         // echoed the typed casing anyway, so the Settings page said
         // 'Added "Marla Vex"' beside a list still reading "marla vex".
-        echo json_encode([
-            'names' => $names,
+        echo moviedb_cast_manage_body($names, [
             'added' => moviedb_stored_cast_name($names, $clean) ?: $clean,
         ]);
         break;
@@ -87,7 +102,13 @@ switch ($action) {
         // the RAW name so the stored name and the 'renamed' echoed below are
         // the same moviedb_clean_cast_name() call applied to the same input.
         $names = moviedb_rename_cast_name($names, $old, $newRaw);
-        echo json_encode(['names' => moviedb_save_cast_store($names), 'renamed' => $clean]);
+        // The new spelling is wanted; the old one stays gone (a casing fix
+        // renames onto the same name, which must not block itself)
+        moviedb_unblock_cast_name($clean);
+        if (mb_strtolower($old) !== mb_strtolower($clean)) {
+            moviedb_block_cast_names([$old]);
+        }
+        echo moviedb_cast_manage_body(moviedb_save_cast_store($names), ['renamed' => $clean]);
         break;
 
     case 'delete':
@@ -99,7 +120,43 @@ switch ($action) {
         }
         $remaining = moviedb_remove_name($names, $target);
         $deleted = count($remaining) < count($names);
-        echo json_encode(['names' => moviedb_save_cast_store($remaining), 'deleted' => $deleted]);
+        moviedb_block_cast_names([moviedb_stored_cast_name($names, $target) ?: $target]);
+        echo moviedb_cast_manage_body(moviedb_save_cast_store($remaining), ['deleted' => $deleted]);
+        break;
+
+    case 'deleteMany':
+        $targets = array_values(array_filter(
+            is_array($data['names'] ?? null) ? $data['names'] : [],
+            fn($n) => is_string($n) && trim($n) !== ''
+        ));
+        if ($targets === [] || count($targets) > 500) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing names']);
+            break;
+        }
+        $remaining = $names;
+        $blocked = [];
+        foreach ($targets as $target) {
+            $blocked[] = moviedb_stored_cast_name($names, $target) ?: $target;
+            $remaining = moviedb_remove_name($remaining, $target);
+        }
+        moviedb_block_cast_names($blocked);
+        echo moviedb_cast_manage_body(moviedb_save_cast_store($remaining), [
+            'deleted' => count($names) - count($remaining),
+        ]);
+        break;
+
+    case 'restore':
+        $target = is_string($data['name'] ?? null) ? $data['name'] : '';
+        $blockedName = moviedb_stored_cast_name(moviedb_load_cast_blocklist(), $target);
+        if ($blockedName === '') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Not a blocked name']);
+            break;
+        }
+        moviedb_unblock_cast_name($blockedName);
+        $names = moviedb_save_cast_store(moviedb_add_cast_name($names, $blockedName));
+        echo moviedb_cast_manage_body($names, ['restored' => $blockedName]);
         break;
 
     default:

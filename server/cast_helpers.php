@@ -8,6 +8,11 @@
 
 const MOVIEDB_CAST_STORE = __DIR__ . '/cast_names.json';
 
+// Names deleted from the vocabulary, kept so filenames can't bring them back
+// (Add Cast mining a folder, the harvester, a rename's cast fed back in).
+// Typing one into Add — or restoring it on the Settings page — unblocks it.
+const MOVIEDB_CAST_BLOCKLIST = __DIR__ . '/cast_names_blocked.json';
+
 // A cast tail is whatever follows the scene number; performers are comma-separated.
 const MOVIEDB_SCENE_CAST_RE = '/Scene_\d+\s*-\s*(.+)$/i';
 
@@ -150,10 +155,63 @@ if (!function_exists('moviedb_merge_cast_names')) {
     }
 }
 
-if (!function_exists('moviedb_save_cast_store')) {
-    /** Merge names into the store, case-insensitively deduped. Best effort. */
-    function moviedb_save_cast_store(array $names): array
+if (!function_exists('moviedb_load_cast_blocklist')) {
+    function moviedb_load_cast_blocklist(?string $path = null): array
     {
+        $path = $path ?? MOVIEDB_CAST_BLOCKLIST;
+        $raw = is_file($path) ? @file_get_contents($path) : false;
+        $data = $raw === false ? null : json_decode($raw, true);
+        return is_array($data) ? array_values(array_filter($data, 'is_string')) : [];
+    }
+}
+
+if (!function_exists('moviedb_save_cast_blocklist')) {
+    /** Write the blocklist deduped and sorted like the store; the list as saved. */
+    function moviedb_save_cast_blocklist(array $names, ?string $path = null): array
+    {
+        $merged = moviedb_merge_cast_names(array_filter($names, fn($n) => is_string($n) && $n !== ''));
+        @file_put_contents(
+            $path ?? MOVIEDB_CAST_BLOCKLIST,
+            json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+        return $merged;
+    }
+}
+
+if (!function_exists('moviedb_without_blocked')) {
+    /** $names minus every name on $blocked (case-insensitively, the store's key). */
+    function moviedb_without_blocked(array $names, array $blocked): array
+    {
+        $keys = array_flip(array_map('mb_strtolower', $blocked));
+        return array_values(array_filter($names, fn($n) => !isset($keys[mb_strtolower($n)])));
+    }
+}
+
+if (!function_exists('moviedb_block_cast_names')) {
+    /** Add names to the blocklist; the list as saved. */
+    function moviedb_block_cast_names(array $names, ?string $path = null): array
+    {
+        return moviedb_save_cast_blocklist(array_merge(moviedb_load_cast_blocklist($path), $names), $path);
+    }
+}
+
+if (!function_exists('moviedb_unblock_cast_name')) {
+    /** Take a name off the blocklist (case-insensitively); the list as saved. */
+    function moviedb_unblock_cast_name(string $name, ?string $path = null): array
+    {
+        return moviedb_save_cast_blocklist(moviedb_remove_name(moviedb_load_cast_blocklist($path), $name), $path);
+    }
+}
+
+if (!function_exists('moviedb_save_cast_store')) {
+    /**
+     * Merge names into the store, case-insensitively deduped, leaving out
+     * blocked names — every path that writes the store comes through here,
+     * so a deleted name can't sneak back from a filename. Best effort.
+     */
+    function moviedb_save_cast_store(array $names, ?array $blocked = null): array
+    {
+        $names = moviedb_without_blocked($names, $blocked ?? moviedb_load_cast_blocklist());
         $merged = moviedb_merge_cast_names($names);
         // A failed write just means autocomplete forgets — never fail the caller.
         @file_put_contents(

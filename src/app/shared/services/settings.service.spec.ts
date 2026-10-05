@@ -31,6 +31,8 @@ describe('SettingsService', () => {
       ['add', () => service.addCastName('Marla Vex').subscribe()],
       ['rename', () => service.renameCastName('Marla Vex', 'Marla Vexx').subscribe()],
       ['delete', () => service.deleteCastName('Marla Vexx').subscribe()],
+      ['deleteMany', () => service.deleteCastNames(['Marla Vexx']).subscribe()],
+      ['restore', () => service.restoreCastName('Marla Vexx').subscribe()],
     ];
     for (const [action, call] of calls) {
       call();
