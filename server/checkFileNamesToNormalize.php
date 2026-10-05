@@ -30,6 +30,9 @@ if (!isset($data['directory']) || empty($data['directory'])) {
 
 $directory = rtrim($data['directory'], '/');
 
+// Read-only, so just a longer limit: waking a sleeping drive then walking it cold can pass 30 s.
+set_time_limit(120);
+
 // Check if the directory exists
 if (!is_dir($directory)) {
     http_response_code(400);

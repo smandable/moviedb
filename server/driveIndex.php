@@ -106,6 +106,7 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'Missing path']);
             break;
         }
+        set_time_limit(120); // read-only, but realpath may wait on a sleeping drive
         $result = moviedb_reveal_drive_file($path);
         if (!$result['success'] && !empty($result['invalid'])) {
             http_response_code(400);
@@ -120,6 +121,9 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'paths must be a non-empty array of at most 50 paths']);
             break;
         }
+        // Moves wait on drives waking; the index is saved last, so finish or it keeps listing trashed files.
+        set_time_limit(600);
+        ignore_user_abort(true);
         $trash = moviedb_trash_drive_files(array_values($paths));
         echo json_encode([
             'success'      => true,

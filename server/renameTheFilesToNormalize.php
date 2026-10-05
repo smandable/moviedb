@@ -59,6 +59,10 @@ if (!isset($data['files']) || !is_array($data['files'])) {
 $files = $data['files'];
 $results = [];
 
+// A drive waking mid-batch outlasted 30 s (2026-10-01): finish, or renames land unreported or stuck as .__tmp__.
+set_time_limit(600);
+ignore_user_abort(true);
+
 try {
 
 foreach ($files as $file) {

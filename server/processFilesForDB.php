@@ -4,6 +4,8 @@ header('Content-Type: application/json');
 
 // Increase the max execution time as needed
 ini_set('max_execution_time', 0);
+// Rows are written before their files are renamed/moved: finish even if the page stops waiting.
+ignore_user_abort(true);
 
 // Inserts/updates catalog rows and moves duplicate files: a custom header
 // forces a CORS preflight a hostile page won't be granted, killing blind
