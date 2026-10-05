@@ -1333,6 +1333,15 @@ check('LA is not a French article', normalizeFileBaseName('Lonely in LA # 01'), 
 check('title-only de lowercased in respect mode too', normalizeFileBaseName('Le Retour De Quill - Scene_1 - Jane Doe', true), 'Le Retour de Quill - Scene_1 - Jane Doe');
 check('a listed year is not a volume', normalizeFileBaseName('Debbie Class of 88'), 'Debbie Class of 88');
 check('a listed year survives a dotted release name', normalizeFileBaseName('debbie.does.dallas.99'), 'Debbie Does Dallas 99');
+check('a settled full title pins one volume\'s subtitle',
+    applyTitleOverride('Velvet # 23 - Bis Zur Quelle - Scene_1', ['velvet # 23 - bis zur quelle' => 'Velvet # 23 - Bis zur Quelle']),
+    'Velvet # 23 - Bis zur Quelle - Scene_1');
+check('... leaving the other volumes to the rules',
+    applyTitleOverride('Velvet # 24 - Am Ende', ['velvet # 23 - bis zur quelle' => 'Velvet # 23 - Bis zur Quelle']),
+    'Velvet # 24 - Am Ende');
+check('a base-title override still applies under a subtitle',
+    applyTitleOverride('Sexo En Velvet # 07 - Scene_1', ['sexo en velvet' => 'Sexo en Velvet']),
+    'Sexo en Velvet # 07 - Scene_1');
 check('abbreviation periods survive respect mode', normalizeFileBaseName('Mr. Lonelyheart # 13 - Scene_1 - Jane Doe', true), 'Mr. Lonelyheart # 13 - Scene_1 - Jane Doe');
 check('invalid UTF-8 passes protectAbbreviationDots untouched', protectAbbreviationDots("Amat\xF6r Mr. X"), "Amat\xF6r Mr. X");
 

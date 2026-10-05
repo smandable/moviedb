@@ -133,6 +133,19 @@ if (!function_exists('moviedb_title_overrides')) {
             'Anal.Oil.Latex.',
             'Beyond Fucked A Zombie Odyssey',
             'Break Up Blues',
+            // Foreign titles keep their own casing — the rules would capitalize
+            // every word (2026-10-04). A full "# NN - Subtitle" entry pins
+            // just that volume (applyTitleOverride checks the full title first).
+            'Das Beste aus Private Amateure',
+            'Pascal le Grand Frere Pineur',
+            "Le Journal d'une Debutante - Diary of a Beginner",
+            'Sexo en Publico',
+            'Blackout # 23 - Bis zur Maulsperre und dann ist dein Arsch dran!',
+            'Blackout # 24 - Weisse Schrift aus schwarzem Stift',
+            'Blackout # 25 - Gewaltige Prgel in unschuldige Kehlen versenkt',
+            'Blackout # 33 - Schwarze Perlen Spermasuechtig ohne Ende',
+            'Sirina # 62 - Erasitexniko Orgia se Vila Twn Voreiwn Proastiwn',
+            "Teenager's Dream # 58 - Lesbo Teens Maedchen unter sich",
             // A name or a pun, not the French "de" (2026-10-04)
             'All About Isabella De Santos',
             'Life of Salma De Nora',
@@ -218,16 +231,25 @@ if (!function_exists('applyTitleOverride')) {
      * Swaps a name's base title for its settled spelling, keeping everything
      * after it (" # NN", " - Scene_N - Cast"). The base is matched after the
      * rest of the pipeline has run, so "Anal Oil Latex # 01" (periods already
-     * swept to spaces) still finds "Anal.Oil.Latex.".
+     * swept to spaces) still finds "Anal.Oil.Latex.". A settled full title
+     * ("Blackout # 23 - Bis zur …", subtitle included) is tried first, so a
+     * single volume's subtitle can be pinned.
      */
     function applyTitleOverride(string $name, ?array $overrides = null): string
     {
-        $base = trim(preg_replace('/\s*# \d+.*$/', '', stripTitleVariantSuffixes($name)));
-        if ($base === '' || !str_starts_with($name, $base)) {
-            return $name;
+        $overrides ??= moviedb_title_overrides();
+        $full = trim(stripTitleVariantSuffixes($name));
+        $base = trim(preg_replace('/\s*# \d+.*$/', '', $full));
+        foreach ([$full, $base] as $title) {
+            if ($title === '' || !str_starts_with($name, $title)) {
+                continue;
+            }
+            $canonical = $overrides[mb_strtolower($title)] ?? null;
+            if ($canonical !== null) {
+                return $canonical . substr($name, strlen($title));
+            }
         }
-        $canonical = ($overrides ?? moviedb_title_overrides())[mb_strtolower($base)] ?? null;
-        return $canonical === null ? $name : $canonical . substr($name, strlen($base));
+        return $name;
     }
 }
 
