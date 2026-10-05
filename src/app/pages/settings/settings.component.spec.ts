@@ -608,6 +608,59 @@ describe('SettingsComponent', () => {
         expect(respellEl()!.querySelector('.cast-respell-confirm')!.textContent).toContain('Remove from list');
       });
 
+      it('unticking a look-alike spelling previews and renames only the ticked ones', () => {
+        preview();
+        const boxes = respellEl()!.querySelectorAll<HTMLInputElement>('.cast-respell-spellings input');
+        expect(Array.from(boxes).map((b) => b.checked)).toEqual([true, true]);
+
+        boxes[1].click(); // "Orlenna Rains" is someone else
+        const req = httpMock.expectOne(auditUrl);
+        expect(req.request.body).toEqual({ action: 'respellPreview', from: ['Orlena Rain'], to: 'Orlena Rains' });
+        req.flush({ files: [previewFiles[0]] });
+        fixture.detectChanges();
+        expect(respellEl()!.textContent).toContain('then remove “Orlena Rain” from the list');
+
+        component.confirmRespell();
+        const respell = httpMock.expectOne(auditUrl);
+        expect(respell.request.body.from).toEqual(['Orlena Rain']);
+        respell.flush({
+          results: [{ path: previewFiles[0].path, newFile: previewFiles[0].newFile, renamed: true }],
+          renamed: 1,
+          failed: 0,
+          notPreviewed: 0,
+          indexUpdated: true,
+          names: ['Orlena Rains', 'Orlenna Rains'],
+          removed: true,
+        });
+        // The look-alike pair stays, to be marked "Not a problem"
+        const variant = component.castAudit!.findings.find((f) => f.kind === 'variant')!;
+        expect(variant.names.map((n) => n.name)).toEqual(['Orlena Rains', 'Orlenna Rains']);
+        expect(component.castAuditStatus).toBe('Renamed 1 file to “Orlena Rains”. Removed “Orlena Rain” from the list.');
+      });
+
+      it('with every spelling unticked there is nothing to confirm', () => {
+        preview();
+        component.toggleRespellSpelling('Orlena Rain');
+        httpMock.expectOne(auditUrl).flush({ files: [previewFiles[1]] });
+        component.toggleRespellSpelling('Orlenna Rains'); // the last one: no request
+        fixture.detectChanges();
+        expect(respellEl()!.textContent).toContain('Tick a spelling to replace');
+        const confirm = respellEl()!.querySelector('.cast-respell-confirm') as HTMLButtonElement;
+        expect(confirm.disabled).toBeTrue();
+        component.confirmRespell(); // afterEach's verify() fails on any request
+        // Ticking one again previews it
+        component.toggleRespellSpelling('Orlenna Rains');
+        expect(httpMock.expectOne(auditUrl).request.body.from).toEqual(['Orlenna Rains']);
+      });
+
+      it('a two-spelling finding has no checkboxes', () => {
+        runAudit();
+        (auditEl().querySelectorAll('.cast-audit-row')[0].querySelector('.cast-audit-use') as HTMLElement).click();
+        httpMock.expectOne(auditUrl).flush({ files: [] });
+        fixture.detectChanges();
+        expect(respellEl()!.querySelector('.cast-respell-spellings')).toBeNull();
+      });
+
       it('cancel closes the preview without renaming', () => {
         preview();
         (respellEl()!.querySelector('.cast-respell-cancel') as HTMLButtonElement).click();

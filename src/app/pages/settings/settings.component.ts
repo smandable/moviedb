@@ -77,7 +77,12 @@ export interface CastRespellPlan {
   findingKey: string;
   /** The spelling to keep. */
   to: string;
-  /** The spellings to rename away and drop from the vocabulary. */
+  /** The finding's other spellings, each offered with a checkbox. */
+  candidates: string[];
+  /**
+   * The ticked ones: renamed away and dropped from the vocabulary. An
+   * unticked one is a different person who just looks alike.
+   */
   from: string[];
   files: CastRespellFile[];
 }
@@ -605,12 +610,47 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
     this.settingsService.previewCastRespell(from, entry.name).subscribe({
       next: ({ files }) => {
-        this.castRespell = { findingKey: finding.key, to: entry.name, from, files };
+        this.castRespell = { findingKey: finding.key, to: entry.name, candidates: from, from, files };
         this.castRespellBusy = false;
         this.cdr.markForCheck();
       },
       error: (err: Error) => {
         this.castAuditStatus = err.message;
+        this.castRespellBusy = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /**
+   * Tick or untick one spelling and preview again with only the ticked ones
+   * ("Belle Noir" is someone else; only "Bella Noire" is a typo).
+   */
+  toggleRespellSpelling(name: string): void {
+    const plan = this.castRespell;
+    if (!plan || this.castRespellBusy) {
+      return;
+    }
+    const from = plan.candidates.filter((n) =>
+      n === name ? !plan.from.includes(n) : plan.from.includes(n),
+    );
+    this.castRespellMessage = '';
+    if (from.length === 0) {
+      this.castRespell = { ...plan, from, files: [] };
+      return;
+    }
+    this.castRespellBusy = true;
+    this.cdr.markForCheck();
+    this.settingsService.previewCastRespell(from, plan.to).subscribe({
+      next: ({ files }) => {
+        if (this.castRespell?.findingKey === plan.findingKey) {
+          this.castRespell = { ...plan, from, files };
+        }
+        this.castRespellBusy = false;
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castRespellMessage = err.message;
         this.castRespellBusy = false;
         this.cdr.markForCheck();
       },
@@ -635,7 +675,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   /** Rename the previewed files, then drop the old spellings when none remain. */
   confirmRespell(): void {
     const plan = this.castRespell;
-    if (!plan || this.castRespellBusy) {
+    if (!plan || this.castRespellBusy || plan.from.length === 0) {
       return;
     }
     const files = this.respellRenamable(plan).map((f) => f.path);
@@ -717,7 +757,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
     const gone = name.toLowerCase();
     // A preview that renames to or from the gone name no longer applies
-    if (this.castRespell && [this.castRespell.to, ...this.castRespell.from]
+    if (this.castRespell && [this.castRespell.to, ...this.castRespell.candidates]
       .some((n) => n.toLowerCase() === gone)) {
       this.castRespell = null;
       this.castRespellMessage = '';

@@ -373,7 +373,24 @@
                           *ngIf="castRespell?.findingKey === finding.key && castRespell as plan"
                           class="cast-respell small mt-2 p-2 border rounded"
                         >
-                          <div class="mb-1">
+                          <div class="mb-2 cast-respell-spellings" *ngIf="plan.candidates.length > 1">
+                            <span class="me-2">Spellings to replace:</span>
+                            <label class="form-check form-check-inline mb-0" *ngFor="let name of plan.candidates">
+                              <input
+                                type="checkbox"
+                                class="form-check-input"
+                                [checked]="plan.from.includes(name)"
+                                [disabled]="castRespellBusy"
+                                (change)="toggleRespellSpelling(name)"
+                              />
+                              <span class="form-check-label">{{ name }}</span>
+                            </label>
+                            <div class="text-muted">Untick one that's a different person.</div>
+                          </div>
+                          <div class="mb-1" *ngIf="plan.from.length === 0">
+                            Tick a spelling to replace with <strong>{{ plan.to }}</strong>.
+                          </div>
+                          <div class="mb-1" *ngIf="plan.from.length > 0">
                             <ng-container *ngIf="plan.files.length; else noRespellFiles">
                               Rename {{ respellRenamable(plan).length }}
                               {{ respellRenamable(plan).length === 1 ? "file" : "files" }}
@@ -409,7 +426,7 @@
                           <button
                             type="button"
                             class="btn btn-sm btn-primary me-2 cast-respell-confirm"
-                            [disabled]="castRespellBusy || isConsolidating"
+                            [disabled]="castRespellBusy || isConsolidating || plan.from.length === 0"
                             (click)="confirmRespell()"
                           >
                             <span
