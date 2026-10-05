@@ -16,7 +16,7 @@ A local movie file cataloging and management application built with Angular and 
 | Layer     | Technology                                                                    |
 |-----------|-------------------------------------------------------------------------------|
 | Frontend  | Angular 21, TypeScript 5.9, RxJS 7.8                                         |
-| UI        | AG Grid 33, Bootstrap 5.3, Tailwind CSS, ng-bootstrap 20, Font Awesome 6    |
+| UI        | AG Grid 33, Bootstrap 5.3, ng-bootstrap 20, Font Awesome 6                  |
 | Backend   | PHP 7+, MySQL / MariaDB                                                      |
 | Tooling   | Angular CLI 21, Karma + Jasmine, PostCSS                                     |
 | Metadata  | FFprobe (via Homebrew)                                                        |
