@@ -237,6 +237,186 @@ describe('SettingsComponent', () => {
     expect(component.castNames).toEqual(['anna example', 'Zoe Example']);
   });
 
+  describe('cast name audit', () => {
+    const auditUrl = `${environment.apiBaseUrl}castNamesAudit.php`;
+
+    const auditResponse = {
+      findings: [
+        {
+          key: 'duplicate|marla vex|marlavex',
+          kind: 'duplicate',
+          reason: 'Same name apart from case, accents, spacing or punctuation',
+          names: [
+            { name: 'MarlaVex', uses: 0, files: [] },
+            { name: 'Marla Vex', uses: 4, files: ['/Volumes/X/a.mp4'] },
+          ],
+        },
+        {
+          key: 'variant|orlena rain|orlena rains|orlenna rains',
+          kind: 'variant',
+          reason: 'Spelled a letter or so apart',
+          names: [
+            { name: 'Orlena Rain', uses: 1, files: ['/Volumes/X/b.mp4'] },
+            { name: 'Orlena Rains', uses: 2, files: [] },
+            { name: 'Orlenna Rains', uses: 0, files: [] },
+          ],
+        },
+        {
+          key: 'junk|intro',
+          kind: 'junk',
+          reason: 'Contains the word “Intro”',
+          names: [{ name: 'Intro', uses: 3, files: [] }],
+        },
+      ],
+      hidden: 2,
+      total: 6,
+      index: { builtAt: '2026-10-04T00:00:00+00:00', roots: [], fileCount: 100 },
+    };
+
+    function runAudit(response: object = auditResponse) {
+      component.runCastAudit();
+      const req = httpMock.expectOne(auditUrl);
+      expect(req.request.body).toEqual({ action: 'run' });
+      req.flush(response);
+      fixture.detectChanges();
+    }
+
+    function auditEl(): HTMLElement {
+      return fixture.nativeElement.querySelector('.cast-audit');
+    }
+
+    beforeEach(() => flushInit({}, ['Intro', 'Marla Vex', 'MarlaVex']));
+
+    it('runs from the button and lists findings under their headings', () => {
+      fixture.detectChanges();
+      (auditEl().querySelector('.cast-audit-run') as HTMLButtonElement).click();
+      httpMock.expectOne(auditUrl).flush(auditResponse);
+      fixture.detectChanges();
+
+      const sections = Array.from(
+        auditEl().querySelectorAll<HTMLElement>('.cast-audit-section'),
+      ).map((el) => el.dataset['kind']);
+      expect(sections).toEqual(['duplicate', 'variant', 'junk']);
+      expect(auditEl().querySelectorAll('.cast-audit-row').length).toBe(3);
+      expect(auditEl().querySelector('.cast-audit-summary')!.textContent)
+        .toContain('3 to review');
+      expect(auditEl().querySelector('.cast-audit-summary')!.textContent)
+        .toContain('2 marked not a problem');
+      // A junk finding says why; a pair doesn't need to
+      const rows = auditEl().querySelectorAll('.cast-audit-row');
+      expect(rows[2].textContent).toContain('Contains the word “Intro”');
+      expect(rows[0].textContent).not.toContain('Same name apart');
+      expect(rows[0].textContent).toContain('4 files');
+    });
+
+    it('disables the button while a check is in flight', () => {
+      fixture.detectChanges();
+      component.runCastAudit();
+      component.runCastAudit(); // ignored: one request only
+      fixture.detectChanges();
+      const button = auditEl().querySelector('.cast-audit-run') as HTMLButtonElement;
+      expect(button.disabled).toBeTrue();
+      httpMock.expectOne(auditUrl).flush(auditResponse);
+      fixture.detectChanges();
+      expect(button.disabled).toBeFalse();
+    });
+
+    it('says so when there is nothing to review', () => {
+      runAudit({ ...auditResponse, findings: [], hidden: 0 });
+      expect(auditEl().querySelector('.cast-audit-clean')).not.toBeNull();
+      expect(auditEl().querySelector('.cast-audit-results')).toBeNull();
+    });
+
+    it('surfaces a failed check and re-enables the button', () => {
+      component.runCastAudit();
+      httpMock
+        .expectOne(auditUrl)
+        .flush({ message: 'Boom' }, { status: 500, statusText: 'Server Error' });
+      expect(component.castAuditError).toBe('Boom');
+      expect(component.castAuditRunning).toBeFalse();
+    });
+
+    it('deleting a pair member drops the finding, and warns when files still use it', () => {
+      runAudit();
+      spyOn(window, 'confirm').and.returnValue(true);
+
+      component.deleteAuditName(auditResponse.findings[0].names[1]);
+      const req = httpMock.expectOne(manageUrl);
+      expect(req.request.body).toEqual({ action: 'delete', name: 'Marla Vex' });
+      req.flush({ names: ['Intro', 'MarlaVex'], deleted: true });
+
+      expect(component.castNames).toEqual(['Intro', 'MarlaVex']);
+      expect(component.castAudit!.findings.map((f) => f.key)).toEqual([
+        'variant|orlena rain|orlena rains|orlenna rains',
+        'junk|intro',
+      ]);
+      expect(component.castAuditSections.find((s) => s.kind === 'duplicate')!.findings)
+        .toEqual([]);
+      expect(component.castAuditStatus).toContain('4 indexed files still use it');
+    });
+
+    it('deleting one of three spellings keeps the rest of the finding', () => {
+      runAudit();
+      spyOn(window, 'confirm').and.returnValue(true);
+
+      component.deleteAuditName(auditResponse.findings[1].names[2]);
+      httpMock.expectOne(manageUrl).flush({ names: [], deleted: true });
+
+      const variant = component.castAudit!.findings.find((f) => f.kind === 'variant')!;
+      expect(variant.names.map((n) => n.name)).toEqual(['Orlena Rain', 'Orlena Rains']);
+      expect(component.castAuditStatus).toBe('Deleted “Orlenna Rains”.');
+    });
+
+    it('declining the confirm deletes nothing', () => {
+      runAudit();
+      spyOn(window, 'confirm').and.returnValue(false);
+      component.deleteAuditName(auditResponse.findings[2].names[0]);
+      expect(component.castAudit!.findings.length).toBe(3);
+    });
+
+    it('renaming a name from the list drops it from the findings', () => {
+      runAudit();
+      component.startEdit('Intro');
+      component.editValue = 'Introna Vale';
+      component.saveEdit();
+      httpMock
+        .expectOne(manageUrl)
+        .flush({ names: ['Introna Vale'], renamed: 'Introna Vale' });
+      expect(component.castAudit!.findings.some((f) => f.kind === 'junk')).toBeFalse();
+    });
+
+    it('"Not a problem" dismisses the finding and counts it hidden', () => {
+      runAudit();
+      (auditEl().querySelectorAll('.cast-audit-dismiss')[2] as HTMLButtonElement).click();
+      const req = httpMock.expectOne(auditUrl);
+      expect(req.request.body).toEqual({ action: 'dismiss', key: 'junk|intro' });
+      req.flush({ success: true });
+
+      expect(component.castAudit!.findings.length).toBe(2);
+      expect(component.castAudit!.hidden).toBe(3);
+      // The name itself stays in the vocabulary
+      expect(component.castNames).toContain('Intro');
+    });
+
+    it('"show again" resets dismissals and checks again', () => {
+      runAudit();
+      (auditEl().querySelector('.cast-audit-reset') as HTMLElement).click();
+      const reset = httpMock.expectOne(auditUrl);
+      expect(reset.request.body).toEqual({ action: 'reset' });
+      reset.flush({ success: true });
+      const rerun = httpMock.expectOne(auditUrl);
+      expect(rerun.request.body).toEqual({ action: 'run' });
+      rerun.flush({ ...auditResponse, hidden: 0 });
+      expect(component.castAudit!.hidden).toBe(0);
+    });
+
+    it('clicking a name shows it in the list above', () => {
+      runAudit();
+      (auditEl().querySelector('.cast-audit-name a') as HTMLElement).click();
+      expect(component.filterText).toBe('MarlaVex');
+    });
+  });
+
   it('saves the default directory and reports unmounted volumes', () => {
     flushInit({});
 

@@ -21,6 +21,22 @@
   cursor: pointer;
 }
 
+// Audit results: long on a first run, so they scroll like the list above
+.cast-audit-results {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.cast-audit-row {
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+
+// Names in a finding wrap as whole units, never mid-name
+.cast-audit-name {
+  display: inline-block;
+}
+
 // The ✕ that clears the search field, overlaid on the input's right edge
 .clear-filter {
   position: absolute;

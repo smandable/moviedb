@@ -48,6 +48,9 @@ Thumbs.db
 # Generated: cast-name vocabulary for the Add Cast tab (local library data)
 /server/cast_names.json
 
+# Generated: cast-name audit findings dismissed on the Settings page
+/server/cast_audit_dismissed.json
+
 # Generated: app settings edited on the Settings page (machine-local)
 /server/app_settings.json
 

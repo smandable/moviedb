@@ -263,6 +263,112 @@
           </ul>
         </div>
 
+        <div class="cast-audit mt-3">
+          <div class="d-flex align-items-center flex-wrap mb-1">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary me-2 cast-audit-run"
+              [disabled]="castAuditRunning"
+              (click)="runCastAudit()"
+            >
+              <span
+                *ngIf="castAuditRunning"
+                class="spinner-border spinner-border-sm me-1"
+                role="status"
+                aria-hidden="true"
+              ></span>
+              Check for junk &amp; duplicates
+            </button>
+            <span *ngIf="castAudit" class="small text-muted cast-audit-summary">
+              {{ castAudit.findings.length }} to review<span *ngIf="castAudit.hidden">
+                · {{ castAudit.hidden }} marked not a problem (<a
+                  href="#"
+                  class="cast-audit-reset"
+                  (click)="$event.preventDefault(); resetCastAuditDismissals()"
+                  >show again</a
+                >)</span
+              >
+            </span>
+          </div>
+          <p class="text-muted small mb-2">
+            Deleting removes a suggestion only; a spelling still used in
+            filenames returns when Add Cast next reads that folder. File counts
+            come from the drive index<span *ngIf="castAudit?.index as index">
+              ({{ index.fileCount }} files)</span
+            >; hover one for paths.
+          </p>
+          <div *ngIf="castAuditError" class="text-danger small mb-2">
+            {{ castAuditError }}
+          </div>
+          <div *ngIf="castAuditStatus" class="small text-muted mb-2 cast-audit-status">
+            {{ castAuditStatus }}
+          </div>
+
+          <ng-container *ngIf="castAudit">
+            <p
+              *ngIf="castAudit.findings.length === 0"
+              class="small text-success mb-2 cast-audit-clean"
+            >
+              Nothing to review.
+            </p>
+            <div class="cast-audit-results" *ngIf="castAudit.findings.length">
+              <ng-container *ngFor="let section of castAuditSections">
+                <div *ngIf="section.findings.length" class="cast-audit-section" [attr.data-kind]="section.kind">
+                  <div class="small fw-semibold mt-2">
+                    {{ section.label }} ({{ section.findings.length }})
+                  </div>
+                  <div class="small text-muted mb-1">{{ section.help }}</div>
+                  <ul class="list-group mb-2">
+                    <li
+                      class="list-group-item d-flex align-items-start cast-audit-row"
+                      *ngFor="let finding of section.findings; trackBy: trackByFindingKey"
+                    >
+                      <div class="flex-grow-1">
+                        <span
+                          class="cast-audit-name me-3 text-nowrap"
+                          *ngFor="let entry of finding.names"
+                        >
+                          <a
+                            href="#"
+                            title="Show in the list above"
+                            (click)="$event.preventDefault(); findInList(entry.name)"
+                            >{{ entry.name }}</a
+                          >
+                          <span
+                            class="small text-muted ms-1"
+                            [title]="entry.files.join('\n')"
+                            >{{ entry.uses }}
+                            {{ entry.uses === 1 ? "file" : "files" }}</span
+                          >
+                          <span
+                            class="action-icon ms-1"
+                            role="button"
+                            title="Delete"
+                            aria-label="Delete"
+                            (click)="deleteAuditName(entry)"
+                            >🗑️</span
+                          >
+                        </span>
+                        <div *ngIf="finding.kind === 'junk'" class="small text-muted">
+                          {{ finding.reason }}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-link p-0 ms-2 text-nowrap cast-audit-dismiss"
+                        title="Hide this from future checks"
+                        (click)="dismissCastAuditFinding(finding)"
+                      >
+                        Not a problem
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </div>
+
         <hr />
 
         <h6 class="mb-1">Normalize Library Filenames</h6>

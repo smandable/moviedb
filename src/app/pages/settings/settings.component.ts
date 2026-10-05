@@ -8,7 +8,12 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PageLayoutComponent } from '@layouts/page-layout/page-layout.component';
-import { SettingsService } from '@services/settings.service';
+import {
+  CastAuditFinding,
+  CastAuditName,
+  CastAuditResponse,
+  SettingsService,
+} from '@services/settings.service';
 import {
   DriveIndexService,
   DriveIndexStatus,
@@ -34,6 +39,32 @@ import { environment } from 'src/environments/environment';
  * ids). Per-browser view state, deliberately not in app_settings.json.
  */
 export const SETTINGS_COLLAPSED_CARDS_KEY = 'moviedb.settings.collapsedCards';
+
+/** One heading of the cast audit's results, in display order. */
+export interface CastAuditSection {
+  kind: CastAuditFinding['kind'];
+  label: string;
+  help: string;
+  findings: CastAuditFinding[];
+}
+
+const CAST_AUDIT_SECTIONS: ReadonlyArray<Omit<CastAuditSection, 'findings'>> = [
+  {
+    kind: 'duplicate',
+    label: 'Duplicates',
+    help: 'The same name apart from case, accents, spacing or punctuation, or with its words swapped.',
+  },
+  {
+    kind: 'variant',
+    label: 'Likely misspellings',
+    help: 'One word a letter or so apart. Some are different people — mark those “Not a problem”.',
+  },
+  {
+    kind: 'junk',
+    label: 'Not name-shaped',
+    help: 'A digit, a symbol, a filename word like “Intro” or “Girl”, or two names run together.',
+  },
+];
 
 /** One parsed row of the consolidation TSV log, ready for display. */
 export interface ConsolidateLogRow {
@@ -95,6 +126,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   /** Cap the rendered list so typing in the filter stays snappy. */
   readonly renderCap = 300;
+
+  // ---- Cast name audit ----
+  castAudit: CastAuditResponse | null = null;
+  /** castAudit's findings under their headings; rebuilt whenever they change. */
+  castAuditSections: CastAuditSection[] = [];
+  castAuditRunning = false;
+  castAuditError = '';
+  castAuditStatus = '';
 
   // ---- Drive index ----
   // Populated from stored settings, else from the status endpoint's effective
@@ -418,6 +457,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.castNames = names;
         this.castStatus = renamed ? `Renamed to “${renamed}”.` : '';
         this.cancelEdit();
+        this.pruneCastAudit(original);
         this.cdr.markForCheck();
       },
       error: (err: Error) => {
@@ -428,20 +468,138 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   deleteName(name: string): void {
+    this.confirmAndDeleteName(name, (message) => (this.castStatus = message));
+  }
+
+  private confirmAndDeleteName(
+    name: string,
+    report: (message: string) => void,
+    deletedMessage = `Deleted “${name}”.`,
+  ): void {
     if (!confirm(`Delete “${name}” from the cast vocabulary?`)) {
       return;
     }
     this.settingsService.deleteCastName(name).subscribe({
       next: ({ names }) => {
         this.castNames = names;
-        this.castStatus = `Deleted “${name}”.`;
+        report(deletedMessage);
+        this.pruneCastAudit(name);
         this.cdr.markForCheck();
       },
       error: (err: Error) => {
-        this.castStatus = err.message;
+        report(err.message);
         this.cdr.markForCheck();
       },
     });
+  }
+
+  // ---- Cast name audit ----
+
+  runCastAudit(): void {
+    if (this.castAuditRunning) {
+      return;
+    }
+    this.castAuditRunning = true;
+    this.castAuditError = '';
+    this.castAuditStatus = '';
+    // Also reached from "show again"'s HTTP callback, where nothing else
+    // marks the view — the spinner must show either way
+    this.cdr.markForCheck();
+    this.settingsService.auditCastNames().subscribe({
+      next: (res) => {
+        this.castAudit = res;
+        this.rebuildCastAuditSections();
+        this.castAuditRunning = false;
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castAuditError = err.message;
+        this.castAuditRunning = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /**
+   * Delete one spelling from the vocabulary. A spelling still used in
+   * filenames comes back the next time Add Cast reads that folder, so say so
+   * rather than let it look like the delete didn't stick.
+   */
+  deleteAuditName(entry: CastAuditName): void {
+    const files = entry.uses === 1 ? '1 indexed file still uses' : `${entry.uses} indexed files still use`;
+    this.confirmAndDeleteName(
+      entry.name,
+      (message) => (this.castAuditStatus = message),
+      entry.uses > 0
+        ? `Deleted “${entry.name}”. ${files} it, so Add Cast will suggest it again from those folders until they're renamed.`
+        : `Deleted “${entry.name}”.`,
+    );
+  }
+
+  /** Hide a finding from this and future checks. */
+  dismissCastAuditFinding(finding: CastAuditFinding): void {
+    this.settingsService.dismissCastAuditFinding(finding.key).subscribe({
+      next: () => {
+        if (this.castAudit) {
+          this.castAudit = {
+            ...this.castAudit,
+            findings: this.castAudit.findings.filter((f) => f.key !== finding.key),
+            hidden: this.castAudit.hidden + 1,
+          };
+          this.rebuildCastAuditSections();
+        }
+        this.castAuditStatus = '';
+        this.cdr.markForCheck();
+      },
+      error: (err: Error) => {
+        this.castAuditStatus = err.message;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Bring every dismissed finding back, then check again. */
+  resetCastAuditDismissals(): void {
+    this.settingsService.resetCastAuditDismissals().subscribe({
+      next: () => this.runCastAudit(),
+      error: (err: Error) => {
+        this.castAuditStatus = err.message;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Show a name in the vocabulary list (where it can be edited). */
+  findInList(name: string): void {
+    this.filterText = name;
+  }
+
+  trackByFindingKey(_index: number, finding: CastAuditFinding): string {
+    return finding.key;
+  }
+
+  /**
+   * A name left the vocabulary (deleted, or renamed away): drop it from the
+   * findings, and drop findings it leaves with nothing left to compare.
+   */
+  private pruneCastAudit(name: string): void {
+    if (!this.castAudit) {
+      return;
+    }
+    const gone = name.toLowerCase();
+    const findings = this.castAudit.findings
+      .map((f) => ({ ...f, names: f.names.filter((n) => n.name.toLowerCase() !== gone) }))
+      .filter((f) => f.names.length >= (f.kind === 'junk' ? 1 : 2));
+    this.castAudit = { ...this.castAudit, findings };
+    this.rebuildCastAuditSections();
+  }
+
+  private rebuildCastAuditSections(): void {
+    const findings = this.castAudit?.findings ?? [];
+    this.castAuditSections = CAST_AUDIT_SECTIONS.map((section) => ({
+      ...section,
+      findings: findings.filter((f) => f.kind === section.kind),
+    }));
   }
 
   // ---- Drive index ----

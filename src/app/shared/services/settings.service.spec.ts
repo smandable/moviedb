@@ -43,6 +43,35 @@ describe('SettingsService', () => {
     }
   });
 
+  it('posts each cast-audit action with the CSRF header', () => {
+    const auditUrl = `${environment.apiBaseUrl}castNamesAudit.php`;
+    const calls: Array<[object, () => void]> = [
+      [{ action: 'run' }, () => service.auditCastNames().subscribe()],
+      [
+        { action: 'dismiss', key: 'junk|intro' },
+        () => service.dismissCastAuditFinding('junk|intro').subscribe(),
+      ],
+      [{ action: 'reset' }, () => service.resetCastAuditDismissals().subscribe()],
+    ];
+    for (const [body, call] of calls) {
+      call();
+      const req = httpMock.expectOne(auditUrl);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(body);
+      expect(req.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
+      req.flush({ success: true });
+    }
+  });
+
+  it('surfaces the server message when the audit fails', () => {
+    let message = '';
+    service.auditCastNames().subscribe({ error: (err: Error) => (message = err.message) });
+    httpMock
+      .expectOne(`${environment.apiBaseUrl}castNamesAudit.php`)
+      .flush({ message: 'Unknown action' }, { status: 400, statusText: 'Bad Request' });
+    expect(message).toBe('Unknown action');
+  });
+
   it('sends the CSRF header on settings saves', () => {
     service.saveSettings({ moveRenamedUpFromNeedsCast: true }).subscribe();
     const req = httpMock.expectOne(`${environment.apiBaseUrl}appSettings.php`);

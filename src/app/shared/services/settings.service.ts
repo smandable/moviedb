@@ -50,6 +50,32 @@ export interface CastNamesResponse {
   deleted?: boolean;
 }
 
+/** One spelling in a cast-audit finding, with how many indexed files use it. */
+export interface CastAuditName {
+  name: string;
+  uses: number;
+  /** A few of those files' paths. */
+  files: string[];
+}
+
+export interface CastAuditFinding {
+  /** Stable id — what a dismissal remembers. */
+  key: string;
+  kind: 'duplicate' | 'variant' | 'junk';
+  reason: string;
+  names: CastAuditName[];
+}
+
+/** castNamesAudit.php 'run'. */
+export interface CastAuditResponse {
+  findings: CastAuditFinding[];
+  /** Findings dismissed earlier and left out of this list. */
+  hidden: number;
+  total: number;
+  /** The drive index the use counts came from; null when none is built. */
+  index: { builtAt: string | null; roots: string[]; fileCount: number } | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -58,6 +84,7 @@ export class SettingsService {
 
   private settingsUrl = `${this.baseUrl}appSettings.php`;
   private castNamesManageUrl = `${this.baseUrl}castNamesManage.php`;
+  private castNamesAuditUrl = `${this.baseUrl}castNamesAudit.php`;
 
   constructor(private http: HttpClient) {}
 
@@ -93,6 +120,32 @@ export class SettingsService {
 
   deleteCastName(name: string): Observable<CastNamesResponse> {
     return this.castNamesAction({ action: 'delete', name });
+  }
+
+  /** Look for junk and duplicates in the vocabulary (read-only). */
+  auditCastNames(): Observable<CastAuditResponse> {
+    return this.castAuditAction<CastAuditResponse>({ action: 'run' });
+  }
+
+  /** Hide one audit finding from future runs. */
+  dismissCastAuditFinding(key: string): Observable<{ success: boolean }> {
+    return this.castAuditAction({ action: 'dismiss', key });
+  }
+
+  /** Show every dismissed audit finding again. */
+  resetCastAuditDismissals(): Observable<{ success: boolean }> {
+    return this.castAuditAction({ action: 'reset' });
+  }
+
+  private castAuditAction<T>(body: object): Observable<T> {
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      // CSRF gate — castNamesAudit.php refuses dismiss/reset without it
+      'X-Requested-With': 'XMLHttpRequest',
+    });
+    return this.http
+      .post<T>(this.castNamesAuditUrl, body, { headers })
+      .pipe(catchError(this.handleError));
   }
 
   private castNamesAction(body: object): Observable<CastNamesResponse> {
