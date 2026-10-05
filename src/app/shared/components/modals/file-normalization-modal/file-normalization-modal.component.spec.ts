@@ -1633,11 +1633,18 @@ describe('FileNormalizationModalComponent', () => {
       );
       const typing = inputs[0];
       typing.focus();
+      // Chrome skips the focus event when its window isn't the active one.
+      // Fire it ourselves so (focus) runs every time, not just some runs.
+      typing.dispatchEvent(new FocusEvent('focus'));
       expect(document.activeElement).toBe(typing);
 
+      // Type the way a keystroke does. TestBed is zoneless, so
+      // fixture.detectChanges() only refreshes views a template event has
+      // marked dirty; setting the model directly left the row unchecked
+      // whenever the focus event above was skipped, and NG0100 followed.
       typing.value = 'Party of Thre # 03 (2024) - Scene_1';
-      component.files[0].workingBaseName = typing.value;
-      component.onCastNameChange(component.files[0]);
+      typing.dispatchEvent(new Event('input'));
+      expect(component.files[0].workingBaseName).toBe(typing.value);
       fixture.detectChanges();
 
       expect(document.activeElement)
