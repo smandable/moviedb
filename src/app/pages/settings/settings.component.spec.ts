@@ -452,16 +452,84 @@ describe('SettingsComponent', () => {
       expect(component.castNames).toContain('Intro');
     });
 
-    it('"show again" resets dismissals and checks again', () => {
-      runAudit();
-      (auditEl().querySelector('.cast-audit-reset') as HTMLElement).click();
-      const reset = httpMock.expectOne(auditUrl);
-      expect(reset.request.body).toEqual({ action: 'reset' });
-      reset.flush({ success: true });
-      const rerun = httpMock.expectOne(auditUrl);
-      expect(rerun.request.body).toEqual({ action: 'run' });
-      rerun.flush({ ...auditResponse, hidden: 0 });
-      expect(component.castAudit!.hidden).toBe(0);
+    describe('findings marked "Not a problem"', () => {
+      const withHidden = {
+        ...auditResponse,
+        findings: [
+          ...auditResponse.findings,
+          {
+            key: 'male|tommy vale',
+            kind: 'male',
+            reason: 'Male first name “Tommy”',
+            names: [{ name: 'Tommy Vale', uses: 20, files: [] }],
+            hidden: true,
+          },
+        ],
+        hidden: 1,
+      };
+
+      /** Click "show them" and answer the re-run with the hidden one included. */
+      function showHidden() {
+        runAudit({ ...auditResponse, hidden: 1 });
+        (auditEl().querySelector('.cast-audit-show-hidden') as HTMLElement).click();
+        const req = httpMock.expectOne(auditUrl);
+        expect(req.request.body).toEqual({ action: 'run', includeHidden: true });
+        req.flush(withHidden);
+        fixture.detectChanges();
+      }
+
+      it('"show them" only shows them — nothing is un-hidden', () => {
+        showHidden();
+        const hiddenRows = auditEl().querySelectorAll('.cast-audit-hidden');
+        expect(hiddenRows.length).toBe(1);
+        expect(hiddenRows[0].querySelector('.cast-audit-undismiss')).not.toBeNull();
+        expect(hiddenRows[0].querySelector('.cast-audit-dismiss')).toBeNull();
+        // Counts leave the hidden one out
+        expect(auditEl().querySelector('.cast-audit-summary')!.textContent).toContain('4 to review');
+        expect(auditEl().querySelector('.cast-audit-show-hidden')!.textContent).toContain('hide them');
+      });
+
+      it('undo un-hides just that finding', () => {
+        showHidden();
+        (auditEl().querySelector('.cast-audit-undismiss') as HTMLElement).click();
+        const req = httpMock.expectOne(auditUrl);
+        expect(req.request.body).toEqual({ action: 'undismiss', key: 'male|tommy vale' });
+        req.flush({ success: true });
+        fixture.detectChanges();
+        expect(component.castAudit!.hidden).toBe(0);
+        expect(auditEl().querySelectorAll('.cast-audit-hidden').length).toBe(0);
+        expect(auditEl().querySelector('.cast-audit-summary')!.textContent).toContain('5 to review');
+      });
+
+      it('marking one while hidden ones are shown keeps it in place, greyed', () => {
+        showHidden();
+        (auditEl().querySelectorAll('.cast-audit-dismiss')[0] as HTMLElement).click();
+        httpMock.expectOne(auditUrl).flush({ success: true });
+        fixture.detectChanges();
+        expect(auditEl().querySelectorAll('.cast-audit-hidden').length).toBe(2);
+        expect(component.castAudit!.hidden).toBe(2);
+      });
+
+      it('Delete all skips the women marked "Not a problem"', () => {
+        showHidden();
+        const button = auditEl().querySelector('.cast-audit-delete-all') as HTMLButtonElement;
+        expect(button.textContent).toContain('Delete all 1');
+        spyOn(window, 'confirm').and.returnValue(true);
+        button.click();
+        const req = httpMock.expectOne(manageUrl);
+        expect(req.request.body).toEqual({ action: 'deleteMany', names: ['Brock Hale'] });
+        req.flush({ names: [], blocked: ['Brock Hale'], deleted: 1 });
+      });
+
+      it('"hide them" goes back to the plain list', () => {
+        showHidden();
+        (auditEl().querySelector('.cast-audit-show-hidden') as HTMLElement).click();
+        const req = httpMock.expectOne(auditUrl);
+        expect(req.request.body).toEqual({ action: 'run' });
+        req.flush({ ...auditResponse, hidden: 1 });
+        fixture.detectChanges();
+        expect(auditEl().querySelectorAll('.cast-audit-hidden').length).toBe(0);
+      });
     });
 
     it('folds the findings away under the summary, and a new check opens them', () => {

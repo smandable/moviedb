@@ -161,6 +161,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   castAuditStatus = '';
   /** The findings list folds away under its "N to review" toggle. */
   castAuditExpanded = true;
+  /** Also list findings marked "Not a problem" (greyed, each with undo). */
+  castAuditShowHidden = false;
   /** The "use this spelling" being previewed, if any. */
   castRespell: CastRespellPlan | null = null;
   castRespellBusy = false;
@@ -540,7 +542,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     // Also reached from "show again"'s HTTP callback, where nothing else
     // marks the view — the spinner must show either way
     this.cdr.markForCheck();
-    this.settingsService.auditCastNames().subscribe({
+    this.settingsService.auditCastNames(this.castAuditShowHidden).subscribe({
       next: (res) => {
         this.castAudit = res;
         this.rebuildCastAuditSections();
@@ -566,7 +568,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
    * once the women it caught are marked "Not a problem".
    */
   deleteAllInSection(section: CastAuditSection): void {
-    const names = section.findings.flatMap((f) => f.names.map((n) => n.name));
+    // Never the ones marked "Not a problem" — the women it caught
+    const names = section.findings.filter((f) => !f.hidden).flatMap((f) => f.names.map((n) => n.name));
     if (names.length === 0) {
       return;
     }
@@ -608,21 +611,20 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** A section's findings not marked "Not a problem". */
+  sectionToReview(section: CastAuditSection): number {
+    return section.findings.filter((f) => !f.hidden).length;
+  }
+
+  /** Findings still to review — the ones not marked "Not a problem". */
+  get castAuditToReview(): number {
+    return this.castAudit?.findings.filter((f) => !f.hidden).length ?? 0;
+  }
+
   /** Hide a finding from this and future checks. */
   dismissCastAuditFinding(finding: CastAuditFinding): void {
     this.settingsService.dismissCastAuditFinding(finding.key).subscribe({
-      next: () => {
-        if (this.castAudit) {
-          this.castAudit = {
-            ...this.castAudit,
-            findings: this.castAudit.findings.filter((f) => f.key !== finding.key),
-            hidden: this.castAudit.hidden + 1,
-          };
-          this.rebuildCastAuditSections();
-        }
-        this.castAuditStatus = '';
-        this.cdr.markForCheck();
-      },
+      next: () => this.setFindingHidden(finding.key, true),
       error: (err: Error) => {
         this.castAuditStatus = err.message;
         this.cdr.markForCheck();
@@ -630,15 +632,44 @@ export class SettingsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Bring every dismissed finding back, then check again. */
-  resetCastAuditDismissals(): void {
-    this.settingsService.resetCastAuditDismissals().subscribe({
-      next: () => this.runCastAudit(),
+  /** Undo one "Not a problem". */
+  undismissCastAuditFinding(finding: CastAuditFinding): void {
+    this.settingsService.undismissCastAuditFinding(finding.key).subscribe({
+      next: () => this.setFindingHidden(finding.key, false),
       error: (err: Error) => {
         this.castAuditStatus = err.message;
         this.cdr.markForCheck();
       },
     });
+  }
+
+  /**
+   * Show or stop showing the findings marked "Not a problem". Only changes
+   * the view — nothing is un-hidden except by a finding's own undo.
+   */
+  toggleCastAuditShowHidden(): void {
+    this.castAuditShowHidden = !this.castAuditShowHidden;
+    this.runCastAudit();
+  }
+
+  /**
+   * Mark a finding hidden or not, locally: while hidden ones are shown it
+   * stays in place, greyed; otherwise a hidden one leaves the list.
+   */
+  private setFindingHidden(key: string, hidden: boolean): void {
+    if (this.castAudit) {
+      const findings = this.castAuditShowHidden
+        ? this.castAudit.findings.map((f) => (f.key === key ? { ...f, hidden } : f))
+        : this.castAudit.findings.filter((f) => f.key !== key);
+      this.castAudit = {
+        ...this.castAudit,
+        findings,
+        hidden: this.castAudit.hidden + (hidden ? 1 : -1),
+      };
+      this.rebuildCastAuditSections();
+    }
+    this.castAuditStatus = '';
+    this.cdr.markForCheck();
   }
 
   /**

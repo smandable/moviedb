@@ -68,6 +68,8 @@ export interface CastAuditFinding {
   kind: 'duplicate' | 'variant' | 'junk' | 'male';
   reason: string;
   names: CastAuditName[];
+  /** Marked "Not a problem" — only sent when hidden findings are asked for. */
+  hidden?: boolean;
 }
 
 /** castNamesAudit.php 'run'. */
@@ -161,9 +163,14 @@ export class SettingsService {
     return this.castNamesAction({ action: 'restore', name });
   }
 
-  /** Look for junk and duplicates in the vocabulary (read-only). */
-  auditCastNames(): Observable<CastAuditResponse> {
-    return this.castAuditAction<CastAuditResponse>({ action: 'run' });
+  /**
+   * Look for junk and duplicates in the vocabulary (read-only). With
+   * `includeHidden`, findings marked "Not a problem" come back too, flagged.
+   */
+  auditCastNames(includeHidden = false): Observable<CastAuditResponse> {
+    return this.castAuditAction<CastAuditResponse>(
+      includeHidden ? { action: 'run', includeHidden: true } : { action: 'run' },
+    );
   }
 
   /** Hide one audit finding from future runs. */
@@ -171,9 +178,9 @@ export class SettingsService {
     return this.castAuditAction({ action: 'dismiss', key });
   }
 
-  /** Show every dismissed audit finding again. */
-  resetCastAuditDismissals(): Observable<{ success: boolean }> {
-    return this.castAuditAction({ action: 'reset' });
+  /** Undo one "Not a problem": the finding shows in checks again. */
+  undismissCastAuditFinding(key: string): Observable<{ success: boolean }> {
+    return this.castAuditAction({ action: 'undismiss', key });
   }
 
   /** The renames respelling `from` as `to` would make (read-only). */

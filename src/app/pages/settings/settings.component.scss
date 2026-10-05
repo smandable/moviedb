@@ -38,6 +38,11 @@
   padding-bottom: 0.3rem;
 }
 
+// A finding marked "Not a problem", shown only on request
+.cast-audit-hidden {
+  opacity: 0.55;
+}
+
 // Names in a finding wrap as whole units, never mid-name
 .cast-audit-name {
   display: inline-block;

@@ -53,7 +53,11 @@ describe('SettingsService', () => {
         { action: 'dismiss', key: 'junk|intro' },
         () => service.dismissCastAuditFinding('junk|intro').subscribe(),
       ],
-      [{ action: 'reset' }, () => service.resetCastAuditDismissals().subscribe()],
+      [{ action: 'run', includeHidden: true }, () => service.auditCastNames(true).subscribe()],
+      [
+        { action: 'undismiss', key: 'junk|intro' },
+        () => service.undismissCastAuditFinding('junk|intro').subscribe(),
+      ],
       [
         { action: 'respellPreview', from: ['Marla Vexx'], to: 'Marla Vex' },
         () => service.previewCastRespell(['Marla Vexx'], 'Marla Vex').subscribe(),

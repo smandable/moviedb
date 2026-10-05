@@ -315,13 +315,14 @@
                 [title]="(castAuditExpanded ? 'Hide' : 'Show') + ' the findings'"
                 (click)="castAuditExpanded = !castAuditExpanded"
                 ><span class="chevron me-1">{{ castAuditExpanded ? "▾" : "▸" }}</span
-                >{{ castAudit.findings.length }} to review</span
+                >{{ castAuditToReview }} to review</span
               ><span *ngIf="castAudit.hidden" class="small text-muted">
                 · {{ castAudit.hidden }} marked not a problem (<a
                   href="#"
-                  class="cast-audit-reset"
-                  (click)="$event.preventDefault(); resetCastAuditDismissals()"
-                  >show again</a
+                  class="cast-audit-show-hidden"
+                  [class.disabled]="castAuditRunning"
+                  (click)="$event.preventDefault(); castAuditRunning || toggleCastAuditShowHidden()"
+                  >{{ castAuditShowHidden ? "hide them" : "show them" }}</a
                 >)</span
               >
             </span>
@@ -353,19 +354,20 @@
                   <div class="small fw-semibold mt-2 d-flex align-items-center">
                     <span>{{ section.label }} ({{ section.findings.length }})</span>
                     <button
-                      *ngIf="section.kind === 'male'"
+                      *ngIf="section.kind === 'male' && sectionToReview(section) > 0"
                       type="button"
                       class="btn btn-sm btn-outline-danger py-0 ms-2 cast-audit-delete-all"
                       title="Delete every name in this section; they won't come back from filenames"
                       (click)="deleteAllInSection(section)"
                     >
-                      Delete all {{ section.findings.length }}
+                      Delete all {{ sectionToReview(section) }}
                     </button>
                   </div>
                   <div class="small text-muted mb-1">{{ section.help }}</div>
                   <ul class="list-group mb-2">
                     <li
                       class="list-group-item d-flex align-items-start cast-audit-row"
+                      [class.cast-audit-hidden]="finding.hidden"
                       *ngFor="let finding of section.findings; trackBy: trackByFindingKey"
                     >
                       <div class="flex-grow-1">
@@ -490,6 +492,16 @@
                         </div>
                       </div>
                       <button
+                        *ngIf="finding.hidden"
+                        type="button"
+                        class="btn btn-sm btn-link p-0 ms-2 text-nowrap cast-audit-undismiss"
+                        title="Marked “Not a problem” — undo, so it shows in checks again"
+                        (click)="undismissCastAuditFinding(finding)"
+                      >
+                        Not a problem ✓ undo
+                      </button>
+                      <button
+                        *ngIf="!finding.hidden"
                         type="button"
                         class="btn btn-sm btn-link p-0 ms-2 text-nowrap cast-audit-dismiss"
                         title="Hide this from future checks"

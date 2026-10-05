@@ -5,9 +5,15 @@
  * server/cast_names.json (see cast_audit_lib.php) and remembers the findings
  * Sean has looked at and kept.
  *
- * POST { action: 'run' }          -> { findings: [...], hidden, total, index }
- * POST { action: 'dismiss', key } -> { success }  hide one finding from now on
- * POST { action: 'reset' }        -> { success }  show every finding again
+ * POST { action: 'run', includeHidden? }
+ *                                 -> { findings: [...], hidden, total, index }
+ *                                    (includeHidden keeps dismissed findings,
+ *                                    each marked hidden: true)
+ * POST { action: 'dismiss', key }   -> { success }  hide one finding from now on
+ * POST { action: 'undismiss', key } -> { success }  show that one again
+ *
+ * There is deliberately no "un-hide everything": one click once wiped every
+ * dismissal (2026-10-05) and they couldn't be recovered.
  * POST { action: 'respellPreview', from: [...], to }
  *                                 -> { files: [{path, dir, file, newFile, conflict}] }
  * POST { action: 'respell', from: [...], to, files: [paths] }
@@ -90,7 +96,7 @@ if ($action !== 'run' && empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
 switch ($action) {
     case 'run':
         $names = moviedb_load_cast_store();
-        $audit = moviedb_cast_audit($names, moviedb_cast_audit_load_dismissed());
+        $audit = moviedb_cast_audit($names, moviedb_cast_audit_load_dismissed(), !empty($data['includeHidden']));
         $index = moviedb_load_drive_index();
         $usage = moviedb_cast_audit_usage($index['entries'] ?? []);
         $findings = array_map(function (array $finding) use ($usage): array {
@@ -129,10 +135,18 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
-    case 'reset':
-        if (!moviedb_cast_audit_save_dismissed([])) {
+    case 'undismiss':
+        $key = is_string($data['key'] ?? null) ? $data['key'] : '';
+        $keys = moviedb_cast_audit_load_dismissed();
+        $kept = array_values(array_filter($keys, fn($k) => $k !== $key));
+        if ($key === '' || count($kept) === count($keys)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Not a hidden finding']);
+            break;
+        }
+        if (!moviedb_cast_audit_save_dismissed($kept)) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Could not reset dismissals']);
+            echo json_encode(['success' => false, 'message' => 'Could not save']);
             break;
         }
         echo json_encode(['success' => true]);

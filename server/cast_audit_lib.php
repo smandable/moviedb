@@ -296,9 +296,10 @@ if (!function_exists('moviedb_cast_audit')) {
      * Audit a name list. Returns ['findings' => [...], 'hidden' => n], each
      * finding ['key', 'kind', 'reason', 'names' => [string, ...]], ordered
      * duplicates, variants, junk, male; findings whose key is in $dismissed are
-     * left out and counted in 'hidden'.
+     * counted in 'hidden' and left out — or, with $includeHidden, kept and
+     * marked 'hidden' => true so they can be shown greyed out and un-hidden.
      */
-    function moviedb_cast_audit(array $names, array $dismissed = []): array
+    function moviedb_cast_audit(array $names, array $dismissed = [], bool $includeHidden = false): array
     {
         $names = array_values(array_unique(array_filter($names, 'is_string')));
         $known = [];
@@ -400,7 +401,10 @@ if (!function_exists('moviedb_cast_audit')) {
             foreach ($list as $key => $finding) {
                 if (isset($dismissedSet[$key])) {
                     $hidden++;
-                    continue;
+                    if (!$includeHidden) {
+                        continue;
+                    }
+                    $finding['hidden'] = true;
                 }
                 $out[] = $finding;
             }
@@ -425,6 +429,11 @@ if (!function_exists('moviedb_cast_audit_save_dismissed')) {
         $path = $path ?? MOVIEDB_CAST_AUDIT_DISMISSED_FILE;
         $keys = array_values(array_unique(array_filter($keys, 'is_string')));
         sort($keys, SORT_STRING);
+        // Keep the previous list beside it: a lost dismissal list once had
+        // nothing to restore from
+        if (is_file($path)) {
+            @copy($path, $path . '.bak');
+        }
         return @file_put_contents(
             $path,
             json_encode($keys, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)

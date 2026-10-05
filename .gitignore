@@ -52,7 +52,7 @@ Thumbs.db
 /server/cast_names_blocked.json
 
 # Generated: cast-name audit findings dismissed on the Settings page
-/server/cast_audit_dismissed.json
+/server/cast_audit_dismissed.json*
 
 # Generated: undo log of cast-name respelling renames (Settings audit)
 /server/cast_respell_log.jsonl

@@ -119,6 +119,10 @@ $dismissed = moviedb_cast_audit($names, ['variant|orlena rain|orlena rains|orlen
 check('dismissed: findings hidden', groups($dismissed, 'variant'), []);
 check('dismissed: junk hidden', groups($dismissed, 'junk'), []);
 check('dismissed: counted', $dismissed['hidden'], 2);
+$withHidden = moviedb_cast_audit($names, ['junk|intro'], true);
+check('includeHidden: kept and marked', array_values(array_filter($withHidden['findings'], fn($f) => !empty($f['hidden'])))[0]['key'] ?? '', 'junk|intro');
+check('includeHidden: still counted', $withHidden['hidden'], 1);
+check('includeHidden: others unmarked', count(array_filter($withHidden['findings'], fn($f) => isset($f['hidden']))), 1);
 // A new spelling joining the chain is a new finding, so it shows again
 $grown = moviedb_cast_audit(array_merge($names, ['Orlena Raine']), ['variant|orlena rain|orlena rains|orlenna rains']);
 check('dismissed: grown chain shows again', groups($grown, 'variant'),
@@ -158,6 +162,9 @@ unlink($tmp);
 check('dismissed file: missing = empty', moviedb_cast_audit_load_dismissed($tmp), []);
 check('dismissed file: save', moviedb_cast_audit_save_dismissed(['junk|b', 'junk|a', 'junk|b'], $tmp), true);
 check('dismissed file: deduped and sorted', moviedb_cast_audit_load_dismissed($tmp), ['junk|a', 'junk|b']);
+moviedb_cast_audit_save_dismissed([], $tmp);
+check('dismissed file: previous list kept as .bak', moviedb_cast_audit_load_dismissed($tmp . '.bak'), ['junk|a', 'junk|b']);
+unlink($tmp . '.bak');
 file_put_contents($tmp, '{"not": "a list"');
 check('dismissed file: corrupt = empty', moviedb_cast_audit_load_dismissed($tmp), []);
 unlink($tmp);
