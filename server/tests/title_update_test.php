@@ -72,6 +72,42 @@ $conflict = moviedb_title_update_pairs([
 ], 'movies_het');
 check('conflict flagged on both', [$conflict[0]['conflict'], $conflict[1]['conflict']], [true, true]);
 
+// --- subtitled titles ("# NN - Subtitle"): the database picks the form ---
+check('file title, short form drops the tail', moviedb_title_update_file_title('Sample Trip # 02 - Back Home'), 'Sample Trip # 02');
+check('file title, full form keeps it', moviedb_title_update_file_title('Sample Trip # 02 - Back Home', 'full'), 'Sample Trip # 02 - Back Home');
+check('file title, full form still drops scenes', moviedb_title_update_file_title('Sample Trip # 04 - Scene_2', 'full'), 'Sample Trip # 04');
+$sub = moviedb_title_update_pairs([
+    ['path' => $d1, 'originalFileName' => 'Sample trip # 02 - Back Home.mp4', 'newFileName' => 'Sample Trip # 02 - Back Home.mp4'],
+    ['path' => $d1, 'originalFileName' => 'Sample Trip # 03 - the Return.mp4', 'newFileName' => 'Sample Trip # 03 - The Return.mp4'],
+    ['path' => $d1, 'originalFileName' => 'Sample Trip # 05 - Jane Doe.mp4', 'newFileName' => 'Sample Trip # 05 - Jane Doe, Mary Roe.mp4'],
+], 'movies_het');
+check('a tail-only change stays a pair (it may be a subtitle)', count($sub), 3);
+check('pairs carry both forms', [$sub[0]['oldTitle'], $sub[0]['oldFull'], $sub[0]['newFull']],
+    ['Sample trip # 02', 'Sample trip # 02 - Back Home', 'Sample Trip # 02 - Back Home']);
+$rowsBy = fn(array $byTitle) => function (string $old, string $new) use ($byTitle) {
+    $out = [];
+    foreach ($byTitle as $t => $r) {
+        if (strcasecmp($t, $old) === 0 || strcasecmp($t, $new) === 0) {
+            $out[] = $r;
+        }
+    }
+    return $out;
+};
+$subRow = ['id' => '7', 'title' => 'Sample trip # 02 - Back Home', 'dimensions' => '', 'filesize' => '1', 'duration' => '1', 'date_created' => '2022-08-15'];
+$r = moviedb_title_update_resolve($sub[0], $rowsBy(['Sample trip # 02 - Back Home' => $subRow]));
+check('a row with the subtitle is found by the full form',
+    [$r['form'], $r['oldTitle'], $r['newTitle'], count($r['rows'])],
+    ['full', 'Sample trip # 02 - Back Home', 'Sample Trip # 02 - Back Home', 1]);
+check('... and classifies as an update of that row', moviedb_title_update_classify($r, $r['rows'], [])['status'], 'update');
+$shortRow = ['title' => 'Sample trip # 02'] + $subRow;
+$r = moviedb_title_update_resolve($sub[0], $rowsBy(['Sample trip # 02' => $shortRow]));
+check('no subtitled row: the short form, as before', [$r['form'], $r['oldTitle'], $r['newTitle']], ['short', 'Sample trip # 02', 'Sample Trip # 02']);
+$r = moviedb_title_update_resolve($sub[1], $rowsBy(['Sample Trip # 03 - the Return' => ['title' => 'Sample Trip # 03 - the Return'] + $subRow]));
+check('a subtitle-only change updates the subtitled row', [$r['form'], $r['newTitle']], ['full', 'Sample Trip # 03 - The Return']);
+check('a cast-only change on a volume drops out', moviedb_title_update_resolve($sub[2], $rowsBy([])), null);
+check('a cast-only change drops out even when the short title has a row',
+    moviedb_title_update_resolve($sub[2], $rowsBy(['Sample Trip # 05' => ['title' => 'Sample Trip # 05'] + $subRow])), null);
+
 // --- leftovers (live folder + index elsewhere) ---
 $tmp = rtrim(sys_get_temp_dir(), '/') . '/moviedb-title-update-test-' . getmypid();
 @mkdir($tmp, 0777, true);
@@ -101,6 +137,24 @@ check('elsewhere only from the same catalog',
 check('files elsewhere match either title, any case',
     moviedb_title_update_files_elsewhere([$tmp], ['movie and friends'], $index),
     ['/Volumes/X/recorded/Movie And Friends - Scene_9.mp4']);
+// A folder of its own: listings are cached per request, and $tmp was listed
+// above. One file — the temp volume is case-insensitive, like the drives.
+$tmpSub = "$tmp-sub";
+@mkdir($tmpSub, 0777, true);
+touch("$tmpSub/Sample trip # 02 - Back Home.mp4");
+check('leftovers in the full form: a file still on the old subtitled spelling',
+    moviedb_title_update_leftovers([$tmpSub], 'Sample trip # 02 - Back Home', null, 'Sample Trip # 02 - Back Home', 'movies_het', 'full'),
+    ["$tmpSub/Sample trip # 02 - Back Home.mp4"]);
+check('the short form never sees a subtitled leftover as the full title',
+    moviedb_title_update_leftovers([$tmpSub], 'Sample trip # 02 - Back Home', null, 'Sample Trip # 02 - Back Home'),
+    []);
+unlink("$tmpSub/Sample trip # 02 - Back Home.mp4");
+rmdir($tmpSub);
+check('elsewhere in the full form',
+    moviedb_title_update_files_elsewhere([], ['sample trip # 02 - back home'],
+        ['entries' => [['base' => 'Sample Trip # 02 - Back Home', 'file' => 'Sample Trip # 02 - Back Home.mp4', 'dir' => '/Volumes/X/recorded', 'size' => 1]]],
+        'movies_het', 'full'),
+    ['/Volumes/X/recorded/Sample Trip # 02 - Back Home.mp4']);
 array_map('unlink', glob("$tmp/*"));
 rmdir($tmp);
 

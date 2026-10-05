@@ -70,19 +70,25 @@ try {
         $ffprobe = is_executable('/opt/homebrew/bin/ffprobe') ? '/opt/homebrew/bin/ffprobe' : 'ffprobe';
         $items = [];
         foreach (moviedb_title_update_pairs($renames, $table) as $pair) {
-            $rows = moviedb_title_update_rows($db, $pair['table'], $pair['oldTitle'], $pair['newTitle']);
-            $leftovers = moviedb_title_update_leftovers($pair['dirs'], $pair['oldTitle'], $index, $pair['newTitle'], $pair['table']);
-            $item = moviedb_title_update_classify($pair, $rows, $leftovers);
+            // Subtitled title ("# 02 - Back in Rio") or cast tail: the rows decide
+            $pair = moviedb_title_update_resolve($pair,
+                fn(string $old, string $new) => moviedb_title_update_rows($db, $pair['table'], $old, $new));
+            if ($pair === null) {
+                continue; // only a cast changed
+            }
+            $form = $pair['form'];
+            $leftovers = moviedb_title_update_leftovers($pair['dirs'], $pair['oldTitle'], $index, $pair['newTitle'], $pair['table'], $form);
+            $item = moviedb_title_update_classify($pair, $pair['rows'], $leftovers);
             if ($item['status'] === 'merge') {
                 // Measure the title's files when they're all here; with copies
                 // elsewhere a folder total would understate the movie.
                 $files = null;
-                $elsewhere = moviedb_title_update_files_elsewhere($pair['dirs'], [$pair['oldTitle'], $pair['newTitle']], $index, $pair['table']);
+                $elsewhere = moviedb_title_update_files_elsewhere($pair['dirs'], [$pair['oldTitle'], $pair['newTitle']], $index, $pair['table'], $form);
                 if (!$elsewhere) {
                     $paths = [];
                     foreach ($pair['dirs'] as $dir) {
                         foreach (moviedb_title_update_dir_videos($dir) as $f) {
-                            if (strcasecmp(moviedb_db_title_for_base(pathinfo($f, PATHINFO_FILENAME)), $pair['newTitle']) === 0
+                            if (strcasecmp(moviedb_title_update_file_title(pathinfo($f, PATHINFO_FILENAME), $form), $pair['newTitle']) === 0
                                 && is_file("$dir/$f")) {
                                 $paths[] = "$dir/$f";
                             }

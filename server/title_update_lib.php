@@ -56,43 +56,100 @@ if (!function_exists('moviedb_title_update_tables')) {
     }
 }
 
+if (!function_exists('moviedb_title_update_file_title')) {
+    /**
+     * The title a file base is catalogued under, in one of two forms. 'short'
+     * is moviedb_db_title_for_base: a tail after "# NN - " is a cast and
+     * drops ("Title # 03 - Jane Doe" → "Title # 03"). 'full' keeps it — the
+     * library also has ~880 rows whose tail is a subtitle ("Buttman Goes to
+     * Rio # 02 - Back in Rio", "A.N.A.L. # 03 - Bum Rush"), which the short
+     * form can never find. The two differ only for such a tail; which one a
+     * title uses is the database's call (moviedb_title_update_resolve).
+     */
+    function moviedb_title_update_file_title(string $base, string $form = 'short'): string
+    {
+        return $form === 'full' ? trim(stripTitleVariantSuffixes($base)) : moviedb_db_title_for_base($base);
+    }
+}
+
 if (!function_exists('moviedb_title_update_pairs')) {
     /**
      * Collapse landed renames ({path, originalFileName, newFileName}) into
-     * distinct title changes. Renames that keep the title (a cast added or
-     * fixed) drop out. Scenes of one movie collapse into one change; the same
-     * change made in two folders keeps both folders. An old title heading to
-     * two different new titles is flagged `conflict` on each.
+     * distinct title changes, each in both forms (moviedb_title_update_file_title):
+     * oldTitle/newTitle short, oldFull/newFull full. Renames that keep both
+     * forms (a cast added to a scene) drop out; one that changes only a "# NN
+     * - " tail stays, since that tail may be a subtitle — resolve decides.
+     * Scenes of one movie collapse into one change; the same change made in
+     * two folders keeps both folders. An old title heading to two different
+     * new titles is flagged `conflict` (short form) / `conflictFull` on each.
      *
-     * @return array<int, array{table:string, oldTitle:string, newTitle:string, dirs:string[], files:string[], conflict:bool}>
+     * @return array<int, array{table:string, oldTitle:string, newTitle:string, oldFull:string, newFull:string, dirs:string[], files:string[], conflict:bool, conflictFull:bool}>
      */
     function moviedb_title_update_pairs(array $renames, string $defaultTable): array
     {
         $pairs = [];
         foreach ($renames as $r) {
             $dir = rtrim((string) ($r['path'] ?? ''), '/');
-            $old = moviedb_db_title_for_base(pathinfo((string) ($r['originalFileName'] ?? ''), PATHINFO_FILENAME));
-            $new = moviedb_db_title_for_base(pathinfo((string) ($r['newFileName'] ?? ''), PATHINFO_FILENAME));
-            if ($dir === '' || $old === '' || $new === '' || $old === $new) {
+            $oldBase = pathinfo((string) ($r['originalFileName'] ?? ''), PATHINFO_FILENAME);
+            $newBase = pathinfo((string) ($r['newFileName'] ?? ''), PATHINFO_FILENAME);
+            $old = moviedb_title_update_file_title($oldBase);
+            $new = moviedb_title_update_file_title($newBase);
+            $oldFull = moviedb_title_update_file_title($oldBase, 'full');
+            $newFull = moviedb_title_update_file_title($newBase, 'full');
+            if ($dir === '' || $old === '' || $new === '' || ($old === $new && $oldFull === $newFull)) {
                 continue;
             }
             $table = moviedb_title_update_table_for_dir($dir, $defaultTable);
-            $key = $table . "\0" . $old . "\0" . $new;
-            $pairs[$key] ??= ['table' => $table, 'oldTitle' => $old, 'newTitle' => $new, 'dirs' => [], 'files' => [], 'conflict' => false];
+            $key = implode("\0", [$table, $old, $new, $oldFull, $newFull]);
+            $pairs[$key] ??= ['table' => $table, 'oldTitle' => $old, 'newTitle' => $new, 'oldFull' => $oldFull, 'newFull' => $newFull,
+                'dirs' => [], 'files' => [], 'conflict' => false, 'conflictFull' => false];
             if (!in_array($dir, $pairs[$key]['dirs'], true)) {
                 $pairs[$key]['dirs'][] = $dir;
             }
             $pairs[$key]['files'][] = $dir . '/' . $r['newFileName'];
         }
         $targets = [];
+        $targetsFull = [];
         foreach ($pairs as $p) {
             $targets[$p['table'] . "\0" . $p['oldTitle']][$p['newTitle']] = true;
+            $targetsFull[$p['table'] . "\0" . $p['oldFull']][$p['newFull']] = true;
         }
         foreach ($pairs as &$p) {
             $p['conflict'] = count($targets[$p['table'] . "\0" . $p['oldTitle']]) > 1;
+            $p['conflictFull'] = count($targetsFull[$p['table'] . "\0" . $p['oldFull']]) > 1;
         }
         unset($p);
         return array_values($pairs);
+    }
+}
+
+if (!function_exists('moviedb_title_update_resolve')) {
+    /**
+     * Which form a pair's title takes, decided by the database: the full
+     * form (subtitle kept) when a row carries its old or new spelling, else
+     * the short form (tail read as a cast). Returns the pair with
+     * oldTitle/newTitle/conflict set to that form, `form` and its `rows` —
+     * or null when only a cast changed (short form unchanged, no full-form
+     * row).
+     *
+     * @param callable(string $old, string $new): array $rowsFor rows matching either title
+     */
+    function moviedb_title_update_resolve(array $pair, callable $rowsFor): ?array
+    {
+        $oldFull = $pair['oldFull'] ?? $pair['oldTitle'];
+        $newFull = $pair['newFull'] ?? $pair['newTitle'];
+        $hasTail = $oldFull !== $pair['oldTitle'] || $newFull !== $pair['newTitle'];
+        if ($hasTail && $oldFull !== $newFull) {
+            $rows = $rowsFor($oldFull, $newFull);
+            if ($rows) {
+                return ['oldTitle' => $oldFull, 'newTitle' => $newFull, 'conflict' => $pair['conflictFull'] ?? false,
+                    'form' => 'full', 'rows' => $rows] + $pair;
+            }
+        }
+        if ($pair['oldTitle'] === $pair['newTitle']) {
+            return null;
+        }
+        return ['form' => 'short', 'rows' => $rowsFor($pair['oldTitle'], $pair['newTitle'])] + $pair;
     }
 }
 
@@ -140,14 +197,14 @@ if (!function_exists('moviedb_title_update_leftovers')) {
      * @param array|null $index A loaded drive index (moviedb_load_drive_index) or null.
      * @return string[] Paths.
      */
-    function moviedb_title_update_leftovers(array $dirs, string $oldTitle, ?array $index, string $newTitle = '', string $table = MOVIEDB_TITLE_UPDATE_DEFAULT_TABLE): array
+    function moviedb_title_update_leftovers(array $dirs, string $oldTitle, ?array $index, string $newTitle = '', string $table = MOVIEDB_TITLE_UPDATE_DEFAULT_TABLE, string $form = 'short'): array
     {
         $caseOnly = strcasecmp($oldTitle, $newTitle) === 0;
         $isOld = fn(string $t) => $caseOnly ? $t === $oldTitle : strcasecmp($t, $oldTitle) === 0;
         $found = [];
         foreach ($dirs as $dir) {
             foreach (moviedb_title_update_dir_videos($dir) as $f) {
-                if ($isOld(moviedb_db_title_for_base(pathinfo($f, PATHINFO_FILENAME))) && is_file("$dir/$f")) {
+                if ($isOld(moviedb_title_update_file_title(pathinfo($f, PATHINFO_FILENAME), $form)) && is_file("$dir/$f")) {
                     $found[] = "$dir/$f";
                 }
             }
@@ -157,7 +214,7 @@ if (!function_exists('moviedb_title_update_leftovers')) {
                 || moviedb_title_update_table_for_dir($e['dir'], MOVIEDB_TITLE_UPDATE_DEFAULT_TABLE) !== $table) {
                 continue; // read live above (the index may predate the rename) / another catalog
             }
-            if ($isOld(moviedb_db_title_for_base($e['base']))) {
+            if ($isOld(moviedb_title_update_file_title($e['base'], $form))) {
                 $found[] = $e['dir'] . '/' . $e['file'];
             }
         }
@@ -166,8 +223,8 @@ if (!function_exists('moviedb_title_update_leftovers')) {
 }
 
 if (!function_exists('moviedb_title_update_files_elsewhere')) {
-    /** Index entries outside $dirs, in the same catalog, whose title matches either title case-insensitively. */
-    function moviedb_title_update_files_elsewhere(array $dirs, array $titles, ?array $index, string $table = MOVIEDB_TITLE_UPDATE_DEFAULT_TABLE): array
+    /** Index entries outside $dirs, in the same catalog, whose title (in $form) matches either title case-insensitively. */
+    function moviedb_title_update_files_elsewhere(array $dirs, array $titles, ?array $index, string $table = MOVIEDB_TITLE_UPDATE_DEFAULT_TABLE, string $form = 'short'): array
     {
         $want = array_map('mb_strtolower', $titles);
         $found = [];
@@ -176,7 +233,7 @@ if (!function_exists('moviedb_title_update_files_elsewhere')) {
                 || moviedb_title_update_table_for_dir($e['dir'], MOVIEDB_TITLE_UPDATE_DEFAULT_TABLE) !== $table) {
                 continue;
             }
-            if (in_array(mb_strtolower(moviedb_db_title_for_base($e['base'])), $want, true)) {
+            if (in_array(mb_strtolower(moviedb_title_update_file_title($e['base'], $form)), $want, true)) {
                 $found[] = $e['dir'] . '/' . $e['file'];
             }
         }
