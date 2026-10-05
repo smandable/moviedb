@@ -188,6 +188,15 @@ if (!function_exists('moviedb_cast_respell_apply')) {
                     continue;
                 }
                 $check = moviedb_drive_index_validate_path($item['path'], $index);
+                if (!$check['ok'] && !$item['conflict'] && $check['error'] === 'File not found'
+                    && is_file($item['dir'] . '/' . $item['newFile'])) {
+                    // An earlier respell renamed it but was stopped before it
+                    // saved the index (a sleeping drive outlasted the time
+                    // limit): count it done and fix the entry. Logged then.
+                    $newNames[$item['path']] = $item['newFile'];
+                    $results[] = ['path' => $item['path'], 'newFile' => $item['newFile'], 'renamed' => true, 'already' => true];
+                    continue;
+                }
                 $error = $check['ok']
                     ? moviedb_cast_respell_rename($check['real'], $item['newFile'])
                     : $check['error'];

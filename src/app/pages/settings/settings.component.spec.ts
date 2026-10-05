@@ -529,7 +529,15 @@ describe('SettingsComponent', () => {
         );
       });
 
-      it('keeps the finding and says why when some files are left', () => {
+      /** The re-preview an unfinished respell sends, answered with what's left. */
+      function flushRefresh(files: object[]) {
+        const req = httpMock.expectOne(auditUrl);
+        expect(req.request.body.action).toBe('respellPreview');
+        req.flush({ files });
+        fixture.detectChanges();
+      }
+
+      it('keeps the finding, says why in the box, and shows what is left', () => {
         preview();
         component.confirmRespell();
         const req = httpMock.expectOne(auditUrl);
@@ -544,11 +552,16 @@ describe('SettingsComponent', () => {
           names: ['Orlena Rain', 'Orlena Rains', 'Orlenna Rains'],
           removed: false,
         });
+        expect(component.castRespellBusy).toBeTrue(); // until the refresh lands
+        flushRefresh([previewFiles[1]]);
+
         expect(component.castAudit!.findings.some((f) => f.kind === 'variant')).toBeTrue();
-        expect(component.castAuditStatus).toBe(
+        expect(component.castRespellBusy).toBeFalse();
+        expect(respellEl()!.querySelector('.cast-respell-message')!.textContent!.trim()).toBe(
           'Renamed 1 file to “Orlena Rains”. 1 was left alone. ' +
             '“Orlena Rain”, “Orlenna Rains” stays in the list while files still use it.',
         );
+        expect(respellEl()!.querySelectorAll('.cast-respell-files li').length).toBe(1);
       });
 
       it('reports a failed rename and a stale index', () => {
@@ -563,8 +576,30 @@ describe('SettingsComponent', () => {
           names: ['Orlena Rain', 'Orlena Rains', 'Orlenna Rains'],
           removed: false,
         });
-        expect(component.castAuditStatus).toContain("1 couldn't be renamed (Rename failed: Permission denied)");
-        expect(component.castAuditStatus).toContain('rebuild it under Drive Index');
+        flushRefresh([previewFiles[0]]);
+        expect(component.castRespellMessage).toContain("1 couldn't be renamed (Rename failed: Permission denied)");
+        expect(component.castRespellMessage).toContain('rebuild it under Drive Index');
+      });
+
+      it('a respell that dies partway says so in the box and shows what is left', () => {
+        preview([previewFiles[0], { ...previewFiles[0], path: '/Volumes/Y/b.mp4', file: 'b.mp4' }]);
+        component.confirmRespell();
+        httpMock.expectOne(auditUrl).flush(null, { status: 500, statusText: 'Internal Server Error' });
+        flushRefresh([{ ...previewFiles[0], path: '/Volumes/Y/b.mp4', file: 'b.mp4' }]);
+
+        const message = respellEl()!.querySelector('.cast-respell-message')!.textContent!;
+        expect(message).toContain('500');
+        expect(message).toContain("Renames that went through are kept; what's left is below.");
+        expect(respellEl()!.querySelector('.cast-respell-confirm')!.textContent).toContain('Rename 1 file');
+        expect((respellEl()!.querySelector('.cast-respell-confirm') as HTMLButtonElement).disabled).toBeFalse();
+      });
+
+      it('once nothing is left, the box offers to just remove the spellings', () => {
+        preview([previewFiles[0]]);
+        component.confirmRespell();
+        httpMock.expectOne(auditUrl).flush(null, { status: 500, statusText: 'Internal Server Error' });
+        flushRefresh([]);
+        expect(respellEl()!.querySelector('.cast-respell-confirm')!.textContent).toContain('Remove from list');
       });
 
       it('with no files to rename, offers to just remove the spellings', () => {
@@ -586,7 +621,8 @@ describe('SettingsComponent', () => {
         httpMock
           .expectOne(auditUrl)
           .flush({ message: 'A consolidation is moving files' }, { status: 409, statusText: 'Conflict' });
-        expect(component.castAuditStatus).toBe('A consolidation is moving files');
+        flushRefresh(previewFiles);
+        expect(component.castRespellMessage).toContain('A consolidation is moving files');
         expect(component.castRespell).not.toBeNull();
         expect(component.castRespellBusy).toBeFalse();
       });

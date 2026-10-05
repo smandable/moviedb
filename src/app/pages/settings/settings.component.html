@@ -400,7 +400,11 @@
                           </ul>
                           <div class="text-muted mb-2">
                             Only files in the drive index are renamed; each rename is
-                            logged to server/cast_respell_log.jsonl.
+                            logged to server/cast_respell_log.jsonl. A sleeping drive
+                            can take a while to wake.
+                          </div>
+                          <div *ngIf="castRespellMessage" class="text-danger mb-2 cast-respell-message">
+                            {{ castRespellMessage }}
                           </div>
                           <button
                             type="button"

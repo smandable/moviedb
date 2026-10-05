@@ -155,6 +155,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   /** The "use this spelling" being previewed, if any. */
   castRespell: CastRespellPlan | null = null;
   castRespellBusy = false;
+  /** What happened when a respell didn't finish — shown in the preview box. */
+  castRespellMessage = '';
 
   // ---- Drive index ----
   // Populated from stored settings, else from the status endpoint's effective
@@ -599,6 +601,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const from = finding.names.map((n) => n.name).filter((n) => n !== entry.name);
     this.castRespellBusy = true;
     this.castAuditStatus = '';
+    this.castRespellMessage = '';
     this.cdr.markForCheck();
     this.settingsService.previewCastRespell(from, entry.name).subscribe({
       next: ({ files }) => {
@@ -616,6 +619,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
   cancelRespell(): void {
     this.castRespell = null;
+    this.castRespellMessage = '';
   }
 
   /** The previewed files that will be renamed (not blocked by an existing name). */
@@ -637,34 +641,57 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const files = this.respellRenamable(plan).map((f) => f.path);
     this.castRespellBusy = true;
     this.cdr.markForCheck();
+    this.castRespellMessage = '';
     this.settingsService.respellCastName(plan.from, plan.to, files).subscribe({
       next: (res) => {
         this.castNames = res.names;
-        this.castRespell = null;
-        this.castRespellBusy = false;
         const renamed = `Renamed ${res.renamed} ${res.renamed === 1 ? 'file' : 'files'} to “${plan.to}”.`;
+        const staleIndex = res.indexUpdated
+          ? ''
+          : ' The drive index couldn’t be updated — rebuild it under Drive Index.';
         if (res.removed) {
+          this.castRespell = null;
+          this.castRespellBusy = false;
           plan.from.forEach((name) => this.pruneCastAudit(name));
-          this.castAuditStatus = `${res.renamed > 0 ? renamed + ' ' : ''}Removed ${this.quoteNames(plan.from)} from the list.`;
-        } else {
-          const left: string[] = [];
-          if (res.failed > 0) {
-            const why = res.results.find((r) => !r.renamed)?.error;
-            left.push(`${res.failed} couldn't be renamed${why ? ` (${why})` : ''}`);
-          }
-          if (res.notPreviewed > 0) {
-            left.push(`${res.notPreviewed} ${res.notPreviewed === 1 ? 'was' : 'were'} left alone`);
-          }
           this.castAuditStatus =
-            `${renamed} ${left.join('; ')}. ${this.quoteNames(plan.from)} stays in the list while files still use it.`;
+            `${res.renamed > 0 ? renamed + ' ' : ''}Removed ${this.quoteNames(plan.from)} from the list.${staleIndex}`;
+          this.cdr.markForCheck();
+          return;
         }
-        if (!res.indexUpdated) {
-          this.castAuditStatus += ' The drive index couldn’t be updated — rebuild it under Drive Index.';
+        // Not finished: say why in the box, beside what's still left
+        const left: string[] = [];
+        if (res.failed > 0) {
+          const why = res.results.find((r) => !r.renamed)?.error;
+          left.push(`${res.failed} couldn't be renamed${why ? ` (${why})` : ''}`);
         }
-        this.cdr.markForCheck();
+        if (res.notPreviewed > 0) {
+          left.push(`${res.notPreviewed} ${res.notPreviewed === 1 ? 'was' : 'were'} left alone`);
+        }
+        this.castRespellMessage =
+          `${renamed} ${left.join('; ')}. ${this.quoteNames(plan.from)} stays in the list while files still use it.${staleIndex}`;
+        this.refreshRespell(plan);
       },
       error: (err: Error) => {
-        this.castAuditStatus = err.message;
+        // It may have stopped partway; renames that landed are kept, and
+        // renaming again finishes the rest
+        this.castRespellMessage = `${err.message} Renames that went through are kept; what's left is below.`;
+        this.refreshRespell(plan);
+      },
+    });
+  }
+
+  /** Re-preview after an unfinished respell, so the box shows what's left. */
+  private refreshRespell(plan: CastRespellPlan): void {
+    this.cdr.markForCheck();
+    this.settingsService.previewCastRespell(plan.from, plan.to).subscribe({
+      next: ({ files }) => {
+        if (this.castRespell?.findingKey === plan.findingKey) {
+          this.castRespell = { ...plan, files };
+        }
+        this.castRespellBusy = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
         this.castRespellBusy = false;
         this.cdr.markForCheck();
       },
@@ -693,6 +720,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (this.castRespell && [this.castRespell.to, ...this.castRespell.from]
       .some((n) => n.toLowerCase() === gone)) {
       this.castRespell = null;
+      this.castRespellMessage = '';
     }
     // Duplicates and variants compare spellings, so need two left; junk and
     // male findings are about one name and stand while it does.

@@ -163,6 +163,12 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'A consolidation is moving files — try again when it finishes']);
             break;
         }
+        // Renames wait on sleeping drives to spin up — several can outlast the
+        // 30 s default, which killed one respell after its first rename,
+        // before the index and the list were saved. Finish even if the page
+        // gives up waiting.
+        set_time_limit(600);
+        ignore_user_abort(true);
         $approved = array_values(array_filter(is_array($data['files'] ?? null) ? $data['files'] : [], 'is_string'));
         $outcome = moviedb_cast_respell_apply($request['from'], $request['to'], $approved);
         if (isset($outcome['error'])) {

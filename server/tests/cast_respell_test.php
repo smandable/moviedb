@@ -150,6 +150,27 @@ check('outside roots: refused', [$out['renamed'], $out['failed'], $out['results'
     [0, 1, 'Path is outside the indexed roots']);
 check('outside roots: file untouched', file_get_contents("{$dir}/elsewhere/E # 01 - Scene_1 - Orlena Rain.mp4"), 'seven');
 
+// A rename that landed before an interrupted run saved the index is
+// finished on the next run: counted done, entry fixed, nothing re-logged
+file_put_contents("{$dir}/F # 01 - Scene_1 - Orlena Rains.mp4", 'eight');   // renamed already
+$stale = json_decode(file_get_contents($indexPath), true);
+$stale['entries'][] = ['base' => 'F # 01', 'file' => 'F # 01 - Scene_1 - Orlena Rain.mp4', 'dir' => $dir, 'size' => 1, 'mtime' => 1];
+file_put_contents($indexPath, json_encode($stale));
+$logLines = count(file($logPath));
+$out = moviedb_cast_respell_apply(['Orlena Rain'], 'Orlena Rains', ["{$dir}/F # 01 - Scene_1 - Orlena Rain.mp4"], $indexPath, $logPath);
+check('interrupted: counted renamed', [$out['renamed'], $out['failed']], [1, 0]);
+check('interrupted: marked already', $out['results'][0]['already'] ?? false, true);
+$healed = array_column(json_decode(file_get_contents($indexPath), true)['entries'], 'file');
+check('interrupted: index entry fixed', [in_array('F # 01 - Scene_1 - Orlena Rains.mp4', $healed, true),
+    in_array('F # 01 - Scene_1 - Orlena Rain.mp4', $healed, true)], [true, false]);
+check('interrupted: not logged twice', count(file($logPath)), $logLines);
+// But a missing file with no renamed copy is still a failure
+$stale = json_decode(file_get_contents($indexPath), true);
+$stale['entries'][] = ['base' => 'G # 01', 'file' => 'G # 01 - Scene_1 - Orlena Rain.mp4', 'dir' => $dir, 'size' => 1, 'mtime' => 1];
+file_put_contents($indexPath, json_encode($stale));
+$out = moviedb_cast_respell_apply(['Orlena Rain'], 'Orlena Rains', ["{$dir}/G # 01 - Scene_1 - Orlena Rain.mp4"], $indexPath, $logPath);
+check('vanished: a failure', [$out['renamed'], $out['failed'], $out['results'][0]['error'] ?? ''], [0, 1, 'File not found']);
+
 // No index at all
 $out = moviedb_cast_respell_apply(['Orlena Rain'], 'Orlena Rains', [], "{$dir}/missing.json", $logPath);
 check('no index: error', $out['error'] ?? '', 'No drive index has been built yet');
