@@ -279,8 +279,16 @@
               ></span>
               Check for junk &amp; duplicates
             </button>
-            <span *ngIf="castAudit" class="small text-muted cast-audit-summary">
-              {{ castAudit.findings.length }} to review<span *ngIf="castAudit.hidden">
+            <span *ngIf="castAudit" class="cast-audit-summary">
+              <span
+                class="accordion-toggle cast-audit-toggle"
+                role="button"
+                [attr.aria-expanded]="castAuditExpanded"
+                [title]="(castAuditExpanded ? 'Hide' : 'Show') + ' the findings'"
+                (click)="castAuditExpanded = !castAuditExpanded"
+                ><span class="chevron me-1">{{ castAuditExpanded ? "▾" : "▸" }}</span
+                >{{ castAudit.findings.length }} to review</span
+              ><span *ngIf="castAudit.hidden" class="small text-muted">
                 · {{ castAudit.hidden }} marked not a problem (<a
                   href="#"
                   class="cast-audit-reset"
@@ -304,7 +312,7 @@
             {{ castAuditStatus }}
           </div>
 
-          <ng-container *ngIf="castAudit">
+          <ng-container *ngIf="castAudit && castAuditExpanded">
             <p
               *ngIf="castAudit.findings.length === 0"
               class="small text-success mb-2 cast-audit-clean"

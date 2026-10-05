@@ -418,6 +418,29 @@ describe('SettingsComponent', () => {
       expect(component.castAudit!.hidden).toBe(0);
     });
 
+    it('folds the findings away under the summary, and a new check opens them', () => {
+      runAudit();
+      const toggle = auditEl().querySelector('.cast-audit-toggle') as HTMLElement;
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+
+      toggle.click();
+      fixture.detectChanges();
+      expect(auditEl().querySelector('.cast-audit-results')).toBeNull();
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      // The count stays visible while folded
+      expect(auditEl().querySelector('.cast-audit-summary')!.textContent)
+        .toContain('4 to review');
+
+      toggle.click();
+      fixture.detectChanges();
+      expect(auditEl().querySelector('.cast-audit-results')).not.toBeNull();
+
+      toggle.click();
+      fixture.detectChanges();
+      runAudit();
+      expect(auditEl().querySelector('.cast-audit-results')).not.toBeNull();
+    });
+
     it('clicking a name shows it in the list above', () => {
       runAudit();
       (auditEl().querySelector('.cast-audit-name a') as HTMLElement).click();

@@ -139,6 +139,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   castAuditRunning = false;
   castAuditError = '';
   castAuditStatus = '';
+  /** The findings list folds away under its "N to review" toggle. */
+  castAuditExpanded = true;
 
   // ---- Drive index ----
   // Populated from stored settings, else from the status endpoint's effective
@@ -514,6 +516,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.castAudit = res;
         this.rebuildCastAuditSections();
+        this.castAuditExpanded = true;
         this.castAuditRunning = false;
         this.cdr.markForCheck();
       },
