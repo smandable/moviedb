@@ -2,7 +2,6 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
-    "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -22,13 +21,13 @@
     "module": "ES2022",
     "lib": ["ES2022", "dom"],
     "paths": {
-      "@layouts/*": ["src/app/shared/components/layouts/*"],
-      "@modals/*": ["src/app/shared/components/modals/*"],
-      "@components/*": ["src/app/shared/components/*"],
-      "@enums/*": ["src/app/shared/enums/*"],
-      "@helpers/*": ["src/app/shared/helpers/*"],
-      "@services/*": ["src/app/shared/services/*"],
-      "@env/*": ["src/environments/*"]
+      "@layouts/*": ["./src/app/shared/components/layouts/*"],
+      "@modals/*": ["./src/app/shared/components/modals/*"],
+      "@components/*": ["./src/app/shared/components/*"],
+      "@enums/*": ["./src/app/shared/enums/*"],
+      "@helpers/*": ["./src/app/shared/helpers/*"],
+      "@services/*": ["./src/app/shared/services/*"],
+      "@env/*": ["./src/environments/*"]
     },
     "useDefineForClassFields": false
   },

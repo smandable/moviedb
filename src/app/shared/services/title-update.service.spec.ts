@@ -3,7 +3,7 @@ import {
   HttpClientTestingModule,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 
 import { TitleUpdateItem, TitleUpdateService } from './title-update.service';
 

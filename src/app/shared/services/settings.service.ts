@@ -7,7 +7,7 @@ import {
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 import { ConsolidateSettings } from './consolidate.service';
 
 export interface AppSettings {

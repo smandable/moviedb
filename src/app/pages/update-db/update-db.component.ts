@@ -10,7 +10,7 @@ import { SettingsService } from '@services/settings.service';
 import { FormsModule } from '@angular/forms';
 import { fileSizeFormatter, durationFormatter, formatBytes } from '@helpers/formatters';
 import { getBaseTitle } from '@helpers/title';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 import { myTheme } from '@helpers/grid-theme';
 import {
   AllCommunityModule,

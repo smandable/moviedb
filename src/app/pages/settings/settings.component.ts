@@ -33,7 +33,7 @@ import {
   RENAME_SUCCESS_STATUS,
 } from '@modals/file-normalization-modal/file-normalization-modal.component';
 import { formatBytes, formatDurationHuman } from '@helpers/formatters';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 
 /**
  * localStorage key for which Settings cards are collapsed (an array of card

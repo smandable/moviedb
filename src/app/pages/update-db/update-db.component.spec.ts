@@ -12,7 +12,7 @@ import {
   NormalizedFile,
   ProcessFilesResponse,
 } from '@services/file.service';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 import { of, Subject, throwError } from 'rxjs';
 
 describe('UpdateDbComponent', () => {

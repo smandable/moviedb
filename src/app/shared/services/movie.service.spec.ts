@@ -4,7 +4,7 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { MovieService, Movie } from './movie.service';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 
 describe('MovieService', () => {
   let service: MovieService;

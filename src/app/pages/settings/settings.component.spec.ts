@@ -11,7 +11,7 @@ import {
   HttpClientTestingModule,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { NormalizedFile } from '@services/file.service';
 import {

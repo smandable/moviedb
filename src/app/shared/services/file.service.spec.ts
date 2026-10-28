@@ -8,7 +8,7 @@ import {
   NormalizedFile,
   ProcessFilesResponse,
 } from './file.service';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 
 describe('FileService', () => {
   let service: FileService;

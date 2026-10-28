@@ -9,7 +9,7 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 
 import { DriveIndexModalComponent } from './drive-index-modal.component';
 import {

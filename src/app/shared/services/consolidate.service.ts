@@ -7,7 +7,7 @@ import {
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 
 /** Options persisted under app settings' "consolidate" key. */
 export interface ConsolidateSettings {

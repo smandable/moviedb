@@ -6,7 +6,7 @@ import {
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { environment } from 'src/environments/environment';
+import { environment } from '@env/environment';
 
 export interface NormalizedFile {
   path: string;
