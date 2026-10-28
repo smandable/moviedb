@@ -25,7 +25,6 @@ import {
   GridApi,
   ICellRendererParams,
   ColDef,
-  IFilterComp,
 } from 'ag-grid-community';
 
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
@@ -38,11 +37,14 @@ type ClientSideGridApi<TData> = GridApi<TData> & {
   getSortModel?(): any;
   isAnyFilterPresent(): boolean;
   applyColumnState?(params: { state: { colId: string; sort: 'asc' | 'desc' | null; sortIndex?: number }[]; defaultState?: { sort: null } }): void;
-  // getFilterInstance now uses a callback and returns void
-  getFilterInstance?(
-    colKey: string,
-    callback: (filter: IFilterComp | null) => void,
-  ): void;
+};
+
+// The parts of ag-grid's TextFilter that the Title menu's second-condition
+// default needs. eTypes (the per-condition type pickers) is internal, so a
+// grid upgrade can drop it; the home spec pins the behaviour so it shows.
+type TitleTextFilter = {
+  isConditionUiComplete?(position: number): boolean;
+  eTypes?: { setValue(value: string, silent?: boolean): unknown }[];
 };
 
 // Register AG Grid modules
@@ -95,52 +97,24 @@ export class HomeComponent implements OnInit, OnDestroy {
       floatingFilter: false, // Disable floating filters by default
     },
 
+    // The Title menu's second condition starts on "Contains" (the first
+    // starts on "Begins with"). ag-grid gives every condition the one
+    // defaultOption, resets the second to it whenever the floating filter
+    // types, and has no public call that changes a condition's type without
+    // applying it — pushing an empty "contains" condition through
+    // setColumnFilterModel applies it verbatim, which matches no rows and
+    // blanks the floating box. So, only while the second condition is still
+    // empty, set its type picker directly: the applied filter is untouched.
     onFilterOpened: (params) => {
-      if (params.column.getId() === 'title') {
-        if (this.gridApi.getFilterInstance) {
-          this.gridApi.getFilterInstance(
-            'title',
-            (filterInstance: IFilterComp | null) => {
-              if (filterInstance) {
-                let model = filterInstance.getModel() as any;
-
-                if (!model) {
-                  // No existing model, create one with condition1 and condition2
-                  model = {
-                    operator: 'AND',
-                    condition1: { type: 'startsWith', filter: '' },
-                    condition2: { type: 'contains', filter: '' }, // Empty filter
-                  };
-                } else {
-                  // If condition2 is missing or incorrectly set, update it to 'contains'
-                  if (
-                    !model.condition2 ||
-                    model.condition2.type === 'startsWith'
-                  ) {
-                    model.operator = 'AND';
-                    model.condition2 = { type: 'contains', filter: '' }; // Empty filter
-                  }
-                }
-
-                // Set the updated model
-                filterInstance.setModel(model);
-
-                // Apply the model if the method exists
-                if ((filterInstance as any).applyModel) {
-                  (filterInstance as any).applyModel();
-                }
-
-                // Notify the grid of the filter change
-                this.gridApi.onFilterChanged();
-              } else {
-                console.warn("Filter instance for 'title' is null.");
-              }
-            },
-          );
-        } else {
-          console.warn('getFilterInstance is not available on gridApi.');
-        }
+      if (params.column.getId() !== 'title') {
+        return;
       }
+      void this.gridApi.getColumnFilterInstance('title').then((instance) => {
+        const filter = instance as TitleTextFilter | null | undefined;
+        if (filter?.isConditionUiComplete?.(1) === false) {
+          filter.eTypes?.[1]?.setValue('contains', true);
+        }
+      });
     },
 
     // Re-fit when the window/grid resizes so Title keeps absorbing the
@@ -244,7 +218,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       floatingFilterComponent: CustomFloatingFilterComponent,
       filterParams: {
         filterOptions: ['startsWith', 'contains', 'endsWith'],
-        alwaysShowBothConditions: true,
+        numAlwaysVisibleConditions: 2, // ag-grid's replacement for alwaysShowBothConditions
         defaultJoinOperator: 'AND',
         debounceMs: 300,
         caseSensitive: false, // filter ignores case

@@ -11,6 +11,7 @@ import { MovieService, Movie } from '@services/movie.service';
 import { FileService } from '@services/file.service';
 import { environment } from '@env/environment';
 import { of, throwError } from 'rxjs';
+import { GridApi } from 'ag-grid-community';
 
 describe('HomeComponent', () => {
   let component: HomeComponent;
@@ -210,6 +211,43 @@ describe('HomeComponent', () => {
       (el.querySelector('.fa-hard-drive') as HTMLElement).click();
 
       expect(spy).toHaveBeenCalledWith('Galaxy Quest Chronicles');
+    });
+  });
+
+  describe('title filter menu', () => {
+    // The second condition's "Contains" default reaches into ag-grid's
+    // TextFilter internals (its eTypes pickers): this renders the real grid
+    // so an upgrade that renames them fails here instead of quietly
+    // reverting the menu to "Begins with" twice.
+    const waitFor = async (check: () => boolean): Promise<void> => {
+      for (let i = 0; i < 100 && !check(); i++) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    };
+
+    it('opens with the second condition on Contains without changing the applied filter', async () => {
+      spyOn(movieService, 'getAllMovies').and.returnValue(of(mockMovies));
+      fixture.detectChanges();
+      const api = () => (component as unknown as {
+        gridApi?: GridApi<Movie>;
+      }).gridApi;
+      await waitFor(() => !!api());
+
+      const filter = (await api()!.getColumnFilterInstance('title')) as unknown as {
+        onFloatingFilterChanged(type: string, value: string): void;
+        getConditionType(position: number): string | null;
+      };
+      filter.onFloatingFilterChanged('contains', 'Movie');
+      expect(filter.getConditionType(1)).toBe('startsWith');
+
+      api()!.showColumnFilter('title');
+      await waitFor(() => filter.getConditionType(1) === 'contains');
+
+      expect(filter.getConditionType(0)).toBe('contains');
+      expect(filter.getConditionType(1)).toBe('contains');
+      expect(api()!.getFilterModel()).toEqual({
+        title: { filterType: 'text', type: 'contains', filter: 'Movie' },
+      });
     });
   });
 
