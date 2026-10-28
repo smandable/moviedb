@@ -1,23 +1,18 @@
-import {
-  ComponentFixture,
-  TestBed,
-  fakeAsync,
-  tick,
-} from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { environment } from '@env/environment';
 
 import { DriveIndexModalComponent } from './drive-index-modal.component';
-import {
-  DriveIndexSearchResponse,
-  DriveIndexStatus,
-} from '@services/drive-index.service';
+import { DriveIndexSearchResponse, DriveIndexStatus, } from '@services/drive-index.service';
 
 describe('DriveIndexModalComponent', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   let component: DriveIndexModalComponent;
   let fixture: ComponentFixture<DriveIndexModalComponent>;
   let httpMock: HttpTestingController;
@@ -64,7 +59,7 @@ describe('DriveIndexModalComponent', () => {
       providers: [
         {
           provide: NgbActiveModal,
-          useValue: { close: () => {}, dismiss: () => {} },
+          useValue: { close: () => { }, dismiss: () => { } },
         },
       ],
     }).compileComponents();
@@ -81,10 +76,7 @@ describe('DriveIndexModalComponent', () => {
     httpMock.verify();
   });
 
-  function flushInit(
-    status: DriveIndexStatus = statusResponse,
-    search: DriveIndexSearchResponse = searchResponse,
-  ) {
+  function flushInit(status: DriveIndexStatus = statusResponse, search: DriveIndexSearchResponse = searchResponse) {
     httpMock
       .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'status')
       .flush(status);
@@ -100,9 +92,7 @@ describe('DriveIndexModalComponent', () => {
     httpMock
       .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'status')
       .flush(statusResponse);
-    const searchReq = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    const searchReq = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'search');
     expect(searchReq.request.body).toEqual({
       action: 'search',
       query: 'Galaxy Quest Chronicles',
@@ -120,9 +110,7 @@ describe('DriveIndexModalComponent', () => {
     expect(el.textContent).toContain('2 files');
     expect(el.textContent).toContain('2.00');
     // Per-file rows show filename and dir
-    expect(el.textContent).toContain(
-      'Galaxy Quest Chronicles - Scene_1 - Vera Nova.mp4',
-    );
+    expect(el.textContent).toContain('Galaxy Quest Chronicles - Scene_1 - Vera Nova.mp4');
     expect(el.textContent).toContain('/Volumes/Fixture A/recorded');
     // Index-status footer line
     expect(el.textContent).toContain('Indexed 1234 files');
@@ -134,9 +122,7 @@ describe('DriveIndexModalComponent', () => {
     httpMock
       .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'status')
       .flush(statusResponse);
-    const page1 = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    const page1 = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'search');
     expect(page1.request.body.offset).toBe(0);
     page1.flush({
       groups: [{ base: 'Bush', files: [] }],
@@ -151,17 +137,13 @@ describe('DriveIndexModalComponent', () => {
     expect(component.resultSummary).toBe('Titles 1–50 of 79 — 138 files matched');
     expect(component.currentPage).toBe(1);
     expect(component.pageCount).toBe(2);
-    expect(component.hasPrevPage).toBeFalse();
-    expect(component.hasNextPage).toBeTrue();
+    expect(component.hasPrevPage).toBe(false);
+    expect(component.hasNextPage).toBe(true);
     expect(component.pageRangeEnd).toBe(50);
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.index-pager'),
-    ).toBeTruthy();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.index-pager')).toBeTruthy();
 
     component.nextPage();
-    const page2 = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    const page2 = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'search');
     // The query must survive paging; only the offset moves
     expect(page2.request.body).toEqual({
       action: 'search',
@@ -179,12 +161,12 @@ describe('DriveIndexModalComponent', () => {
 
     expect(component.resultSummary).toBe('Titles 51–79 of 79 — 138 files matched');
     expect(component.currentPage).toBe(2);
-    expect(component.hasNextPage).toBeFalse();
+    expect(component.hasNextPage).toBe(false);
     // "51-79 of 79", not "51-100"
     expect(component.pageRangeEnd).toBe(79);
   });
 
-  it('a new query resets to page 1', fakeAsync(() => {
+  it('a new query resets to page 1', async () => {
     component.initialQuery = 'Bush';
     fixture.detectChanges();
     flushInit(statusResponse, {
@@ -210,16 +192,14 @@ describe('DriveIndexModalComponent', () => {
     // Typing a different query must not ask the server for page 2 of it
     component.query = 'Something Else';
     component.onQueryChange();
-    tick(300);
-    const req = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    await vi.advanceTimersByTimeAsync(300);
+    const req = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'search');
     expect(req.request.body.offset).toBe(0);
     req.flush({ groups: [], totalGroups: 0, totalFiles: 0, offset: 0, pageSize: 50 });
     expect(component.offset).toBe(0);
 
     component.ngOnDestroy();
-  }));
+  });
 
   it('a page response that lands after the user paged again is ignored', () => {
     component.initialQuery = 'Bush';
@@ -233,13 +213,9 @@ describe('DriveIndexModalComponent', () => {
     } as DriveIndexSearchResponse);
 
     component.nextPage(); // offset 50
-    const slow = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    const slow = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'search');
     component.nextPage(); // offset 100 — issued before page 2 answers
-    const fast = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    const fast = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'search');
     fast.flush({
       groups: [{ base: 'page three', files: [] }],
       totalGroups: 200,
@@ -268,14 +244,12 @@ describe('DriveIndexModalComponent', () => {
       .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'status')
       .flush(statusResponse);
     // Empty query must NOT hit the search endpoint (it would 400)
-    httpMock.expectNone(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    httpMock.expectNone((r) => r.url === driveIndexUrl && r.body.action === 'search');
     fixture.detectChanges();
 
     expect(component.groups).toEqual([]);
     expect(component.searchError).toBe('');
-    expect(component.hasSearched).toBeFalse();
+    expect(component.hasSearched).toBe(false);
   });
 
   it('clearing the search returns to the empty state instead of erroring', () => {
@@ -285,9 +259,7 @@ describe('DriveIndexModalComponent', () => {
 
     component.query = '';
     component.searchNow();
-    httpMock.expectNone(
-      (r) => r.url === driveIndexUrl && r.body.action === 'search',
-    );
+    httpMock.expectNone((r) => r.url === driveIndexUrl && r.body.action === 'search');
     fixture.detectChanges();
 
     expect(component.groups).toEqual([]);
@@ -301,16 +273,14 @@ describe('DriveIndexModalComponent', () => {
     flushInit();
     fixture.detectChanges();
 
-    const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const file = component.groups[0].files[0];
     component.trashFile(file);
 
     expect(confirmSpy).toHaveBeenCalled();
-    expect(confirmSpy.calls.mostRecent().args[0]).toContain(file.file);
+    expect(vi.mocked(confirmSpy).mock.lastCall![0]).toContain(file.file);
 
-    const req = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'trash',
-    );
+    const req = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'trash');
     expect(req.request.body).toEqual({ action: 'trash', paths: [file.path] });
     req.flush({ results: [{ path: file.path, trashed: true }] });
     fixture.detectChanges();
@@ -326,7 +296,7 @@ describe('DriveIndexModalComponent', () => {
     fixture.detectChanges();
     flushInit();
 
-    spyOn(window, 'confirm').and.returnValue(false);
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
     component.trashFile(component.groups[0].files[0]);
 
     // afterEach's httpMock.verify() fails if a trash request was issued
@@ -337,17 +307,15 @@ describe('DriveIndexModalComponent', () => {
     fixture.detectChanges();
     flushInit();
 
-    const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     const group = component.groups[0];
     component.trashGroup(group);
 
-    const prompt = confirmSpy.calls.mostRecent().args[0] as string;
+    const prompt = vi.mocked(confirmSpy).mock.lastCall![0] as string;
     expect(prompt).toContain('Galaxy Quest Chronicles');
     expect(prompt).toContain('2');
 
-    const req = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'trash',
-    );
+    const req = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'trash');
     expect(req.request.body).toEqual({
       action: 'trash',
       paths: group.files.map((f) => f.path),
@@ -365,7 +333,7 @@ describe('DriveIndexModalComponent', () => {
     fixture.detectChanges();
     flushInit();
 
-    spyOn(window, 'confirm').and.returnValue(true);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const file = component.groups[0].files[0];
     component.trashFile(file);
 
@@ -396,10 +364,7 @@ describe('DriveIndexModalComponent', () => {
 
   it('warns in the footer when the index has not been built', () => {
     fixture.detectChanges();
-    flushInit(
-      { exists: false, builtAt: null, fileCount: 0, roots: [], missingRoots: [] },
-      { groups: [], totalGroups: 0, totalFiles: 0 },
-    );
+    flushInit({ exists: false, builtAt: null, fileCount: 0, roots: [], missingRoots: [] }, { groups: [], totalGroups: 0, totalFiles: 0 });
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
@@ -413,9 +378,7 @@ describe('DriveIndexModalComponent', () => {
     const file = component.groups[0].files[0];
     component.reveal(file);
 
-    const req = httpMock.expectOne(
-      (r) => r.url === driveIndexUrl && r.body.action === 'reveal',
-    );
+    const req = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'reveal');
     expect(req.request.body).toEqual({ action: 'reveal', path: file.path });
     req.flush({ success: false, error: 'File not found' });
 

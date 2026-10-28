@@ -1,30 +1,22 @@
 import { ChangeDetectorRef } from '@angular/core';
-import {
-  ComponentFixture,
-  TestBed,
-  fakeAsync,
-  tick,
-} from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { provideTranslateService } from '@ngx-translate/core';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { environment } from '@env/environment';
 import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
 import { NormalizedFile } from '@services/file.service';
-import {
-  FileNormalizationModalComponent,
-  RENAME_SUCCESS_STATUS,
-} from '@modals/file-normalization-modal/file-normalization-modal.component';
+import { FileNormalizationModalComponent, RENAME_SUCCESS_STATUS, } from '@modals/file-normalization-modal/file-normalization-modal.component';
 
-import {
-  SETTINGS_COLLAPSED_CARDS_KEY,
-  SettingsComponent,
-} from './settings.component';
+import { SETTINGS_COLLAPSED_CARDS_KEY, SettingsComponent, } from './settings.component';
 
 describe('SettingsComponent', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   let component: SettingsComponent;
   let fixture: ComponentFixture<SettingsComponent>;
   let httpMock: HttpTestingController;
@@ -81,29 +73,24 @@ describe('SettingsComponent', () => {
   });
 
   describe('collapsible cards', () => {
-    const header = (id: string) =>
-      fixture.nativeElement.querySelector(`.card-header[data-card="${id}"]`) as HTMLElement;
+    const header = (id: string) => fixture.nativeElement.querySelector(`.card-header[data-card="${id}"]`) as HTMLElement;
     const body = (id: string) => header(id).nextElementSibling as HTMLElement;
 
     it('starts with every card open', () => {
       flushInit({});
       fixture.detectChanges();
-      const headers = Array.from(
-        fixture.nativeElement.querySelectorAll('.card-header.card-toggle'),
-      ) as HTMLElement[];
+      const headers = Array.from(fixture.nativeElement.querySelectorAll('.card-header.card-toggle')) as HTMLElement[];
       expect(headers.length).toBe(5);
       headers.forEach((h) => {
         expect(h.getAttribute('aria-expanded')).toBe('true');
-        expect((h.nextElementSibling as HTMLElement).hidden).toBeFalse();
+        expect((h.nextElementSibling as HTMLElement).hidden).toBe(false);
       });
     });
 
     it('keeps the filename normalizer in the Normalization & Renaming card, not beside the drive index', () => {
       flushInit({});
       fixture.detectChanges();
-      const headings = Array.from(body('normalization').querySelectorAll('h6')).map((h) =>
-        (h as HTMLElement).textContent!.trim(),
-      );
+      const headings = Array.from(body('normalization').querySelectorAll('h6')).map((h) => (h as HTMLElement).textContent!.trim());
       expect(headings).toEqual(['Cast Name Vocabulary', 'Normalize Library Filenames']);
       expect(body('normalization').querySelector('.normalize-toggle')).not.toBeNull();
       expect(header('normalize')).toBeNull();
@@ -116,13 +103,13 @@ describe('SettingsComponent', () => {
 
       header('index').click();
       fixture.detectChanges();
-      expect(body('index').hidden).toBeTrue();
+      expect(body('index').hidden).toBe(true);
       expect(header('index').getAttribute('aria-expanded')).toBe('false');
       expect(JSON.parse(localStorage.getItem(SETTINGS_COLLAPSED_CARDS_KEY)!)).toEqual(['index']);
 
       header('index').click();
       fixture.detectChanges();
-      expect(body('index').hidden).toBeFalse();
+      expect(body('index').hidden).toBe(false);
       expect(JSON.parse(localStorage.getItem(SETTINGS_COLLAPSED_CARDS_KEY)!)).toEqual([]);
     });
 
@@ -132,7 +119,7 @@ describe('SettingsComponent', () => {
 
       header('table').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       fixture.detectChanges();
-      expect(body('table').hidden).toBeTrue();
+      expect(body('table').hidden).toBe(true);
     });
 
     it('restores the remembered state on the next visit', () => {
@@ -140,9 +127,9 @@ describe('SettingsComponent', () => {
       localStorage.setItem(SETTINGS_COLLAPSED_CARDS_KEY, JSON.stringify(['consolidation', 'directory']));
 
       const next = TestBed.createComponent(SettingsComponent);
-      expect(next.componentInstance.isCardCollapsed('consolidation')).toBeTrue();
-      expect(next.componentInstance.isCardCollapsed('directory')).toBeTrue();
-      expect(next.componentInstance.isCardCollapsed('index')).toBeFalse();
+      expect(next.componentInstance.isCardCollapsed('consolidation')).toBe(true);
+      expect(next.componentInstance.isCardCollapsed('directory')).toBe(true);
+      expect(next.componentInstance.isCardCollapsed('index')).toBe(false);
     });
 
     it('ignores unreadable stored state', () => {
@@ -154,13 +141,7 @@ describe('SettingsComponent', () => {
     });
   });
 
-  function flushInit(
-    settings: object = {},
-    names: string[] = ['Anna Example', 'Zoe Example'],
-    indexStatus: object = neverBuiltStatus,
-    consolidateStatus: object = idleConsolidateStatus,
-    tableInfo: object = { activeDbTable: 'movies_het', dbTables: ['movies_het', 'movies_bi'] },
-  ) {
+  function flushInit(settings: object = {}, names: string[] = ['Anna Example', 'Zoe Example'], indexStatus: object = neverBuiltStatus, consolidateStatus: object = idleConsolidateStatus, tableInfo: object = { activeDbTable: 'movies_het', dbTables: ['movies_het', 'movies_bi'] }) {
     httpMock
       .expectOne(settingsUrl)
       .flush({ settings, ...tableInfo });
@@ -181,7 +162,7 @@ describe('SettingsComponent', () => {
     expect(component).toBeTruthy();
     expect(component.defaultDirectory).toBe('/Volumes/Elsewhere/');
     expect(component.castNames.length).toBe(2);
-    expect(component.castNamesLoaded).toBeTrue();
+    expect(component.castNamesLoaded).toBe(true);
   });
 
   it('falls back to the environment default directory when none is stored', () => {
@@ -299,9 +280,7 @@ describe('SettingsComponent', () => {
       httpMock.expectOne(auditUrl).flush(auditResponse);
       fixture.detectChanges();
 
-      const sections = Array.from(
-        auditEl().querySelectorAll<HTMLElement>('.cast-audit-section'),
-      ).map((el) => el.dataset['kind']);
+      const sections = Array.from(auditEl().querySelectorAll<HTMLElement>('.cast-audit-section')).map((el) => el.dataset['kind']);
       expect(sections).toEqual(['duplicate', 'variant', 'junk', 'male']);
       expect(auditEl().querySelectorAll('.cast-audit-row').length).toBe(4);
       expect(auditEl().querySelector('.cast-audit-summary')!.textContent)
@@ -322,10 +301,10 @@ describe('SettingsComponent', () => {
       component.runCastAudit(); // ignored: one request only
       fixture.detectChanges();
       const button = auditEl().querySelector('.cast-audit-run') as HTMLButtonElement;
-      expect(button.disabled).toBeTrue();
+      expect(button.disabled).toBe(true);
       httpMock.expectOne(auditUrl).flush(auditResponse);
       fixture.detectChanges();
-      expect(button.disabled).toBeFalse();
+      expect(button.disabled).toBe(false);
     });
 
     it('says so when there is nothing to review', () => {
@@ -340,12 +319,12 @@ describe('SettingsComponent', () => {
         .expectOne(auditUrl)
         .flush({ message: 'Boom' }, { status: 500, statusText: 'Server Error' });
       expect(component.castAuditError).toBe('Boom');
-      expect(component.castAuditRunning).toBeFalse();
+      expect(component.castAuditRunning).toBe(false);
     });
 
     it('deleting a pair member keeps the other spelling on screen, resolved', () => {
       runAudit();
-      spyOn(window, 'confirm').and.returnValue(true);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       component.deleteAuditName(auditResponse.findings[0].names[1]);
       const req = httpMock.expectOne(manageUrl);
@@ -356,7 +335,7 @@ describe('SettingsComponent', () => {
       expect(component.castBlocked).toEqual(['Marla Vex']);
       const duplicate = component.castAudit!.findings.find((f) => f.kind === 'duplicate')!;
       expect(duplicate.names.map((n) => n.name)).toEqual(['MarlaVex']);
-      expect(component.isResolved(duplicate)).toBeTrue();
+      expect(component.isResolved(duplicate)).toBe(true);
       expect(component.castAuditStatus).toBe('Deleted “Marla Vex”.');
 
       fixture.detectChanges();
@@ -395,14 +374,14 @@ describe('SettingsComponent', () => {
 
       it('deletes every name in the section in one request, after confirming', () => {
         runAudit(maleResponse);
-        spyOn(window, 'confirm').and.returnValue(true);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
         (auditEl().querySelector('.cast-audit-delete-all') as HTMLButtonElement).click();
         const req = httpMock.expectOne(manageUrl);
         expect(req.request.body).toEqual({ action: 'deleteMany', names: ['Brock Hale', 'Tobin Quarry'] });
         expect(req.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
         req.flush({ names: ['Intro'], blocked: ['Brock Hale', 'Tobin Quarry'], deleted: 2 });
 
-        expect(component.castAudit!.findings.some((f) => f.kind === 'male')).toBeFalse();
+        expect(component.castAudit!.findings.some((f) => f.kind === 'male')).toBe(false);
         expect(component.castAudit!.findings.length).toBe(3);
         expect(component.castBlocked).toEqual(['Brock Hale', 'Tobin Quarry']);
         expect(component.castAuditStatus).toBe('Deleted 2 names.');
@@ -410,7 +389,7 @@ describe('SettingsComponent', () => {
 
       it('declining the confirm deletes nothing', () => {
         runAudit(maleResponse);
-        spyOn(window, 'confirm').and.returnValue(false);
+        vi.spyOn(window, 'confirm').mockReturnValue(false);
         component.deleteAllInSection(component.castAuditSections.find((s) => s.kind === 'male')!);
         expect(component.castAudit!.findings.length).toBe(5);
       });
@@ -418,7 +397,7 @@ describe('SettingsComponent', () => {
 
     it('deleting one of three spellings keeps the rest of the finding', () => {
       runAudit();
-      spyOn(window, 'confirm').and.returnValue(true);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       component.deleteAuditName(auditResponse.findings[1].names[2]);
       httpMock.expectOne(manageUrl).flush({ names: [], deleted: true });
@@ -430,7 +409,7 @@ describe('SettingsComponent', () => {
 
     it('declining the confirm deletes nothing', () => {
       runAudit();
-      spyOn(window, 'confirm').and.returnValue(false);
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
       component.deleteAuditName(auditResponse.findings[2].names[0]);
       expect(component.castAudit!.findings.length).toBe(4);
     });
@@ -443,7 +422,7 @@ describe('SettingsComponent', () => {
       httpMock
         .expectOne(manageUrl)
         .flush({ names: ['Introna Vale'], renamed: 'Introna Vale' });
-      expect(component.castAudit!.findings.some((f) => f.kind === 'junk')).toBeFalse();
+      expect(component.castAudit!.findings.some((f) => f.kind === 'junk')).toBe(false);
     });
 
     it('"Not a problem" dismisses the finding and counts it hidden', () => {
@@ -521,7 +500,7 @@ describe('SettingsComponent', () => {
         showHidden();
         const button = auditEl().querySelector('.cast-audit-delete-all') as HTMLButtonElement;
         expect(button.textContent).toContain('Delete all 1');
-        spyOn(window, 'confirm').and.returnValue(true);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
         button.click();
         const req = httpMock.expectOne(manageUrl);
         expect(req.request.body).toEqual({ action: 'deleteMany', names: ['Brock Hale'] });
@@ -645,11 +624,9 @@ describe('SettingsComponent', () => {
         expect(component.castNames).toContain('Orlena Rains');
         const variant = component.castAudit!.findings.find((f) => f.kind === 'variant')!;
         expect(variant.names.map((n) => n.name)).toEqual(['Orlena Rains']);
-        expect(component.isResolved(variant)).toBeTrue();
+        expect(component.isResolved(variant)).toBe(true);
         expect(respellEl()).toBeNull();
-        expect(component.castAuditStatus).toBe(
-          'Renamed 1 file to “Orlena Rains”. Removed “Orlena Rain”, “Orlenna Rains” from the list.',
-        );
+        expect(component.castAuditStatus).toBe('Renamed 1 file to “Orlena Rains”. Removed “Orlena Rain”, “Orlenna Rains” from the list.');
       });
 
       /** The re-preview an unfinished respell sends, answered with what's left. */
@@ -675,15 +652,13 @@ describe('SettingsComponent', () => {
           names: ['Orlena Rain', 'Orlena Rains', 'Orlenna Rains'],
           removed: false,
         });
-        expect(component.castRespellBusy).toBeTrue(); // until the refresh lands
+        expect(component.castRespellBusy).toBe(true); // until the refresh lands
         flushRefresh([previewFiles[1]]);
 
-        expect(component.castAudit!.findings.some((f) => f.kind === 'variant')).toBeTrue();
-        expect(component.castRespellBusy).toBeFalse();
-        expect(respellEl()!.querySelector('.cast-respell-message')!.textContent!.trim()).toBe(
-          'Renamed 1 file to “Orlena Rains”. 1 was left alone. ' +
-            '“Orlena Rain”, “Orlenna Rains” stays in the list while files still use it.',
-        );
+        expect(component.castAudit!.findings.some((f) => f.kind === 'variant')).toBe(true);
+        expect(component.castRespellBusy).toBe(false);
+        expect(respellEl()!.querySelector('.cast-respell-message')!.textContent!.trim()).toBe('Renamed 1 file to “Orlena Rains”. 1 was left alone. ' +
+          '“Orlena Rain”, “Orlenna Rains” stays in the list while files still use it.');
         expect(respellEl()!.querySelectorAll('.cast-respell-files li').length).toBe(1);
       });
 
@@ -714,7 +689,7 @@ describe('SettingsComponent', () => {
         expect(message).toContain('500');
         expect(message).toContain("Renames that went through are kept; what's left is below.");
         expect(respellEl()!.querySelector('.cast-respell-confirm')!.textContent).toContain('Rename 1 file');
-        expect((respellEl()!.querySelector('.cast-respell-confirm') as HTMLButtonElement).disabled).toBeFalse();
+        expect((respellEl()!.querySelector('.cast-respell-confirm') as HTMLButtonElement).disabled).toBe(false);
       });
 
       it('once nothing is left, the box offers to just remove the spellings', () => {
@@ -769,7 +744,7 @@ describe('SettingsComponent', () => {
         fixture.detectChanges();
         expect(respellEl()!.textContent).toContain('Tick a spelling to replace');
         const confirm = respellEl()!.querySelector('.cast-respell-confirm') as HTMLButtonElement;
-        expect(confirm.disabled).toBeTrue();
+        expect(confirm.disabled).toBe(true);
         component.confirmRespell(); // afterEach's verify() fails on any request
         // Ticking one again previews it
         component.toggleRespellSpelling('Orlenna Rains');
@@ -800,7 +775,7 @@ describe('SettingsComponent', () => {
         flushRefresh(previewFiles);
         expect(component.castRespellMessage).toContain('A consolidation is moving files');
         expect(component.castRespell).not.toBeNull();
-        expect(component.castRespellBusy).toBeFalse();
+        expect(component.castRespellBusy).toBe(false);
       });
 
       it('is unavailable while a consolidation runs', () => {
@@ -813,7 +788,7 @@ describe('SettingsComponent', () => {
 
       it('deleting a spelling closes a preview that involves it', () => {
         preview();
-        spyOn(window, 'confirm').and.returnValue(true);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
         component.deleteAuditName(auditResponse.findings[1].names[0]);
         httpMock.expectOne(manageUrl).flush({ names: [], deleted: true });
         expect(component.castRespell).toBeNull();
@@ -866,12 +841,12 @@ describe('SettingsComponent', () => {
       fixture.componentRef.changeDetectorRef.markForCheck();
       fixture.detectChanges();
       const el: HTMLElement = fixture.nativeElement;
-      const confirmSpy = spyOn(window, 'confirm').and.returnValue(true);
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
       (el.querySelector('.cast-blocked-forget') as HTMLElement).click();
-      expect(confirmSpy.calls.mostRecent().args[0]).toContain('come back when Add Cast');
+      expect(vi.mocked(confirmSpy).mock.lastCall![0]).toContain('come back when Add Cast');
       // The link sits in the toggle row but must not toggle it
-      expect(component.castBlockedExpanded).toBeFalse();
+      expect(component.castBlockedExpanded).toBe(false);
       const req = httpMock.expectOne(manageUrl);
       expect(req.request.body).toEqual({ action: 'forgetBlocked' });
       expect(req.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
@@ -893,7 +868,7 @@ describe('SettingsComponent', () => {
     it('declining the confirm forgets nothing', () => {
       flushInit({}, ['Anna Example']);
       component.castBlocked = ['Marla Vex'];
-      spyOn(window, 'confirm').and.returnValue(false);
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
       component.forgetAllBlocked(); // afterEach's verify() fails on any request
       expect(component.castBlocked).toEqual(['Marla Vex']);
     });
@@ -901,7 +876,7 @@ describe('SettingsComponent', () => {
     it('a later delete withdraws the undo (its backup is gone)', () => {
       flushInit({}, ['Anna Example']);
       component.castBlockedForgotten = 2;
-      spyOn(window, 'confirm').and.returnValue(true);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
       component.deleteName('Anna Example');
       httpMock.expectOne(manageUrl).flush({ names: [], blocked: ['Anna Example'], deleted: true });
       expect(component.castBlockedForgotten).toBe(0);
@@ -935,10 +910,7 @@ describe('SettingsComponent', () => {
   });
 
   describe('catalog table', () => {
-    const radios = () =>
-      Array.from(
-        fixture.nativeElement.querySelectorAll('input[name="dbTable"]'),
-      ) as HTMLInputElement[];
+    const radios = () => Array.from(fixture.nativeElement.querySelectorAll('input[name="dbTable"]')) as HTMLInputElement[];
 
     it('shows the table in effect', () => {
       flushInit({}, undefined, undefined, undefined, {
@@ -982,10 +954,7 @@ describe('SettingsComponent', () => {
       component.saveDbTable('movies_bi');
       httpMock
         .expectOne(settingsUrl)
-        .flush(
-          { message: 'dbTable must be one of: movies_het, movies_bi' },
-          { status: 400, statusText: 'Bad Request' },
-        );
+        .flush({ message: 'dbTable must be one of: movies_het, movies_bi' }, { status: 400, statusText: 'Bad Request' });
 
       expect(component.dbTable).toBe('movies_het');
       expect(component.dbTableStatus).toBe('error');
@@ -1006,13 +975,13 @@ describe('SettingsComponent', () => {
     it('defaults ON when the settings omit the key', () => {
       flushInit({});
 
-      expect(component.moveRenamedUpFromNeedsCast).toBeTrue();
+      expect(component.moveRenamedUpFromNeedsCast).toBe(true);
     });
 
     it('adopts a stored false', () => {
       flushInit({ moveRenamedUpFromNeedsCast: false });
 
-      expect(component.moveRenamedUpFromNeedsCast).toBeFalse();
+      expect(component.moveRenamedUpFromNeedsCast).toBe(false);
     });
 
     it('saves on toggle', () => {
@@ -1029,7 +998,7 @@ describe('SettingsComponent', () => {
         directoryExists: null,
       });
 
-      expect(component.moveRenamedUpFromNeedsCast).toBeFalse();
+      expect(component.moveRenamedUpFromNeedsCast).toBe(false);
       expect(component.moveUpStatus).toBe('saved');
     });
 
@@ -1039,13 +1008,10 @@ describe('SettingsComponent', () => {
       component.saveMoveUpSetting(false);
       httpMock
         .expectOne(settingsUrl)
-        .flush(
-          { message: 'Failed to write settings file' },
-          { status: 500, statusText: 'Server Error' },
-        );
+        .flush({ message: 'Failed to write settings file' }, { status: 500, statusText: 'Server Error' });
 
       // The server kept the old value, so the checkbox must show it
-      expect(component.moveRenamedUpFromNeedsCast).toBeTrue();
+      expect(component.moveRenamedUpFromNeedsCast).toBe(true);
       expect(component.moveUpStatus).toBe('error');
       expect(component.moveUpMessage).toContain('Failed to write');
     });
@@ -1089,7 +1055,7 @@ describe('SettingsComponent', () => {
     it('reports "Never built" from the status endpoint', () => {
       flushInit({});
 
-      expect(component.indexStatus?.exists).toBeFalse();
+      expect(component.indexStatus?.exists).toBe(false);
       expect(component.indexStatusLine).toBe('Never built');
     });
 
@@ -1141,7 +1107,7 @@ describe('SettingsComponent', () => {
       expect(component.indexStatusLine).toBe('Never built');
 
       component.rebuildIndex();
-      expect(component.isRebuilding).toBeTrue();
+      expect(component.isRebuilding).toBe(true);
 
       const req = httpMock.expectOne(driveIndexUrl);
       expect(req.request.body).toEqual({ action: 'rebuild' });
@@ -1155,20 +1121,18 @@ describe('SettingsComponent', () => {
         missingRoots: [],
       });
 
-      expect(component.isRebuilding).toBeFalse();
-      expect(component.indexStatus?.exists).toBeTrue();
+      expect(component.isRebuilding).toBe(false);
+      expect(component.indexStatus?.exists).toBe(true);
       expect(component.indexStatus?.fileCount).toBe(42);
       expect(component.indexStatusLine).toContain('Indexed 42 files');
     });
 
-    it('polls progress every 500ms during a rebuild and stops after', fakeAsync(() => {
+    it('polls progress every 500ms during a rebuild and stops after', async () => {
       flushInit({});
       component.rebuildIndex();
-      const rebuildReq = httpMock.expectOne(
-        (r) => r.url === driveIndexUrl && r.body.action === 'rebuild',
-      );
+      const rebuildReq = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'rebuild');
 
-      tick(500);
+      await vi.advanceTimersByTimeAsync(500);
       httpMock
         .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'progress')
         .flush({
@@ -1189,15 +1153,13 @@ describe('SettingsComponent', () => {
         roots: [],
         missingRoots: [],
       });
-      expect(component.isRebuilding).toBeFalse();
+      expect(component.isRebuilding).toBe(false);
       expect(component.rebuildProgress).toBeNull();
 
       // Polling must stop with the rebuild
-      tick(2000);
-      httpMock.expectNone(
-        (r) => r.url === driveIndexUrl && r.body.action === 'progress',
-      );
-    }));
+      await vi.advanceTimersByTimeAsync(2000);
+      httpMock.expectNone((r) => r.url === driveIndexUrl && r.body.action === 'progress');
+    });
 
     it('surfaces a rebuild failure without wedging the button', () => {
       flushInit({});
@@ -1205,12 +1167,9 @@ describe('SettingsComponent', () => {
       component.rebuildIndex();
       httpMock
         .expectOne(driveIndexUrl)
-        .flush(
-          { message: 'A rebuild is already running' },
-          { status: 500, statusText: 'Server Error' },
-        );
+        .flush({ message: 'A rebuild is already running' }, { status: 500, statusText: 'Server Error' });
 
-      expect(component.isRebuilding).toBeFalse();
+      expect(component.isRebuilding).toBe(false);
       expect(component.rebuildError).toBe('A rebuild is already running');
     });
 
@@ -1219,7 +1178,7 @@ describe('SettingsComponent', () => {
       fixture.detectChanges();
 
       const el: HTMLElement = fixture.nativeElement;
-      expect(component.rootsExpanded).toBeFalse();
+      expect(component.rootsExpanded).toBe(false);
       expect(el.querySelector('.root-input')).toBeNull();
       const toggle = el.querySelector('.roots-toggle') as HTMLElement;
       expect(toggle.textContent).toContain('Library roots (1)');
@@ -1227,7 +1186,7 @@ describe('SettingsComponent', () => {
       toggle.click();
       fixture.detectChanges();
 
-      expect(component.rootsExpanded).toBeTrue();
+      expect(component.rootsExpanded).toBe(true);
       expect(el.querySelector('.root-input')).toBeTruthy();
     });
   });
@@ -1267,13 +1226,10 @@ describe('SettingsComponent', () => {
       // OnPush: a field set from outside the component doesn't dirty ITS view
       (component['cdr'] as ChangeDetectorRef).markForCheck();
       fixture.detectChanges();
-      return Array.from(
-        (fixture.nativeElement as HTMLElement).querySelectorAll('.normalize-row'),
-      );
+      return Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.normalize-row'));
     }
 
-    const inputOf = (row: HTMLElement) =>
-      row.querySelector<HTMLInputElement>('input.root-input')!;
+    const inputOf = (row: HTMLElement) => row.querySelector<HTMLInputElement>('input.root-input')!;
 
     it('collapses the folder list by default and expands on toggle', () => {
       flushInit({ driveIndexRoots: [rootA] });
@@ -1347,14 +1303,11 @@ describe('SettingsComponent', () => {
 
     it('surfaces a rejected folder inline', () => {
       flushInit({ driveIndexRoots: [rootA] });
-      spyOn(console, 'error');
+      vi.spyOn(console, 'error').mockReturnValue(undefined as never);
 
       component.normalizeFolders = ['/etc'];
       component.saveNormalizeFolders();
-      httpMock.expectOne(settingsUrl).flush(
-        { success: false, message: 'normalizeRoots entry is not an allowed absolute path: /etc' },
-        { status: 400, statusText: 'Bad Request' },
-      );
+      httpMock.expectOne(settingsUrl).flush({ success: false, message: 'normalizeRoots entry is not an allowed absolute path: /etc' }, { status: 400, statusText: 'Bad Request' });
 
       const el: HTMLElement = fixture.nativeElement;
       rows();
@@ -1370,13 +1323,13 @@ describe('SettingsComponent', () => {
       component.removeNormalizeFolder(0);
       expect(component.normalizeFolders).toEqual([rootB, '']);
       // A blank row has nothing to scan
-      expect(rows()[1].querySelector<HTMLButtonElement>('button.normalize-btn')!.disabled).toBeTrue();
+      expect(rows()[1].querySelector<HTMLButtonElement>('button.normalize-btn')!.disabled).toBe(true);
     });
 
     it('scans the root and reviews only the files whose names would change', () => {
       flushInit({ driveIndexRoots: [rootA] });
       const fake = fakeModal();
-      const open = spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(fake.ref);
+      const open = vi.spyOn(TestBed.inject(NgbModal), 'open').mockReturnValue(fake.ref);
 
       component.normalizeRoot(rootA);
       const req = httpMock.expectOne(checkUrl);
@@ -1389,10 +1342,9 @@ describe('SettingsComponent', () => {
         ],
       });
 
-      expect(open).toHaveBeenCalledOnceWith(
-        FileNormalizationModalComponent,
-        jasmine.objectContaining({ size: 'xl' }),
-      );
+      expect(open).toHaveBeenCalledTimes(1);
+
+      expect(open).toHaveBeenCalledWith(FileNormalizationModalComponent, expect.objectContaining({ size: 'xl' }));
       const instance = fake.ref.componentInstance;
       expect(instance.files.map((f: NormalizedFile) => f.originalFileName)).toEqual([
         'kept me up.mp4',
@@ -1400,10 +1352,10 @@ describe('SettingsComponent', () => {
       ]);
       expect(instance.directory).toBe(rootA);
       // A whole root must not be mined into the cast store
-      expect(instance.harvestDirectoryCastNames).toBeFalse();
-      expect(instance.landOnAddCastAfterRename).toBeFalse();
+      expect(instance.harvestDirectoryCastNames).toBe(false);
+      expect(instance.landOnAddCastAfterRename).toBe(false);
       // Library files are catalogued: offer to update their database titles
-      expect(instance.offerDbTitleUpdates).toBeTrue();
+      expect(instance.offerDbTitleUpdates).toBe(true);
     });
 
     it('shows the scan in flight and ignores clicks until it answers', () => {
@@ -1416,17 +1368,17 @@ describe('SettingsComponent', () => {
       const req = httpMock.expectOne(checkUrl);
       rows();
       expect(a.querySelector('button')!.textContent).toContain('Scanning…');
-      expect(b.querySelector('button')!.disabled).toBeTrue();
+      expect(b.querySelector('button')!.disabled).toBe(true);
 
       req.flush({ files: [scanFile('Already Fine.mp4')] });
       rows();
       expect(a.querySelector('button')!.textContent).toContain('Normalize…');
-      expect(b.querySelector('button')!.disabled).toBeFalse();
+      expect(b.querySelector('button')!.disabled).toBe(false);
     });
 
     it('says so instead of opening an empty review', () => {
       flushInit({ driveIndexRoots: [rootA] });
-      const open = spyOn(TestBed.inject(NgbModal), 'open');
+      const open = vi.spyOn(TestBed.inject(NgbModal), 'open').mockReturnValue(undefined as never);
 
       component.normalizeRoot(rootA);
       httpMock
@@ -1439,29 +1391,24 @@ describe('SettingsComponent', () => {
 
     it('surfaces a failed scan inline and re-enables the button', () => {
       flushInit({ driveIndexRoots: [rootA] });
-      spyOn(console, 'error'); // FileService logs the HTTP failure
+      vi.spyOn(console, 'error').mockReturnValue(undefined as never); // FileService logs the HTTP failure
 
       component.normalizeRoot(rootA);
       httpMock
         .expectOne(checkUrl)
-        .flush(
-          { success: false, message: 'Invalid directory path' },
-          { status: 400, statusText: 'Bad Request' },
-        );
+        .flush({ success: false, message: 'Invalid directory path' }, { status: 400, statusText: 'Bad Request' });
 
       const [a] = rows();
-      expect(a.querySelector('.normalize-result')!.textContent).toContain(
-        "Couldn't scan: Invalid directory path",
-      );
+      expect(a.querySelector('.normalize-result')!.textContent).toContain("Couldn't scan: Invalid directory path");
       expect(a.querySelector('.normalize-result')!.classList).toContain('text-danger');
-      expect(a.querySelector('button')!.disabled).toBeFalse();
+      expect(a.querySelector('button')!.disabled).toBe(false);
     });
 
     it('after renames, reports the count and rebuilds the index', async () => {
       flushInit({ driveIndexRoots: [rootA] });
       const fake = fakeModal();
-      spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(fake.ref);
-      const rebuild = spyOn(component, 'rebuildIndex');
+      vi.spyOn(TestBed.inject(NgbModal), 'open').mockReturnValue(fake.ref);
+      const rebuild = vi.spyOn(component, 'rebuildIndex').mockReturnValue(undefined as never);
 
       component.normalizeRoot(rootA);
       httpMock.expectOne(checkUrl).flush({
@@ -1482,8 +1429,8 @@ describe('SettingsComponent', () => {
     it('closing without renaming leaves the index alone', async () => {
       flushInit({ driveIndexRoots: [rootA] });
       const fake = fakeModal();
-      spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(fake.ref);
-      const rebuild = spyOn(component, 'rebuildIndex');
+      vi.spyOn(TestBed.inject(NgbModal), 'open').mockReturnValue(fake.ref);
+      const rebuild = vi.spyOn(component, 'rebuildIndex').mockReturnValue(undefined as never);
 
       component.normalizeRoot(rootA);
       httpMock.expectOne(checkUrl).flush({
@@ -1492,9 +1439,7 @@ describe('SettingsComponent', () => {
       fake.dismiss();
       await fake.ref.result.catch(() => undefined);
 
-      expect(component.normalizeResults[rootA].text).toBe(
-        'Nothing renamed (2 proposed).',
-      );
+      expect(component.normalizeResults[rootA].text).toBe('Nothing renamed (2 proposed).');
       expect(rebuild).not.toHaveBeenCalled();
     });
 
@@ -1505,7 +1450,7 @@ describe('SettingsComponent', () => {
       (component['cdr'] as ChangeDetectorRef).markForCheck();
 
       const [a] = rows();
-      expect(a.querySelector('button')!.disabled).toBeTrue();
+      expect(a.querySelector('button')!.disabled).toBe(true);
       expect(fixture.nativeElement.querySelector('.normalize-paused')).toBeTruthy();
       component.normalizeRoot(rootA);
       httpMock.expectNone(checkUrl);
@@ -1518,17 +1463,13 @@ describe('SettingsComponent', () => {
     it('loads consolidate settings from the status endpoint into the form', () => {
       flushInit();
 
-      expect(component.consolidateDrives).toEqual(
-        fixtureConsolidateSettings.drives,
-      );
-      expect(component.consolidateBalanceTo).toBe(
-        '/Volumes/Fixture B/recorded',
-      );
+      expect(component.consolidateDrives).toEqual(fixtureConsolidateSettings.drives);
+      expect(component.consolidateBalanceTo).toBe('/Volumes/Fixture B/recorded');
       expect(component.consolidateTargetFreeGb).toBe(100);
       expect(component.consolidateReserveGb).toBe(20);
-      expect(component.consolidateBalance).toBeTrue();
-      expect(component.consolidateRecursive).toBeFalse();
-      expect(component.isConsolidating).toBeFalse();
+      expect(component.consolidateBalance).toBe(true);
+      expect(component.consolidateRecursive).toBe(false);
+      expect(component.isConsolidating).toBe(false);
     });
 
     it('collapses Paths & options by default and expands on toggle', () => {
@@ -1536,13 +1477,13 @@ describe('SettingsComponent', () => {
       fixture.detectChanges();
 
       const el: HTMLElement = fixture.nativeElement;
-      expect(component.consolidateOptionsExpanded).toBeFalse();
+      expect(component.consolidateOptionsExpanded).toBe(false);
       expect(el.querySelector('.drive-input')).toBeNull();
 
       (el.querySelector('.consolidate-options-toggle') as HTMLElement).click();
       fixture.detectChanges();
 
-      expect(component.consolidateOptionsExpanded).toBeTrue();
+      expect(component.consolidateOptionsExpanded).toBe(true);
       expect(el.querySelectorAll('.drive-input').length).toBe(2);
     });
 
@@ -1595,35 +1536,28 @@ describe('SettingsComponent', () => {
       expect(component.consolidateSaveMessage).toContain('balance-to');
     });
 
-    it('a dry run posts execute:false and polls progress every 1s', fakeAsync(() => {
+    it('a dry run posts execute:false and polls progress every 1s', async () => {
       flushInit();
 
       component.dryRun = true;
       component.runConsolidate();
 
-      const runReq = httpMock.expectOne(
-        (r) => r.url === consolidateUrl && r.body.action === 'run',
-      );
+      const runReq = httpMock.expectOne((r) => r.url === consolidateUrl && r.body.action === 'run');
       expect(runReq.request.body).toEqual({ action: 'run', execute: false });
-      expect(runReq.request.headers.get('X-Requested-With')).toBe(
-        'XMLHttpRequest',
-      );
+      expect(runReq.request.headers.get('X-Requested-With')).toBe('XMLHttpRequest');
       runReq.flush({ started: true, pid: 4242 });
-      expect(component.isConsolidating).toBeTrue();
+      expect(component.isConsolidating).toBe(true);
 
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({
           active: true,
           phase: 'groups',
           group: 'Imaginary Serial Adventures',
           groupsDone: 2,
           groupsTotal: 10,
-          currentSrc:
-            '/Volumes/Fixture A/recorded/Imaginary Serial Adventures # 03.mp4',
+        currentSrc: '/Volumes/Fixture A/recorded/Imaginary Serial Adventures # 03.mp4',
           movedBytes: 1500000000,
           moved: 3,
           duped: 1,
@@ -1633,30 +1567,22 @@ describe('SettingsComponent', () => {
       fixture.detectChanges();
 
       // Three short lines, not one that wraps several times mid-run
-      expect(component.consolidatePhaseLine).toBe(
-        'Consolidating groups — group 3 of 10:',
-      );
-      expect(component.consolidateGroupLine).toBe(
-        'Imaginary Serial Adventures — Imaginary Serial Adventures # 03.mp4',
-      );
+      expect(component.consolidatePhaseLine).toBe('Consolidating groups — group 3 of 10:');
+      expect(component.consolidateGroupLine).toBe('Imaginary Serial Adventures — Imaginary Serial Adventures # 03.mp4');
       expect(component.consolidateStalledNote).toBe('');
       expect(component.consolidateCountsLine).toContain('3 moved');
       expect(component.consolidateCountsLine).toContain('1.50');
 
-      const readout = fixture.nativeElement.querySelector(
-        '.consolidate-progress',
-      );
+      const readout = fixture.nativeElement.querySelector('.consolidate-progress');
       expect(readout).toBeTruthy();
       expect(readout.textContent).toContain('group 3 of 10');
       expect(readout.textContent).toContain('DRY RUN');
 
-      // Leaving the page stops the poll. (discardPeriodicTasks would not:
-      // it only clears fakeAsync's bookkeeping, and this zone.js version's
-      // fakeAsync exit-flush would fire the still-queued interval once more.)
+      // Leaving the page stops the poll, so no interval outlives the test.
       component.ngOnDestroy();
-    }));
+    });
 
-    it('stops polling when progress goes inactive and refreshes status', fakeAsync(() => {
+    it('stops polling when progress goes inactive and refreshes status', async () => {
       flushInit();
 
       component.dryRun = true;
@@ -1665,18 +1591,14 @@ describe('SettingsComponent', () => {
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 4242 });
 
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({ active: false });
 
       // Inactive progress ends the run: status is refreshed for the summary
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'status',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'status')
         .flush({
           running: false,
           pid: null,
@@ -1694,20 +1616,18 @@ describe('SettingsComponent', () => {
           settings: fixtureConsolidateSettings,
         });
 
-      expect(component.isConsolidating).toBeFalse();
+      expect(component.isConsolidating).toBe(false);
       expect(component.consolidateLastRunLine).toContain('Dry run finished');
       expect(component.consolidateLastRunLine).toContain('(took 2m 34s)');
       expect(component.consolidateLastRunLine).toContain('12 moved');
       expect(component.consolidateLastRunLine).toContain('3.50');
 
       // Polling must stop with the run
-      tick(3000);
-      httpMock.expectNone(
-        (r) => r.url === consolidateUrl && r.body.action === 'progress',
-      );
-    }));
+      await vi.advanceTimersByTimeAsync(3000);
+      httpMock.expectNone((r) => r.url === consolidateUrl && r.body.action === 'progress');
+    });
 
-    it('one inactive poll does NOT end the run while status says running (long mv)', fakeAsync(() => {
+    it('one inactive poll does NOT end the run while status says running (long mv)', async () => {
       flushInit();
 
       component.dryRun = true;
@@ -1716,11 +1636,9 @@ describe('SettingsComponent', () => {
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 4242 });
 
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({ active: false }); // e.g. sidecar read raced the spawn
 
       // The process is the completion oracle: still running -> resume polling
@@ -1732,13 +1650,11 @@ describe('SettingsComponent', () => {
           lastRun: null,
           settings: fixtureConsolidateSettings,
         });
-      expect(component.isConsolidating).toBeTrue();
+      expect(component.isConsolidating).toBe(true);
 
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({
           active: true,
           phase: 'groups',
@@ -1755,20 +1671,18 @@ describe('SettingsComponent', () => {
       expect(component.consolidatePhaseLine).not.toContain('Still copying');
 
       component.ngOnDestroy();
-    }));
+    });
 
-    it('skipped groups surface in the counts and last-run lines', fakeAsync(() => {
+    it('skipped groups surface in the counts and last-run lines', async () => {
       flushInit();
       component.dryRun = true;
       component.runConsolidate();
       httpMock
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 1 });
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({
           active: true,
           phase: 'groups',
@@ -1799,20 +1713,18 @@ describe('SettingsComponent', () => {
         settings: fixtureConsolidateSettings,
       };
       expect(component.consolidateLastRunLine).toContain('3 groups skipped');
-    }));
+    });
 
-    it('# 01 renames surface in the counts and last-run lines', fakeAsync(() => {
+    it('# 01 renames surface in the counts and last-run lines', async () => {
       flushInit();
       component.dryRun = true;
       component.runConsolidate();
       httpMock
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 1 });
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({
           active: true,
           phase: 'groups',
@@ -1848,20 +1760,18 @@ describe('SettingsComponent', () => {
       // renamed stays out of the line entirely when the run had none
       component.consolidateStatus.lastRun!.renamed = 0;
       expect(component.consolidateLastRunLine).not.toContain('renamed');
-    }));
+    });
 
-    it('the index-rebuild phase reads as its own step, not a stalled copy', fakeAsync(() => {
+    it('the index-rebuild phase reads as its own step, not a stalled copy', async () => {
       flushInit();
       component.dryRun = true;
       component.runConsolidate();
       httpMock
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 1 });
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({
           active: true,
           phase: 'index',
@@ -1883,9 +1793,9 @@ describe('SettingsComponent', () => {
       expect(component.consolidateStalledNote).toBe('This can take a minute.');
 
       component.ngOnDestroy();
-    }));
+    });
 
-    it('a finished run that rebuilt the index refreshes the index card', fakeAsync(() => {
+    it('a finished run that rebuilt the index refreshes the index card', async () => {
       flushInit();
       // Roots the user is mid-edit — the refresh must not overwrite them
       component.driveIndexRoots = ['/Volumes/User Edited'];
@@ -1894,16 +1804,12 @@ describe('SettingsComponent', () => {
       httpMock
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 1 });
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({ active: false });
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'status',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'status')
         .flush({
           running: false,
           pid: null,
@@ -1923,9 +1829,7 @@ describe('SettingsComponent', () => {
         });
 
       // The rebuilt index means the card's count/timestamp are stale
-      const statusReq = httpMock.expectOne(
-        (r) => r.url === driveIndexUrl && r.body.action === 'status',
-      );
+      const statusReq = httpMock.expectOne((r) => r.url === driveIndexUrl && r.body.action === 'status');
       statusReq.flush({
         exists: true,
         fileCount: 4242,
@@ -1937,32 +1841,25 @@ describe('SettingsComponent', () => {
       // Roots the user may be editing must NOT be overwritten by that refresh
       expect(component.driveIndexRoots).toEqual(['/Volumes/User Edited']);
       expect(component.consolidateLastRunLine).toContain('Drive index rebuilt');
-    }));
+    });
 
-    it('the post-run index refresh clears a stale error and repaints the card', fakeAsync(() => {
+    it('the post-run index refresh clears a stale error and repaints the card', async () => {
       flushInit();
       // An earlier status read failed; the card is hidden behind that error
       component.indexStatusError = 'Failed to fetch';
-      const markForCheck = spyOn(
-        component['cdr'] as ChangeDetectorRef,
-        'markForCheck',
-      ).and.callThrough();
+      const markForCheck = vi.spyOn(component['cdr'] as ChangeDetectorRef, 'markForCheck');
 
       component.dryRun = true;
       component.runConsolidate();
       httpMock
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 1 });
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({ active: false });
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'status',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'status')
         .flush({
           running: false,
           pid: null,
@@ -1980,11 +1877,9 @@ describe('SettingsComponent', () => {
           settings: fixtureConsolidateSettings,
         });
 
-      markForCheck.calls.reset();
+      markForCheck.mockClear();
       httpMock
-        .expectOne(
-          (r) => r.url === driveIndexUrl && r.body.action === 'status',
-        )
+        .expectOne((r) => r.url === driveIndexUrl && r.body.action === 'status')
         .flush({
           exists: true,
           fileCount: 30319,
@@ -2001,41 +1896,35 @@ describe('SettingsComponent', () => {
       fixture.detectChanges();
       const card = fixture.nativeElement.querySelector('.index-status-line');
       expect(card?.textContent ?? '').toContain('30319');
-    }));
+    });
 
     it('Rebuild Index is disabled while a consolidation owns the index', () => {
       flushInit();
       fixture.detectChanges();
-      const button = (
-        fixture.nativeElement as HTMLElement
-      ).querySelector<HTMLButtonElement>('.card button.btn-secondary');
+      const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.card button.btn-secondary');
       expect(button?.textContent).toContain('Rebuild Index');
-      expect(button?.disabled).toBeFalse();
+      expect(button?.disabled).toBe(false);
 
       component.isConsolidating = true;
       // OnPush: a field set from outside the component doesn't dirty ITS view
       (component['cdr'] as ChangeDetectorRef).markForCheck();
       fixture.detectChanges();
-      expect(button?.disabled).toBeTrue();
-      expect(
-        fixture.nativeElement.querySelector('.consolidation-owns-index'),
-      ).toBeTruthy();
+      expect(button?.disabled).toBe(true);
+      expect(fixture.nativeElement.querySelector('.consolidation-owns-index')).toBeTruthy();
 
       component.isConsolidating = false;
     });
 
-    it('files needing review are called out in both lines', fakeAsync(() => {
+    it('files needing review are called out in both lines', async () => {
       flushInit();
       component.dryRun = true;
       component.runConsolidate();
       httpMock
         .expectOne((r) => r.url === consolidateUrl && r.body.action === 'run')
         .flush({ started: true, pid: 1 });
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({
           active: true,
           phase: 'groups',
@@ -2069,7 +1958,7 @@ describe('SettingsComponent', () => {
       // Silent when there is nothing to review
       component.consolidateStatus.lastRun!.flagged = 0;
       expect(component.consolidateLastRunLine).not.toContain('review');
-    }));
+    });
 
     it('a failed index rebuild is called out in the last-run line', () => {
       flushInit();
@@ -2089,9 +1978,7 @@ describe('SettingsComponent', () => {
         },
         settings: fixtureConsolidateSettings,
       };
-      expect(component.consolidateLastRunLine).toContain(
-        'Drive index rebuild FAILED',
-      );
+      expect(component.consolidateLastRunLine).toContain('Drive index rebuild FAILED');
 
       // Not attempted (dry run / no changes) says nothing at all
       component.consolidateStatus.lastRun!.indexRebuilt = null;
@@ -2162,19 +2049,14 @@ describe('SettingsComponent', () => {
     });
 
     it('warns about drives that are not mounted right now', () => {
-      flushInit(
-        {},
-        undefined,
-        {
+      flushInit({}, undefined, {
           ...neverBuiltStatus,
           roots: ['/Volumes/Recorded 1/recorded', '/Volumes/Etc/Extra'],
           unmountedRoots: ['/Volumes/Etc/Extra'],
-        },
-        {
+      }, {
           ...idleConsolidateStatus,
           unmountedDrives: ['/Volumes/Recorded 4/recorded'],
-        },
-      );
+      });
       fixture.detectChanges();
 
       expect(component.unmountedRoots).toEqual(['/Volumes/Etc/Extra']);
@@ -2203,15 +2085,13 @@ describe('SettingsComponent', () => {
     it('unsaved consolidate edits disable Run until saved', () => {
       flushInit();
 
-      expect(component.consolidateFormDirty).toBeFalse();
+      expect(component.consolidateFormDirty).toBe(false);
       component.consolidateReserveGb = 55;
-      expect(component.consolidateFormDirty).toBeTrue();
+      expect(component.consolidateFormDirty).toBe(true);
 
       component.runConsolidate();
       // A dirty form must not fire a run — nothing hits the endpoint
-      httpMock.expectNone(
-        (r) => r.url === consolidateUrl && r.body.action === 'run',
-      );
+      httpMock.expectNone((r) => r.url === consolidateUrl && r.body.action === 'run');
 
       component.saveConsolidateSettings();
       const req = httpMock.expectOne(settingsUrl);
@@ -2225,75 +2105,62 @@ describe('SettingsComponent', () => {
         },
         directoryExists: null,
       });
-      expect(component.consolidateFormDirty).toBeFalse();
+      expect(component.consolidateFormDirty).toBe(false);
     });
 
     it('a non-dry run requires confirmation; declining sends nothing', () => {
       flushInit();
 
-      spyOn(window, 'confirm').and.returnValue(false);
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
       // A real run is the DEFAULT — dry-run is the opt-in
-      expect(component.dryRun).toBeFalse();
+      expect(component.dryRun).toBe(false);
       component.runConsolidate();
 
       expect(window.confirm).toHaveBeenCalled();
       // No run request goes out — afterEach's verify() would catch one
-      httpMock.expectNone(
-        (r) => r.url === consolidateUrl && r.body.action === 'run',
-      );
-      expect(component.isConsolidating).toBeFalse();
+      httpMock.expectNone((r) => r.url === consolidateUrl && r.body.action === 'run');
+      expect(component.isConsolidating).toBe(false);
     });
 
     it('a confirmed non-dry run posts execute:true; a 409 refusal surfaces inline', () => {
       flushInit();
 
-      spyOn(window, 'confirm').and.returnValue(true);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
       component.dryRun = false;
       component.runConsolidate();
 
-      const req = httpMock.expectOne(
-        (r) => r.url === consolidateUrl && r.body.action === 'run',
-      );
+      const req = httpMock.expectOne((r) => r.url === consolidateUrl && r.body.action === 'run');
       expect(req.request.body).toEqual({ action: 'run', execute: true });
-      req.flush(
-        { message: 'A consolidation is already running' },
-        { status: 409, statusText: 'Conflict' },
-      );
+      req.flush({ message: 'A consolidation is already running' }, { status: 409, statusText: 'Conflict' });
 
-      expect(component.isConsolidating).toBeFalse();
-      expect(component.consolidateRunError).toBe(
-        'A consolidation is already running',
-      );
+      expect(component.isConsolidating).toBe(false);
+      expect(component.consolidateRunError).toBe('A consolidation is already running');
     });
 
-    it('resumes polling on init when a run is already active', fakeAsync(() => {
+    it('resumes polling on init when a run is already active', async () => {
       flushInit({}, undefined, neverBuiltStatus, {
         ...idleConsolidateStatus,
         running: true,
         pid: 999,
       });
 
-      expect(component.isConsolidating).toBeTrue();
+      expect(component.isConsolidating).toBe(true);
 
-      tick(1000);
+      await vi.advanceTimersByTimeAsync(1000);
       httpMock
-        .expectOne(
-          (r) => r.url === consolidateUrl && r.body.action === 'progress',
-        )
+        .expectOne((r) => r.url === consolidateUrl && r.body.action === 'progress')
         .flush({ active: true, phase: 'scan', dryRun: false });
       expect(component.consolidatePhaseLine).toContain('Scanning drives');
 
       // Leaving the page stops the poll (see the dry-run test's note)
       component.ngOnDestroy();
-    }));
+    });
 
     it('fetches the log tail when the log section expands and parses it into rows', () => {
       flushInit();
 
       component.toggleConsolidateLog();
-      const req = httpMock.expectOne(
-        (r) => r.url === consolidateUrl && r.body.action === 'logTail',
-      );
+      const req = httpMock.expectOne((r) => r.url === consolidateUrl && r.body.action === 'logTail');
       expect(req.request.body).toEqual({ action: 'logTail', lines: 400, actions: true });
       req.flush({
         lines: [
@@ -2324,7 +2191,7 @@ describe('SettingsComponent', () => {
 
       // Collapsing must not refetch — afterEach's verify() would catch one
       component.toggleConsolidateLog();
-      expect(component.consolidateLogExpanded).toBeFalse();
+      expect(component.consolidateLogExpanded).toBe(false);
     });
   });
 });

@@ -1,8 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { MovieService, Movie } from './movie.service';
 import { environment } from '@env/environment';
 
@@ -70,7 +67,7 @@ describe('MovieService', () => {
   describe('updateRow', () => {
     it('should send a POST request with id, field, and value', () => {
       service.updateRow(1, 'title', 'Updated Title').subscribe((res) => {
-        expect(res.success).toBeTrue();
+        expect(res.success).toBe(true);
       });
 
       const req = httpMock.expectOne(`${baseUrl}editCurrentRow.php`);
@@ -89,7 +86,7 @@ describe('MovieService', () => {
   describe('deleteRow', () => {
     it('should send a POST request with the movie id', () => {
       service.deleteRow(5).subscribe((res) => {
-        expect(res.success).toBeTrue();
+        expect(res.success).toBe(true);
       });
 
       const req = httpMock.expectOne(`${baseUrl}deleteRow.php`);
@@ -106,17 +103,14 @@ describe('MovieService', () => {
       req.flush({ success: true });
     });
 
-    it("surfaces the server's refusal after a table switch", (done) => {
+    it("surfaces the server's refusal after a table switch", async () => {
       service.deleteRow(5).subscribe({
         error: (e: Error) => {
           expect(e.message).toContain('reload this list');
-          done();
+          ;
         },
       });
-      httpMock.expectOne(`${baseUrl}deleteRow.php`).flush(
-        { success: false, tableChanged: true, message: 'The catalog table is now movies_bi — reload this list before changing rows.' },
-        { status: 409, statusText: 'Conflict' },
-      );
+      httpMock.expectOne(`${baseUrl}deleteRow.php`).flush({ success: false, tableChanged: true, message: 'The catalog table is now movies_bi — reload this list before changing rows.' }, { status: 409, statusText: 'Conflict' });
     });
   });
 });

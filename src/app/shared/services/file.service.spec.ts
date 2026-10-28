@@ -1,13 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
-import {
-  FileService,
-  NormalizedFile,
-  ProcessFilesResponse,
-} from './file.service';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
+import { FileService, NormalizedFile, ProcessFilesResponse, } from './file.service';
 import { environment } from '@env/environment';
 
 describe('FileService', () => {
@@ -35,22 +28,22 @@ describe('FileService', () => {
   it('sends the CSRF header on every request', () => {
     // rename, process, edit, Finder search and cast merges are server-gated;
     // the read-only calls send it too, so no call site has to choose
-    const calls: Array<[string, () => void]> = [
+    const calls: Array<[
+      string,
+      () => void
+    ]> = [
       ['checkFileNamesToNormalize.php', () => service.checkFileNamesToNormalize('/test').subscribe()],
       ['renameTheFilesToNormalize.php', () => service.renameTheFilesToNormalize([]).subscribe()],
       ['processFilesForDB.php', () => service.processFilesForDB('/test').subscribe()],
       ['openExternalDriveSearch.php', () => service.openExternalDriveSearch('q').subscribe()],
       ['normalizeName.php', () => service.normalizeName('x', false).subscribe()],
       ['castNames.php', () => service.getCastNames('/test', ['Marla Vex']).subscribe()],
-      ['editCurrentRow.php', () =>
-        service.updateRow(1, { dimensions: '', filesize: 0, duration: 0 }).subscribe()],
+      ['editCurrentRow.php', () => service.updateRow(1, { dimensions: '', filesize: 0, duration: 0 }).subscribe()],
     ];
     for (const [endpoint, call] of calls) {
       call();
       const req = httpMock.expectOne(`${baseUrl}${endpoint}`);
-      expect(req.request.headers.get('X-Requested-With'))
-        .withContext(endpoint)
-        .toBe('XMLHttpRequest');
+      expect(req.request.headers.get('X-Requested-With'), endpoint).toBe('XMLHttpRequest');
       req.flush({});
     }
   });
@@ -73,7 +66,7 @@ describe('FileService', () => {
 
       service.checkFileNamesToNormalize('/test').subscribe((res) => {
         expect(res.files.length).toBe(1);
-        expect(res.files[0].needsNormalization).toBeTrue();
+        expect(res.files[0].needsNormalization).toBe(true);
       });
 
       const req = httpMock.expectOne(`${baseUrl}checkFileNamesToNormalize.php`);
@@ -170,7 +163,7 @@ describe('FileService', () => {
   describe('openExternalDriveSearch', () => {
     it('should POST query and return response', () => {
       service.openExternalDriveSearch('test query').subscribe((res) => {
-        expect(res.success).toBeTrue();
+        expect(res.success).toBe(true);
       });
 
       const req = httpMock.expectOne(`${baseUrl}openExternalDriveSearch.php`);
@@ -185,7 +178,7 @@ describe('FileService', () => {
       const updateFields = { dimensions: '1920x1080', filesize: 1048576, duration: 3600 };
 
       service.updateRow(1, updateFields).subscribe((res) => {
-        expect(res.success).toBeTrue();
+        expect(res.success).toBe(true);
       });
 
       const req = httpMock.expectOne(`${baseUrl}editCurrentRow.php`);
@@ -194,17 +187,14 @@ describe('FileService', () => {
       req.flush({ success: true });
     });
 
-    it("surfaces the server's refusal after a table switch", (done) => {
+    it("surfaces the server's refusal after a table switch", async () => {
       service.updateRow(1, { dimensions: '640 x 480', filesize: 1, duration: 1 }).subscribe({
         error: (e: Error) => {
           expect(e.message).toContain('reload this list');
-          done();
+          ;
         },
       });
-      httpMock.expectOne(`${baseUrl}editCurrentRow.php`).flush(
-        { success: false, tableChanged: true, message: 'The catalog table is now movies_bi — reload this list before changing rows.' },
-        { status: 409, statusText: 'Conflict' },
-      );
+      httpMock.expectOne(`${baseUrl}editCurrentRow.php`).flush({ success: false, tableChanged: true, message: 'The catalog table is now movies_bi — reload this list before changing rows.' }, { status: 409, statusText: 'Conflict' });
     });
 
     it('echoes the table processFilesForDB ran against', () => {

@@ -1,8 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { environment } from '@env/environment';
 
 import { SettingsService } from './settings.service';
@@ -26,7 +23,10 @@ describe('SettingsService', () => {
   });
 
   it('sends the CSRF header on every cast-name action', () => {
-    const calls: Array<[string, () => void]> = [
+    const calls: Array<[
+      string,
+      () => void
+    ]> = [
       ['list', () => service.listCastNames().subscribe()],
       ['add', () => service.addCastName('Marla Vex').subscribe()],
       ['rename', () => service.renameCastName('Marla Vex', 'Marla Vexx').subscribe()],
@@ -40,16 +40,17 @@ describe('SettingsService', () => {
       call();
       const req = httpMock.expectOne(castUrl);
       expect(req.request.body.action).toBe(action);
-      expect(req.request.headers.get('X-Requested-With'))
-        .withContext(action)
-        .toBe('XMLHttpRequest');
+      expect(req.request.headers.get('X-Requested-With'), action).toBe('XMLHttpRequest');
       req.flush({ names: [] });
     }
   });
 
   it('posts each cast-audit action with the CSRF header', () => {
     const auditUrl = `${environment.apiBaseUrl}castNamesAudit.php`;
-    const calls: Array<[object, () => void]> = [
+    const calls: Array<[
+      object,
+      () => void
+    ]> = [
       [{ action: 'run' }, () => service.auditCastNames().subscribe()],
       [
         { action: 'dismiss', key: 'junk|intro' },

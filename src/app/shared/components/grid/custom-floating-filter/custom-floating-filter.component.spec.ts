@@ -13,12 +13,12 @@ describe('CustomFloatingFilterComponent', () => {
     TestBed.configureTestingModule({
       imports: [CustomFloatingFilterComponent],
       providers: [
-        { provide: ChangeDetectorRef, useValue: { markForCheck: jasmine.createSpy('markForCheck') } },
+        { provide: ChangeDetectorRef, useValue: { markForCheck: vi.fn().mockName('markForCheck') } },
       ],
     });
     component = TestBed.runInInjectionContext(() => new CustomFloatingFilterComponent());
     mockFilterInstance = {
-      onFloatingFilterChanged: jasmine.createSpy('onFloatingFilterChanged'),
+      onFloatingFilterChanged: vi.fn().mockName('onFloatingFilterChanged'),
     };
     mockParams = {
       parentFilterInstance: (callback: Function) => callback(mockFilterInstance),

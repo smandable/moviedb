@@ -1,9 +1,6 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { PLATFORM_ID } from '@angular/core';
 import { HomeComponent } from './home.component';
@@ -80,7 +77,7 @@ describe('HomeComponent', () => {
 
   describe('loadMovies', () => {
     it('should populate rowData and totalItems on success', () => {
-      spyOn(movieService, 'getAllMovies').and.returnValue(of(mockMovies));
+      vi.spyOn(movieService, 'getAllMovies').mockReturnValue(of(mockMovies));
 
       component.loadMovies();
 
@@ -97,7 +94,7 @@ describe('HomeComponent', () => {
           duration: '90.5' as any,
         },
       ];
-      spyOn(movieService, 'getAllMovies').and.returnValue(of(moviesWithStrings));
+      vi.spyOn(movieService, 'getAllMovies').mockReturnValue(of(moviesWithStrings));
 
       component.loadMovies();
 
@@ -106,17 +103,12 @@ describe('HomeComponent', () => {
     });
 
     it('should log error on failure', () => {
-      spyOn(movieService, 'getAllMovies').and.returnValue(
-        throwError(() => new Error('Network error')),
-      );
-      spyOn(console, 'error');
+      vi.spyOn(movieService, 'getAllMovies').mockReturnValue(throwError(() => new Error('Network error')));
+      vi.spyOn(console, 'error').mockReturnValue(undefined as never);
 
       component.loadMovies();
 
-      expect(console.error).toHaveBeenCalledWith(
-        'Failed to load movies:',
-        jasmine.any(Error),
-      );
+      expect(console.error).toHaveBeenCalledWith('Failed to load movies:', expect.any(Error));
     });
   });
 
@@ -127,8 +119,8 @@ describe('HomeComponent', () => {
     });
 
     it('should not delete if user cancels confirm', () => {
-      spyOn(window, 'confirm').and.returnValue(false);
-      spyOn(movieService, 'deleteRow');
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      vi.spyOn(movieService, 'deleteRow').mockReturnValue(undefined as never);
 
       component.deleteRow(mockMovies[0]);
 
@@ -136,8 +128,8 @@ describe('HomeComponent', () => {
     });
 
     it('should remove the movie from rowData on success', () => {
-      spyOn(window, 'confirm').and.returnValue(true);
-      spyOn(movieService, 'deleteRow').and.returnValue(of({ success: true }));
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(movieService, 'deleteRow').mockReturnValue(of({ success: true }));
 
       component.deleteRow(mockMovies[0]);
 
@@ -147,24 +139,20 @@ describe('HomeComponent', () => {
     });
 
     it('should alert on delete failure', () => {
-      spyOn(window, 'confirm').and.returnValue(true);
-      spyOn(movieService, 'deleteRow').and.returnValue(
-        throwError(() => new Error('Delete failed')),
-      );
-      spyOn(window, 'alert');
-      spyOn(console, 'error');
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      vi.spyOn(movieService, 'deleteRow').mockReturnValue(throwError(() => new Error('Delete failed')));
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
+      vi.spyOn(console, 'error').mockReturnValue(undefined as never);
 
       component.deleteRow(mockMovies[0]);
 
-      expect(window.alert).toHaveBeenCalledWith(
-        'Failed to delete row: Delete failed',
-      );
+      expect(window.alert).toHaveBeenCalledWith('Failed to delete row: Delete failed');
     });
   });
 
   describe('onCellValueChanged', () => {
     it('should call updateRow when value changes', () => {
-      spyOn(movieService, 'updateRow').and.returnValue(of({ success: true }));
+      vi.spyOn(movieService, 'updateRow').mockReturnValue(of({ success: true }));
 
       component.onCellValueChanged({
         data: { id: 1 },
@@ -177,7 +165,7 @@ describe('HomeComponent', () => {
     });
 
     it('should not call updateRow when value is unchanged', () => {
-      spyOn(movieService, 'updateRow');
+      vi.spyOn(movieService, 'updateRow').mockReturnValue(undefined as never);
 
       component.onCellValueChanged({
         data: { id: 1 },
@@ -205,7 +193,7 @@ describe('HomeComponent', () => {
     });
 
     it('drive-index icon opens the modal with the base title', () => {
-      const spy = spyOn(component, 'openDriveIndexModal');
+      const spy = vi.spyOn(component, 'openDriveIndexModal').mockReturnValue(undefined as never);
       const el = renderActions({ id: 1, title: 'Galaxy Quest Chronicles # 03' });
 
       (el.querySelector('.fa-hard-drive') as HTMLElement).click();
@@ -226,7 +214,7 @@ describe('HomeComponent', () => {
     };
 
     it('opens with the second condition on Contains without changing the applied filter', async () => {
-      spyOn(movieService, 'getAllMovies').and.returnValue(of(mockMovies));
+      vi.spyOn(movieService, 'getAllMovies').mockReturnValue(of(mockMovies));
       fixture.detectChanges();
       const api = () => (component as unknown as {
         gridApi?: GridApi<Movie>;

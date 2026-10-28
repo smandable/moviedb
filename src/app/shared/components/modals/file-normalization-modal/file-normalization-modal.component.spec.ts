@@ -1,9 +1,5 @@
-import {
-  ComponentFixture,
-  TestBed,
-  fakeAsync,
-  tick,
-} from '@angular/core/testing';
+import type { Mock } from 'vitest';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { NgbActiveModal, NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { DbTitleUpdatesModalComponent } from '@modals/db-title-updates-modal/db-title-updates-modal.component';
@@ -12,6 +8,12 @@ import { FileNormalizationModalComponent } from './file-normalization-modal.comp
 import { FileService, NormalizedFile } from '@services/file.service';
 
 describe('FileNormalizationModalComponent', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   let component: FileNormalizationModalComponent;
   let fixture: ComponentFixture<FileNormalizationModalComponent>;
   let fileService: FileService;
@@ -32,7 +34,7 @@ describe('FileNormalizationModalComponent', () => {
       imports: [FileNormalizationModalComponent, HttpClientTestingModule],
       providers: [
         FileService,
-        { provide: NgbActiveModal, useValue: { close: () => {}, dismiss: () => {} } },
+        { provide: NgbActiveModal, useValue: { close: () => { }, dismiss: () => { } } },
       ],
     }).compileComponents();
 
@@ -47,23 +49,29 @@ describe('FileNormalizationModalComponent', () => {
 
   describe('ngOnInit', () => {
     it('seeds the working name + preview from server data without extra calls', () => {
-      const spy = spyOn(fileService, 'normalizeName');
+      const spy = vi.spyOn(fileService, 'normalizeName').mockReturnValue(undefined as never);
       component.files = [makeFile()];
 
       component.ngOnInit();
 
       expect(component.files[0].workingBaseName).toBe('the.matrix');
-      expect(component.files[0].needsNormalization).toBeTrue();
-      expect(component.files[0].exclude).toBeFalse();
+      expect(component.files[0].needsNormalization).toBe(true);
+      expect(component.files[0].exclude).toBe(false);
       expect(spy).not.toHaveBeenCalled();
     });
   });
 
   describe('onWorkingNameChange', () => {
-    it('debounces, normalizes server-side, and updates the preview', fakeAsync(() => {
-      const spy = spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'The Matrix' }),
-      );
+    // TestBed is zoneless, so the fixture auto-detects: left alone, its first
+    // change detection runs ngOnInit (which re-derives every working name from
+    // the file on disk) as soon as a test advances the clock, wiping the name
+    // the test typed. Let that first pass happen before the test sets up.
+    beforeEach(() => {
+      fixture.detectChanges();
+    });
+
+    it('debounces, normalizes server-side, and updates the preview', async () => {
+      const spy = vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'The Matrix' }));
       const file = makeFile({
         workingBaseName: 'the matrix',
         needsNormalization: false,
@@ -72,24 +80,21 @@ describe('FileNormalizationModalComponent', () => {
       component.files = [file];
 
       component.onWorkingNameChange(file);
-      expect(file.userEdited).toBeTrue();
+      expect(file.userEdited).toBe(true);
       expect(spy).not.toHaveBeenCalled(); // still within debounce window
 
-      tick(250);
-
+      await vi.advanceTimersByTimeAsync(250);
       expect(spy).toHaveBeenCalledWith('the matrix', true, false);
-      expect(file.needsNormalization).toBeTrue();
+      expect(file.needsNormalization).toBe(true);
       expect(file.newFileName).toBe('The Matrix.mp4');
-    }));
+    });
 
     // Regression: the New Filename column used to be gated on "normalization
     // changed the text", so typing an already-correct cast name blanked it out
     // and it only reappeared on a space or dangling dash.
-    it('still shows the pending name when the typed text is already normalized', fakeAsync(() => {
+    it('still shows the pending name when the typed text is already normalized', async () => {
       const typed = 'Ass Man - Scene_1 - Kissa';
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: typed }), // server returns it unchanged
-      );
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: typed }));
       const file = makeFile({
         originalFileName: 'Ass Man - Scene_1.mp4',
         newFileName: '',
@@ -99,19 +104,17 @@ describe('FileNormalizationModalComponent', () => {
       component.files = [file];
 
       component.onWorkingNameChange(file);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
 
-      expect(file.needsNormalization).toBeTrue();
+      expect(file.needsNormalization).toBe(true);
       expect(file.newFileName).toBe(`${typed}.mp4`);
       expect(component.previewBaseName(file)).toBe(typed);
-    }));
+    });
 
-    it('keeps a trailing separator in the preview while the input has focus', fakeAsync(() => {
+    it('keeps a trailing separator in the preview while the input has focus', async () => {
       // The server strips a dangling " - "; while typing we put it back for
       // display so the preview doesn't look like it ate the separator.
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'Ass Man - Scene_1' }),
-      );
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'Ass Man - Scene_1' }));
       const file = makeFile({
         originalFileName: 'ass man.scene 1.mp4',
         workingBaseName: 'Ass Man - Scene_1 - ',
@@ -120,7 +123,7 @@ describe('FileNormalizationModalComponent', () => {
 
       component.onNameFocus(file);
       component.onWorkingNameChange(file);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
 
       expect(component.previewBaseName(file)).toBe('Ass Man - Scene_1 - ');
       // ...but the actual rename target stays the true normalized name
@@ -128,12 +131,10 @@ describe('FileNormalizationModalComponent', () => {
 
       component.onNameBlur(file);
       expect(component.previewBaseName(file)).toBe('Ass Man - Scene_1');
-    }));
+    });
 
-    it('does not double up a separator the server kept', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'Ass Man - Scene_1 - K' }),
-      );
+    it('does not double up a separator the server kept', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'Ass Man - Scene_1 - K' }));
       const file = makeFile({
         originalFileName: 'ass man.scene 1.mp4',
         workingBaseName: 'Ass Man - Scene_1 - K',
@@ -142,15 +143,13 @@ describe('FileNormalizationModalComponent', () => {
 
       component.onNameFocus(file);
       component.onWorkingNameChange(file);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
 
       expect(component.previewBaseName(file)).toBe('Ass Man - Scene_1 - K');
-    }));
+    });
 
-    it('leaves other rows unaffected while one has focus', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'Ass Man - Scene_2' }),
-      );
+    it('leaves other rows unaffected while one has focus', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'Ass Man - Scene_2' }));
       const focused = makeFile({ workingBaseName: 'Ass Man - Scene_1 - ' });
       const other = makeFile({
         originalFileName: 'ass man.scene 2.mp4',
@@ -162,12 +161,10 @@ describe('FileNormalizationModalComponent', () => {
       component.onNameFocus(focused);
 
       expect(component.previewBaseName(other)).toBe('Ass Man - Scene_2');
-    }));
+    });
 
-    it('clears the column when the typed name already matches the file on disk', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'The Matrix' }),
-      );
+    it('clears the column when the typed name already matches the file on disk', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'The Matrix' }));
       const file = makeFile({
         originalFileName: 'The Matrix.mp4',
         workingBaseName: 'The Matrix',
@@ -175,28 +172,26 @@ describe('FileNormalizationModalComponent', () => {
       component.files = [file];
 
       component.onWorkingNameChange(file);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
 
-      expect(file.needsNormalization).toBeFalse();
+      expect(file.needsNormalization).toBe(false);
       expect(file.newFileName).toBe('');
-    }));
+    });
 
-    it('collapses rapid edits into a single server call', fakeAsync(() => {
-      const spy = spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'The Matrix' }),
-      );
+    it('collapses rapid edits into a single server call', async () => {
+      const spy = vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'The Matrix' }));
       const file = makeFile();
       component.files = [file];
 
       component.onWorkingNameChange(file);
-      tick(100);
+      await vi.advanceTimersByTimeAsync(100);
       component.onWorkingNameChange(file);
-      tick(100);
+      await vi.advanceTimersByTimeAsync(100);
       component.onWorkingNameChange(file);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
 
       expect(spy).toHaveBeenCalledTimes(1);
-    }));
+    });
   });
 
   describe('renameFiles', () => {
@@ -213,11 +208,7 @@ describe('FileNormalizationModalComponent', () => {
       });
       component.files = [a, b];
 
-      const spy = spyOn(
-        fileService,
-        'renameTheFilesToNormalize',
-      ).and.returnValue(
-        of({
+      const spy = vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'a scene_1.mp4',
@@ -225,9 +216,8 @@ describe('FileNormalizationModalComponent', () => {
               status: 'Renamed successfully',
             },
           ],
-        }),
-      );
-      spyOn(component.activeModal, 'close');
+      }));
+      vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -239,7 +229,7 @@ describe('FileNormalizationModalComponent', () => {
       expect(a.originalFileName).toBe('A - Scene_1.mp4');
       expect(a.workingBaseName).toBe('A - Scene_1');
       expect(a.newFileName).toBe('');
-      expect(a.needsNormalization).toBeFalse();
+      expect(a.needsNormalization).toBe(false);
       expect(component.renameSummary).toEqual({
         renamed: 1,
         failed: 0,
@@ -256,8 +246,7 @@ describe('FileNormalizationModalComponent', () => {
       });
       component.files = [a];
 
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'a.mp4',
@@ -265,14 +254,13 @@ describe('FileNormalizationModalComponent', () => {
               status: 'New file name already exists',
             },
           ],
-        }),
-      );
+      }));
 
       component.renameFiles();
 
       expect(a.originalFileName).toBe('a.mp4');
       expect(a.renameError).toBe('New file name already exists');
-      expect(a.needsNormalization).toBeTrue();
+      expect(a.needsNormalization).toBe(true);
       expect(component.renameSummary).toEqual({
         renamed: 0,
         failed: 1,
@@ -285,7 +273,7 @@ describe('FileNormalizationModalComponent', () => {
     it('still lands on Add Cast when nothing is selected for renaming', () => {
       const a = makeFile({ exclude: true });
       component.files = [a];
-      const spy = spyOn(fileService, 'renameTheFilesToNormalize');
+      const spy = vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -302,14 +290,12 @@ describe('FileNormalizationModalComponent', () => {
       });
       component.files = [a];
       component.landOnAddCastAfterRename = false;
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             { originalFileName: 'a scene_1.mp4', newFileName: 'A - Scene_1.mp4', status: 'Renamed successfully' },
           ],
-        }),
-      );
-      spyOn(component.activeModal, 'close');
+      }));
+      vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -328,13 +314,11 @@ describe('FileNormalizationModalComponent', () => {
       component.files = [a, b];
       component.landOnAddCastAfterRename = false;
       component.activeTab = 'cast';
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             { originalFileName: 'a scene_1.mp4', newFileName: 'A - Scene_1.mp4', status: 'Renamed successfully' },
           ],
-        }),
-      );
+      }));
 
       component.renameFiles();
 
@@ -348,8 +332,7 @@ describe('FileNormalizationModalComponent', () => {
         exclude: false,
       });
       component.files = [a];
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'a.mp4',
@@ -357,9 +340,8 @@ describe('FileNormalizationModalComponent', () => {
               status: 'Renamed successfully',
             },
           ],
-        }),
-      );
-      const close = spyOn(component.activeModal, 'close');
+      }));
+      const close = vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -373,8 +355,8 @@ describe('FileNormalizationModalComponent', () => {
         needsNormalization: false,
       });
       component.files = [a];
-      const spy = spyOn(fileService, 'renameTheFilesToNormalize');
-      const close = spyOn(component.activeModal, 'close');
+      const spy = vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(undefined as never);
+      const close = vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -395,10 +377,8 @@ describe('FileNormalizationModalComponent', () => {
       component.files = [
         makeFile({ originalFileName: 'Up And Away.mp4', newFileName: 'Up and Away.mp4', exclude: false }),
       ];
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({ results: [renamed('Up And Away.mp4', 'Up and Away.mp4')] }),
-      );
-      const close = spyOn(component.activeModal, 'close');
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({ results: [renamed('Up And Away.mp4', 'Up and Away.mp4')] }));
+      const close = vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -415,10 +395,8 @@ describe('FileNormalizationModalComponent', () => {
       component.files = [
         makeFile({ originalFileName: 'a.mp4', newFileName: 'A.mp4', exclude: false }),
       ];
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({ results: [renamed('a.mp4', 'A.mp4')] }),
-      );
-      const close = spyOn(component.activeModal, 'close');
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({ results: [renamed('a.mp4', 'A.mp4')] }));
+      const close = vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -432,14 +410,12 @@ describe('FileNormalizationModalComponent', () => {
       component.offerDbTitleUpdates = true;
       const file = makeFile({ originalFileName: 'x one.mp4', newFileName: 'X One.mp4', exclude: false });
       component.files = [file];
-      const spy = spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({ results: [renamed('x one.mp4', 'X One.mp4')] }),
-      );
+      const spy = vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({ results: [renamed('x one.mp4', 'X One.mp4')] }));
       component.renameFiles();
 
       file.newFileName = 'X 1.mp4';
       file.needsNormalization = true;
-      spy.and.returnValue(of({ results: [renamed('X One.mp4', 'X 1.mp4')] }));
+      spy.mockReturnValue(of({ results: [renamed('X One.mp4', 'X 1.mp4')] }));
       component.renameFiles();
       expect(component.landedTitleRenames).toEqual([
         { path: '/test', originalFileName: 'x one.mp4', newFileName: 'X 1.mp4' },
@@ -447,7 +423,7 @@ describe('FileNormalizationModalComponent', () => {
 
       file.newFileName = 'x one.mp4';
       file.needsNormalization = true;
-      spy.and.returnValue(of({ results: [renamed('X 1.mp4', 'x one.mp4')] }));
+      spy.mockReturnValue(of({ results: [renamed('X 1.mp4', 'x one.mp4')] }));
       component.renameFiles();
       expect(component.landedTitleRenames).toEqual([]);
     });
@@ -458,14 +434,13 @@ describe('FileNormalizationModalComponent', () => {
         { path: '/test', originalFileName: 'A.mp4', newFileName: 'B.mp4' },
       ];
       const ref = { componentInstance: {} as any };
-      const open = spyOn(TestBed.inject(NgbModal), 'open').and.returnValue(ref as any);
+      const open = vi.spyOn(TestBed.inject(NgbModal), 'open').mockReturnValue(ref as any);
 
       component.openDbTitleUpdates();
 
-      expect(open).toHaveBeenCalledOnceWith(
-        DbTitleUpdatesModalComponent,
-        jasmine.objectContaining({ scrollable: true }),
-      );
+      expect(open).toHaveBeenCalledTimes(1);
+
+      expect(open).toHaveBeenCalledWith(DbTitleUpdatesModalComponent, expect.objectContaining({ scrollable: true }));
       expect(ref.componentInstance.renames).toEqual(component.landedTitleRenames);
       expect(ref.componentInstance.renames[0]).not.toBe(component.landedTitleRenames[0]);
     });
@@ -480,8 +455,7 @@ describe('FileNormalizationModalComponent', () => {
         exclude: false,
       });
       component.files = [a];
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'Fixture Flick - Scene_1.mp4',
@@ -490,17 +464,14 @@ describe('FileNormalizationModalComponent', () => {
               movedTo: '/test',
             },
           ],
-        }),
-      );
-      const close = spyOn(component.activeModal, 'close');
+      }));
+      const close = vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
       // Later renames of this row must target the file's new home
       expect(a.path).toBe('/test');
-      expect(a.originalFileName).toBe(
-        'Fixture Flick - Scene_1 - Casey Fixture.mp4',
-      );
+      expect(a.originalFileName).toBe('Fixture Flick - Scene_1 - Casey Fixture.mp4');
       expect(component.renameSummary).toEqual({
         renamed: 1,
         failed: 0,
@@ -520,20 +491,17 @@ describe('FileNormalizationModalComponent', () => {
       component.files = [a];
       component.landOnAddCastAfterRename = false;
       component.activeTab = 'cast'; // run from Add Cast: the error row isn't listed there
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'Fixture Flick - Scene_1.mp4',
               newFileName: 'Fixture Flick - Scene_1 - Casey Fixture.mp4',
               status: 'Renamed successfully',
-              moveError:
-                'Renamed, but not moved up: "Fixture Flick - Scene_1 - Casey Fixture.mp4" already exists in /test',
+            moveError: 'Renamed, but not moved up: "Fixture Flick - Scene_1 - Casey Fixture.mp4" already exists in /test',
             },
           ],
-        }),
-      );
-      const close = spyOn(component.activeModal, 'close');
+      }));
+      const close = vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -555,8 +523,7 @@ describe('FileNormalizationModalComponent', () => {
   });
 
   describe('subfolderOf', () => {
-    const at = (path: string) =>
-      ({ path, originalFileName: 'a.mp4' }) as NormalizedFile;
+    const at = (path: string) => ({ path, originalFileName: 'a.mp4' }) as NormalizedFile;
 
     it('names a subfolder relative to the scanned folder', () => {
       component.directory = '/Volumes/Etc/Extra/';
@@ -595,7 +562,7 @@ describe('FileNormalizationModalComponent', () => {
       expect(text).toContain('limit by 4');
     });
 
-    it('warns while typing a cast list that pushes the name over the limit', fakeAsync(() => {
+    it('warns while typing a cast list that pushes the name over the limit', async () => {
       const base = 'Ass Man - Scene_1';
       const cast = 'A'.repeat(250);
       const file = makeFile({
@@ -605,27 +572,22 @@ describe('FileNormalizationModalComponent', () => {
       });
       component.files = [file];
       fixture.detectChanges(); // runs ngOnInit
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: `${base} - ${cast}` }),
-      );
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: `${base} - ${cast}` }));
 
       component.activeTab = 'cast';
       component.setCast(file, cast);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
       fixture.detectChanges();
 
       expect(component.newNameLength(file)).toBeGreaterThan(255);
-      expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-        'File name too long',
-      );
-    }));
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('File name too long');
+    });
   });
 
   describe('scene-number ordering', () => {
     // Regression: plain localeCompare is lexicographic, so Scene_10 sorted
     // between Scene_1 and Scene_2. Digit runs must compare as numbers.
-    const scene = (n: number) =>
-      makeFile({
+    const scene = (n: number) => makeFile({
         originalFileName: `Sample Reel # 02 - Scene_${n}.mp4`,
         newFileName: '',
         needsNormalization: false,
@@ -656,8 +618,7 @@ describe('FileNormalizationModalComponent', () => {
   });
 
   describe('group dismissal', () => {
-    const sceneFile = (base: string) =>
-      makeFile({
+    const sceneFile = (base: string) => makeFile({
         originalFileName: `${base}.mp4`,
         workingBaseName: base,
         newFileName: '',
@@ -675,9 +636,7 @@ describe('FileNormalizationModalComponent', () => {
 
       expect(component.castFiles).not.toContain(a);
       expect(component.castFiles).toContain(b);
-      expect(
-        component.castFileGroups.some((g) => g.title === 'Ass Man'),
-      ).toBeFalse();
+      expect(component.castFileGroups.some((g) => g.title === 'Ass Man')).toBe(false);
       // View-state only: a dismissed file keeps its rename inclusion
       expect(a.exclude).toBeUndefined();
     });
@@ -686,8 +645,8 @@ describe('FileNormalizationModalComponent', () => {
       const a = sceneFile('Ass Man - Scene_1');
       component.files = [a];
       component.dismissGroup(component.castFileGroups[0]);
-      const spy = spyOn(fileService, 'renameTheFilesToNormalize');
-      const close = spyOn(component.activeModal, 'close');
+      const spy = vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(undefined as never);
+      const close = vi.spyOn(component.activeModal, 'close').mockReturnValue(undefined as never);
 
       component.renameFiles();
 
@@ -704,13 +663,9 @@ describe('FileNormalizationModalComponent', () => {
       fixture.detectChanges();
 
       const el = fixture.nativeElement as HTMLElement;
-      expect(
-        el.querySelectorAll('.cast-group-row input.group-dismiss').length,
-      ).toBe(1);
-      expect(
-        el.querySelectorAll('tbody tr:not(.cast-group-row) input[type="checkbox"]')
-          .length,
-      ).toBe(0);
+      expect(el.querySelectorAll('.cast-group-row input.group-dismiss').length).toBe(1);
+      expect(el.querySelectorAll('tbody tr:not(.cast-group-row) input[type="checkbox"]')
+        .length).toBe(0);
     });
 
     it('unchecking the header checkbox removes the group from the DOM', () => {
@@ -719,16 +674,12 @@ describe('FileNormalizationModalComponent', () => {
       fixture.detectChanges();
 
       const el = fixture.nativeElement as HTMLElement;
-      const checkbox = el.querySelector(
-        '.cast-group-row input.group-dismiss',
-      ) as HTMLInputElement;
+      const checkbox = el.querySelector('.cast-group-row input.group-dismiss') as HTMLInputElement;
       checkbox.click();
       fixture.detectChanges();
 
       expect(el.querySelector('.cast-group-row')).toBeNull();
-      expect(el.textContent).toContain(
-        'No scene files are waiting for a cast name.',
-      );
+      expect(el.textContent).toContain('No scene files are waiting for a cast name.');
     });
   });
 
@@ -749,10 +700,8 @@ describe('FileNormalizationModalComponent', () => {
       expect(component.castOf(file)).toBe('');
     });
 
-    it('setCast rewrites only the cast half', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'Ass Man - Scene_1 - Angel Long' }),
-      );
+    it('setCast rewrites only the cast half', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'Ass Man - Scene_1 - Angel Long' }));
       const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
       component.files = [file];
 
@@ -762,11 +711,11 @@ describe('FileNormalizationModalComponent', () => {
       // clearing it puts the name back to the bare scene
       component.setCast(file, '');
       expect(file.workingBaseName).toBe('Ass Man - Scene_1');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
-    it('tidies a pasted cast list into "Name, Name"', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+    it('tidies a pasted cast list into "Name, Name"', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
       const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
       component.files = [file];
 
@@ -778,13 +727,13 @@ describe('FileNormalizationModalComponent', () => {
 
       component.setCast(file, '(Lisa Ann); Kianna Dior,');
       expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Lisa Ann, Kianna Dior');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
     // Regression: copying a name off a lookup site also grabs the photo's
     // alt text, so the clipboard carries "<Name> <Name> Bodyshot".
-    it('collapses the pasted "<Name> <Name> Bodyshot" copy echo', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+    it('collapses the pasted "<Name> <Name> Bodyshot" copy echo', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
       const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
       component.files = [file];
 
@@ -802,8 +751,8 @@ describe('FileNormalizationModalComponent', () => {
       // no doubled name, no echo: a Bodyshot "surname" is left alone
       component.setCast(file, 'Shona Bodyshot');
       expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Shona Bodyshot');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
     // Regression: fresh group objects on every change-detection pass made
     // *ngFor rebuild all rows (with their datalist inputs) per pass — the
@@ -827,7 +776,7 @@ describe('FileNormalizationModalComponent', () => {
       component.castSuggestions = [];
       const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
       component.files = [file];
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
 
       component.setCast(file, 'Angel Long, jan');
       expect(component.castSuggestions).toEqual([
@@ -840,22 +789,22 @@ describe('FileNormalizationModalComponent', () => {
       expect(component.castSuggestions).toEqual([]); // under 2 chars
     });
 
-    it('caps the suggestion list at 12, prefix matches before substring ones', fakeAsync(() => {
+    it('caps the suggestion list at 12, prefix matches before substring ones', async () => {
       component.castNames = [
         ...Array.from({ length: 14 }, (_, i) => `Jane Fictionelle ${i}`),
         'Marisol Janeway', // a substring match, so it queues behind the 12
       ];
       const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
       component.files = [file];
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
 
       component.setCast(file, 'jane');
 
       expect(component.castSuggestions.length).toBe(12);
       expect(component.castSuggestions[0]).toBe('Jane Fictionelle 0');
       expect(component.castSuggestions).not.toContain('Marisol Janeway');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
     // Regression: typing a second name WITHOUT a comma produced no suggestions
     // at all, even though the New Filename preview already showed the comma.
@@ -878,8 +827,8 @@ describe('FileNormalizationModalComponent', () => {
       let file: NormalizedFile;
 
       beforeEach(() => {
-        spyOn(fileService, 'getCastNames').and.returnValue(of({ names: vocabulary }));
-        spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+        vi.spyOn(fileService, 'getCastNames').mockReturnValue(of({ names: vocabulary }));
+        vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
         // ngOnInit re-derives workingBaseName from originalFileName and loads
         // the vocabulary (castNames AND the lowercased set the parsers share).
         file = makeFile({ originalFileName: 'Ass Man - Scene_1.mp4' });
@@ -887,7 +836,7 @@ describe('FileNormalizationModalComponent', () => {
         component.ngOnInit();
       });
 
-      it('offers the second name as soon as two of its characters are typed', fakeAsync(() => {
+      it('offers the second name as soon as two of its characters are typed', async () => {
         component.setCast(file, 'Angel Long J');
         expect(component.castSuggestions).toEqual([]); // one char so far
 
@@ -896,42 +845,38 @@ describe('FileNormalizationModalComponent', () => {
 
         component.setCast(file, 'Angel Long Jane Wil');
         expect(component.castSuggestions).toEqual(['Angel Long Jane Wilde']);
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
-      it('builds the option from the raw text and lets the tidier add the comma', fakeAsync(() => {
+      it('builds the option from the raw text and lets the tidier add the comma', async () => {
         component.setCast(file, 'Angel Long Jane Wil');
         const [option] = component.castSuggestions;
 
         // No comma in the option: the browser filters datalist options against
         // the input's whole value, so it has to prefix-match what was typed.
         expect(option).toBe('Angel Long Jane Wilde');
-        expect(option.toLowerCase().startsWith('angel long jane wil')).toBeTrue();
+        expect(option.toLowerCase().startsWith('angel long jane wil')).toBe(true);
 
         // Picking it runs back through setCast, and tidyCastInput puts the
         // comma in — so the filename still ends up separated.
         component.setCast(file, option);
         expect(component.castOf(file)).toBe('Angel Long, Jane Wilde');
-        expect(file.workingBaseName).toBe(
-          'Ass Man - Scene_1 - Angel Long, Jane Wilde',
-        );
-        tick(250);
-      }));
+        expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Angel Long, Jane Wilde');
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
-      it('finds the third name in an unseparated run', fakeAsync(() => {
+      it('finds the third name in an unseparated run', async () => {
         component.setCast(file, 'Angel Long Jane Wilde Marla Q');
         expect(component.castSuggestions).toEqual([
           'Angel Long Jane Wilde Marla Quintessa',
         ]);
 
         component.setCast(file, 'Angel Long Jane Wilde Marla Quintessa');
-        expect(component.castOf(file)).toBe(
-          'Angel Long, Jane Wilde, Marla Quintessa',
-        );
-        tick(250);
-      }));
+        expect(component.castOf(file)).toBe('Angel Long, Jane Wilde, Marla Quintessa');
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
-      it('still matches after an explicit separator, reusing the raw spacing', fakeAsync(() => {
+      it('still matches after an explicit separator, reusing the raw spacing', async () => {
         component.setCast(file, 'Angel Long, Jane W');
         expect(component.castSuggestions).toEqual(['Angel Long, Jane Wilde']);
 
@@ -943,23 +888,23 @@ describe('FileNormalizationModalComponent', () => {
         // "and" is a separator tidyCastInput understands, so it is one here too.
         component.setCast(file, 'Angel Long and Vex H');
         expect(component.castSuggestions).toEqual(['Angel Long and Vex Harrowgate']);
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
-      it('keeps the two-character minimum for the new segment', fakeAsync(() => {
+      it('keeps the two-character minimum for the new segment', async () => {
         component.setCast(file, 'Angel Long V');
         expect(component.castSuggestions).toEqual([]);
 
         component.setCast(file, 'Angel Long Ve');
         expect(component.castSuggestions).toEqual(['Angel Long Vex Harrowgate']);
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
       // Regression: the boundary walk read a finished name off the front of the
       // name still being typed. "Rowan Vale" is a name AND the start of "Rowan
       // Vale Ashby", so consuming the short one made "As" the segment and
       // offered completions for that instead of the name in the field.
-      it('keeps a longer name that starts with a shorter one offerable', fakeAsync(() => {
+      it('keeps a longer name that starts with a shorter one offerable', async () => {
         component.setCast(file, 'Angel Long Rowan Vale As');
         expect(component.castSuggestions).toEqual(['Angel Long Rowan Vale Ashby']);
 
@@ -979,13 +924,13 @@ describe('FileNormalizationModalComponent', () => {
         expect(component.castSuggestions).toEqual([
           'Angel Long Rowan Vale Ashby Jane Wilde',
         ]);
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
       // Regression: "and" is a separator, so a trailing "And" was treated as
       // one and the segment came out empty — typing the first three letters of
       // "Andra Fell" blanked the list for exactly that keystroke.
-      it('treats a trailing "and" as a name being typed, not a separator', fakeAsync(() => {
+      it('treats a trailing "and" as a name being typed, not a separator', async () => {
         // (a two-letter segment also picks up substring matches, hence toContain)
         component.setCast(file, 'Angel Long, An');
         expect(component.castSuggestions).toContain('Angel Long, Andra Fell');
@@ -1004,8 +949,8 @@ describe('FileNormalizationModalComponent', () => {
         // with a space after it, it really is the separator again
         component.setCast(file, 'Angel Long and Vex H');
         expect(component.castSuggestions).toEqual(['Angel Long and Vex Harrowgate']);
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
       // The wrinkle, and it is NOT free: the TS tidier only segments a part of
       // 4+ words and only matches names of 2+ words, so it leaves "Angel Long
@@ -1015,7 +960,7 @@ describe('FileNormalizationModalComponent', () => {
       // never re-join a wrong guess, and it never splits a two-word part.
       // Allowing one-word names here produced wrong filenames in a measured
       // sweep, so on a glued boundary they are withheld.
-      it('withholds a one-word name where the tidier would not split it', fakeAsync(() => {
+      it('withholds a one-word name where the tidier would not split it', async () => {
         component.setCast(file, 'Angel Long Bl');
         expect(component.castSuggestions).toEqual([]);
 
@@ -1028,15 +973,15 @@ describe('FileNormalizationModalComponent', () => {
         expect(component.castSuggestions).toEqual(['Angel Long, Bly']);
         component.setCast(file, 'Angel Long, Bly');
         expect(component.castOf(file)).toBe('Angel Long, Bly');
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
       // Deliberate divergence, the safe way round: the walk trusts only names
       // the vocabulary confirms, never segmentCastRun's pair-guess fallback. An
       // unknown name ANYWHERE — not just first — stops the walk, and everything
       // after it is one unmatchable segment, so no suggestions (rather than
       // wrong ones) until a separator is typed after it.
-      it('stays quiet around a name it does not know, wherever it sits', fakeAsync(() => {
+      it('stays quiet around a name it does not know, wherever it sits', async () => {
         component.setCast(file, 'Nadia Volkova Jane W');
         expect(component.castSuggestions).toEqual([]);
 
@@ -1049,8 +994,8 @@ describe('FileNormalizationModalComponent', () => {
         // a separator after the unknown name is what brings them back
         component.setCast(file, 'Nadia Volkova, Jane W');
         expect(component.castSuggestions).toEqual(['Nadia Volkova, Jane Wilde']);
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
 
       // Regression: a NEW performer's 4-word name, typed before the store
       // knew it, was pair-guessed into two names ("Alex De La Flor" became
@@ -1058,12 +1003,10 @@ describe('FileNormalizationModalComponent', () => {
       // long new name, not several unknown names glued together — it stays
       // whole, and the rename feeds it into the store, where it anchors the
       // next run.
-      it('never invents a comma inside a run with no known name in it', fakeAsync(() => {
+      it('never invents a comma inside a run with no known name in it', async () => {
         component.setCast(file, 'Vexa De La Harrow');
         expect(component.castOf(file)).toBe('Vexa De La Harrow');
-        expect(file.workingBaseName).toBe(
-          'Ass Man - Scene_1 - Vexa De La Harrow',
-        );
+        expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Vexa De La Harrow');
 
         // blur must not yank a comma in either — tidied equals typed now
         component.onNameBlur(file);
@@ -1072,67 +1015,66 @@ describe('FileNormalizationModalComponent', () => {
         // a run a known name anchors still splits exactly as before
         component.setCast(file, 'Angel Long Vexa De La Harrow');
         expect(component.castOf(file)).toBe('Angel Long, Vexa De, La Harrow');
-        tick(250);
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+      });
     });
 
     // A pasted period is normalized away as usual; one the user TYPES (a
     // small edit that raises the period count) is deliberate, so the preview
     // request asks the server to keep the cast tail's periods.
     describe('deliberate periods in cast names', () => {
-      let spy: jasmine.Spy;
+      let spy: Mock;
       let file: NormalizedFile;
 
       beforeEach(() => {
-        spy = spyOn(fileService, 'normalizeName').and.returnValue(
-          of({ normalized: 'x' }),
-        );
+        fixture.detectChanges(); // first pass (ngOnInit) now, as in onWorkingNameChange
+        spy = vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
         file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
         component.files = [file];
       });
 
-      it('does not keep periods for a wholesale paste', fakeAsync(() => {
+      it('does not keep periods for a wholesale paste', async () => {
         component.setCast(file, 'Wren St. Cardew');
-        tick(250);
+        await vi.advanceTimersByTimeAsync(250);
 
-        expect(spy.calls.mostRecent().args).toEqual([
+        expect(vi.mocked(spy).mock.lastCall).toEqual([
           'Ass Man - Scene_1 - Wren St. Cardew',
           true,
           false,
         ]);
-      }));
+      });
 
-      it('keeps periods once one is typed, until none remain', fakeAsync(() => {
+      it('keeps periods once one is typed, until none remain', async () => {
         component.setCast(file, 'Wren St');
-        tick(250);
-        expect(spy.calls.mostRecent().args[2]).toBeFalse();
+        await vi.advanceTimersByTimeAsync(250);
+        expect(vi.mocked(spy).mock.lastCall![2]).toBe(false);
 
         component.setCast(file, 'Wren St.');
-        tick(250);
-        expect(spy.calls.mostRecent().args[2]).toBeTrue();
+        await vi.advanceTimersByTimeAsync(250);
+        expect(vi.mocked(spy).mock.lastCall![2]).toBe(true);
 
         // Later keystrokes keep the intent…
         component.setCast(file, 'Wren St. Cardew');
-        tick(250);
-        expect(spy.calls.mostRecent().args[2]).toBeTrue();
+        await vi.advanceTimersByTimeAsync(250);
+        expect(vi.mocked(spy).mock.lastCall![2]).toBe(true);
 
         // …and removing every period withdraws it.
         component.setCast(file, 'Wren Cardew');
-        tick(250);
-        expect(spy.calls.mostRecent().args[2]).toBeFalse();
-      }));
+        await vi.advanceTimersByTimeAsync(250);
+        expect(vi.mocked(spy).mock.lastCall![2]).toBe(false);
+      });
 
       // Regression: a TRAILING period ("Kylie G.") was tidied off as wrapping
       // punctuation before the server ever saw it — the preview stayed
       // dotless and blur snapped the input back to the dotless name.
-      it('keeps a typed trailing period through tidy, preview, and blur', fakeAsync(() => {
+      it('keeps a typed trailing period through tidy, preview, and blur', async () => {
         component.setCast(file, 'Wren J');
-        tick(250);
+        await vi.advanceTimersByTimeAsync(250);
         component.setCast(file, 'Wren J.');
-        tick(250);
+        await vi.advanceTimersByTimeAsync(250);
 
         expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Wren J.');
-        expect(spy.calls.mostRecent().args).toEqual([
+        expect(vi.mocked(spy).mock.lastCall).toEqual([
           'Ass Man - Scene_1 - Wren J.',
           true,
           true,
@@ -1140,23 +1082,23 @@ describe('FileNormalizationModalComponent', () => {
 
         component.onNameBlur(file);
         expect(component.castInputValue(file)).toBe('Wren J.');
-      }));
+      });
 
-      it('still strips a pasted trailing period', fakeAsync(() => {
+      it('still strips a pasted trailing period', async () => {
         component.setCast(file, 'Wren J.');
-        tick(250);
+        await vi.advanceTimersByTimeAsync(250);
 
         expect(file.workingBaseName).toBe('Ass Man - Scene_1 - Wren J');
-      }));
+      });
 
-      it('a replacement paste with more periods does not count as typing one', fakeAsync(() => {
+      it('a replacement paste with more periods does not count as typing one', async () => {
         component.setCast(file, 'Wren St');
-        tick(250);
+        await vi.advanceTimersByTimeAsync(250);
         component.setCast(file, 'Vex J. Marrow, Wren St');
-        tick(250);
+        await vi.advanceTimersByTimeAsync(250);
 
-        expect(spy.calls.mostRecent().args[2]).toBeFalse();
-      }));
+        expect(vi.mocked(spy).mock.lastCall![2]).toBe(false);
+      });
     });
 
     it('groups related scenes under one title with one lookup', () => {
@@ -1174,8 +1116,8 @@ describe('FileNormalizationModalComponent', () => {
 
     // Regression: binding the tidied value straight back into the input ate a
     // trailing comma the moment it was typed — you could never type "X, Y".
-    it('keeps an in-progress trailing comma in the input while typing', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+    it('keeps an in-progress trailing comma in the input while typing', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
       const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
       component.files = [file];
 
@@ -1188,14 +1130,12 @@ describe('FileNormalizationModalComponent', () => {
       // blur snaps the input to the tidied form
       component.onNameBlur(file);
       expect(component.castInputValue(file)).toBe('Angel Long');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
-    it('segments a pasted run of unseparated names using the vocabulary', fakeAsync(() => {
-      spyOn(fileService, 'getCastNames').and.returnValue(
-        of({ names: ['Angel Long', 'Paige Owens', 'Anna Claire Clouds'] }),
-      );
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+    it('segments a pasted run of unseparated names using the vocabulary', async () => {
+      vi.spyOn(fileService, 'getCastNames').mockReturnValue(of({ names: ['Angel Long', 'Paige Owens', 'Anna Claire Clouds'] }));
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
       // ngOnInit re-derives workingBaseName from originalFileName, so the
       // fixture needs its scene marker there, not just in workingBaseName.
       const file = makeFile({ originalFileName: 'Ass Man - Scene_1.mp4' });
@@ -1218,14 +1158,14 @@ describe('FileNormalizationModalComponent', () => {
       // stays whole ("Alex De La Flor" must not become "Alex De, La Flor")
       component.setCast(file, 'zz aa bb cc');
       expect(component.castOf(file)).toBe('zz aa bb cc');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
     // Regression: SCENE_SPLIT only knew canonical "Scene_N", so on a raw name
     // ("test movie.scene 1") sceneBaseOf fell back to the whole name and each
     // keystroke APPENDED the cast again: "... - Angel Long - Angel Long - ...".
-    it('replaces, never accumulates, cast on a raw un-normalized scene name', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+    it('replaces, never accumulates, cast on a raw un-normalized scene name', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
       const file = makeFile({
         originalFileName: 'test movie.scene 1.mp4',
         workingBaseName: 'test movie.scene 1',
@@ -1236,24 +1176,22 @@ describe('FileNormalizationModalComponent', () => {
       component.setCast(file, 'Angel Long, Pai');
       component.setCast(file, 'Angel Long, Paige Owens');
 
-      expect(file.workingBaseName).toBe(
-        'test movie.scene 1 - Angel Long, Paige Owens',
-      );
+      expect(file.workingBaseName).toBe('test movie.scene 1 - Angel Long, Paige Owens');
       expect(component.castOf(file)).toBe('Angel Long, Paige Owens');
       expect(component.sceneBaseOf(file)).toBe('test movie.scene 1');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
-    it('does not segment while a short name is being typed', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(of({ normalized: 'x' }));
+    it('does not segment while a short name is being typed', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'x' }));
       const file = makeFile({ workingBaseName: 'Ass Man - Scene_1' });
       component.files = [file];
 
       // 3 words stay whole — could be one name still being typed
       component.setCast(file, 'anna claire clouds');
       expect(component.castOf(file)).toBe('anna claire clouds');
-      tick(250);
-    }));
+      await vi.advanceTimersByTimeAsync(250);
+    });
 
     it('searches the movie title only, without scene number or cast', () => {
       const file = makeFile({
@@ -1278,9 +1216,7 @@ describe('FileNormalizationModalComponent', () => {
         ];
         component.activeTab = 'cast';
         fixture.detectChanges();
-        return Array.from(
-          fixture.nativeElement.querySelectorAll('input.cast-input'),
-        );
+        return Array.from(fixture.nativeElement.querySelectorAll('input.cast-input'));
       }
 
       it('tab skips the working-name box and lands on the next cast field', () => {
@@ -1291,7 +1227,7 @@ describe('FileNormalizationModalComponent', () => {
         const event = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true, bubbles: true });
         inputs[0].dispatchEvent(event);
 
-        expect(event.defaultPrevented).toBeTrue();
+        expect(event.defaultPrevented).toBe(true);
         expect(document.activeElement).toBe(inputs[1]);
       });
 
@@ -1302,7 +1238,7 @@ describe('FileNormalizationModalComponent', () => {
         const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, cancelable: true, bubbles: true });
         inputs[2].dispatchEvent(event);
 
-        expect(event.defaultPrevented).toBeTrue();
+        expect(event.defaultPrevented).toBe(true);
         expect(document.activeElement).toBe(inputs[1]);
       });
 
@@ -1313,11 +1249,11 @@ describe('FileNormalizationModalComponent', () => {
 
         const last = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true, bubbles: true });
         inputs[2].dispatchEvent(last);
-        expect(last.defaultPrevented).toBeFalse();
+        expect(last.defaultPrevented).toBe(false);
 
         const first = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, cancelable: true, bubbles: true });
         inputs[0].dispatchEvent(first);
-        expect(first.defaultPrevented).toBeFalse();
+        expect(first.defaultPrevented).toBe(false);
       });
     });
 
@@ -1337,9 +1273,7 @@ describe('FileNormalizationModalComponent', () => {
       component.activeTab = 'cast';
       fixture.detectChanges();
 
-      const links: HTMLAnchorElement[] = Array.from(
-        fixture.nativeElement.querySelectorAll('a.lookup-link'),
-      );
+      const links: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll('a.lookup-link'));
       expect(links.length).toBeGreaterThan(0);
       for (const link of links) {
         expect(link.target).toBe('_blank');
@@ -1363,43 +1297,41 @@ describe('FileNormalizationModalComponent', () => {
         return fixture.nativeElement.querySelector('button.copy-title');
       }
 
-      it('copies the group title and confirms until the timeout', fakeAsync(() => {
-        const write = spyOn(navigator.clipboard, 'writeText').and.resolveTo();
+      it('copies the group title and confirms until the timeout', async () => {
+        const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
         const button = renderHeaderButton();
         expect(button.textContent!.trim()).toBe('Copy');
 
         button.click();
-        tick(); // resolve the clipboard promise
+        await vi.advanceTimersByTimeAsync(0); // resolve the clipboard promise
         fixture.detectChanges();
 
         expect(write).toHaveBeenCalledWith('Ass Man');
         expect(button.textContent).toContain('Copied');
         expect(button.classList).toContain('copied');
 
-        tick(1500);
+        await vi.advanceTimersByTimeAsync(1500);
         fixture.detectChanges();
         expect(button.textContent!.trim()).toBe('Copy');
         expect(button.classList).not.toContain('copied');
-      }));
+      });
 
-      it('keeps the plain label when the clipboard write fails', fakeAsync(() => {
-        spyOn(navigator.clipboard, 'writeText').and.rejectWith(new Error('denied'));
-        spyOn(console, 'error');
+      it('keeps the plain label when the clipboard write fails', async () => {
+        vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'));
+        vi.spyOn(console, 'error').mockReturnValue(undefined as never);
         const button = renderHeaderButton();
 
         button.click();
-        tick();
+        await vi.advanceTimersByTimeAsync(0);
         fixture.detectChanges();
 
         expect(button.textContent!.trim()).toBe('Copy');
         expect(button.classList).not.toContain('copied');
-      }));
+      });
     });
 
     it('loads the cast vocabulary on init', () => {
-      const spy = spyOn(fileService, 'getCastNames').and.returnValue(
-        of({ names: ['Angel Long', 'Jane Wilde'] }),
-      );
+      const spy = vi.spyOn(fileService, 'getCastNames').mockReturnValue(of({ names: ['Angel Long', 'Jane Wilde'] }));
       component.files = [makeFile()];
       component.directory = '/Volumes/Download/fixed';
 
@@ -1410,16 +1342,13 @@ describe('FileNormalizationModalComponent', () => {
     });
 
     it('feeds cast that landed on disk back into the vocabulary', () => {
-      const spy = spyOn(fileService, 'getCastNames').and.returnValue(
-        of({ names: [] }),
-      );
+      const spy = vi.spyOn(fileService, 'getCastNames').mockReturnValue(of({ names: [] }));
       const file = makeFile({
         originalFileName: 'Ass Man - Scene_1.mp4',
         newFileName: 'Ass Man - Scene_1 - Angel Long.mp4',
       });
       component.files = [file];
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'Ass Man - Scene_1.mp4',
@@ -1427,8 +1356,7 @@ describe('FileNormalizationModalComponent', () => {
               status: 'Renamed successfully',
             },
           ],
-        }),
-      );
+      }));
 
       component.directory = '/Volumes/Download/fixed';
 
@@ -1440,9 +1368,7 @@ describe('FileNormalizationModalComponent', () => {
     it('can skip harvesting the directory, yet still feed typed cast back', () => {
       // The Settings page opens this on whole library roots, where a harvest
       // would re-add names deliberately deleted from the store.
-      const spy = spyOn(fileService, 'getCastNames').and.returnValue(
-        of({ names: [] }),
-      );
+      const spy = vi.spyOn(fileService, 'getCastNames').mockReturnValue(of({ names: [] }));
       component.harvestDirectoryCastNames = false;
       component.directory = '/Volumes/Fixture/recorded';
       const file = makeFile({
@@ -1453,8 +1379,7 @@ describe('FileNormalizationModalComponent', () => {
       component.ngOnInit();
       expect(spy).toHaveBeenCalledWith(undefined, undefined);
 
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'Ass Man - Scene_1.mp4',
@@ -1462,16 +1387,13 @@ describe('FileNormalizationModalComponent', () => {
               status: 'Renamed successfully',
             },
           ],
-        }),
-      );
+      }));
       component.renameFiles();
       expect(spy).toHaveBeenCalledWith(undefined, ['Angel Long']);
     });
 
     it('survives a vocabulary fetch failure', () => {
-      spyOn(fileService, 'getCastNames').and.returnValue(
-        throwError(() => new Error('offline')),
-      );
+      vi.spyOn(fileService, 'getCastNames').mockReturnValue(throwError(() => new Error('offline')));
       component.files = [makeFile()];
 
       expect(() => component.ngOnInit()).not.toThrow();
@@ -1513,12 +1435,8 @@ describe('FileNormalizationModalComponent', () => {
         newFileName: 'Ass Man - Scene_1 - Jane Doe.mp4',
       });
 
-      expect(component.effectiveBaseName(file)).toBe(
-        'Ass Man - Scene_1 - Jane Doe',
-      );
-      expect(component.previewBaseName(file)).toBe(
-        'Ass Man - Scene_1 - Jane Doe',
-      );
+      expect(component.effectiveBaseName(file)).toBe('Ass Man - Scene_1 - Jane Doe');
+      expect(component.previewBaseName(file)).toBe('Ass Man - Scene_1 - Jane Doe');
     });
 
     it('uses the pending new name for included files and the on-disk name for excluded ones', () => {
@@ -1543,10 +1461,8 @@ describe('FileNormalizationModalComponent', () => {
       expect(component.castFiles).toEqual([pending]);
     });
 
-    it('keeps a row in the list while a cast name is being typed into it', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'Ass Man - Scene_1 - Jane Doe' }),
-      );
+    it('keeps a row in the list while a cast name is being typed into it', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'Ass Man - Scene_1 - Jane Doe' }));
       const file = makeFile({
         originalFileName: 'Ass Man - Scene_1.mp4',
         newFileName: '',
@@ -1558,18 +1474,15 @@ describe('FileNormalizationModalComponent', () => {
       // Typing a cast name makes it stop qualifying — it must not vanish
       file.workingBaseName = 'Ass Man - Scene_1 - Jane Doe';
       component.onCastNameChange(file);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
 
       expect(component.castFiles).toEqual([file]);
       expect(file.newFileName).toBe('Ass Man - Scene_1 - Jane Doe.mp4');
-    }));
+    });
 
-    it('drops a row once its cast name is renamed onto disk', fakeAsync(() => {
-      spyOn(fileService, 'normalizeName').and.returnValue(
-        of({ normalized: 'Ass Man - Scene_1 - Jane Doe' }),
-      );
-      spyOn(fileService, 'renameTheFilesToNormalize').and.returnValue(
-        of({
+    it('drops a row once its cast name is renamed onto disk', async () => {
+      vi.spyOn(fileService, 'normalizeName').mockReturnValue(of({ normalized: 'Ass Man - Scene_1 - Jane Doe' }));
+      vi.spyOn(fileService, 'renameTheFilesToNormalize').mockReturnValue(of({
           results: [
             {
               originalFileName: 'Ass Man - Scene_1.mp4',
@@ -1577,8 +1490,7 @@ describe('FileNormalizationModalComponent', () => {
               status: 'Renamed successfully',
             },
           ],
-        }),
-      );
+      }));
       const file = makeFile({
         originalFileName: 'Ass Man - Scene_1.mp4',
         newFileName: '',
@@ -1588,16 +1500,15 @@ describe('FileNormalizationModalComponent', () => {
 
       file.workingBaseName = 'Ass Man - Scene_1 - Jane Doe';
       component.onCastNameChange(file);
-      tick(250);
+      await vi.advanceTimersByTimeAsync(250);
       component.renameFiles();
 
       expect(file.originalFileName).toBe('Ass Man - Scene_1 - Jane Doe.mp4');
       expect(component.castFiles).toEqual([]);
-    }));
+    });
   });
   describe('Add Cast grouping survives editing the title', () => {
-    const volume = (scene: string) =>
-      makeFile({
+    const volume = (scene: string) => makeFile({
         originalFileName: `Party of Three # 03 (2024) - ${scene}.mp4`,
         workingBaseName: `Party of Three # 03 (2024) - ${scene}`,
         newFileName: '',
@@ -1615,11 +1526,9 @@ describe('FileNormalizationModalComponent', () => {
       component.onCastNameChange(s1);
 
       const after = component.castFileGroups;
-      expect(after.length).withContext('row split into its own group').toBe(1);
+      expect(after.length, 'row split into its own group').toBe(1);
       expect(after[0].files).toContain(s1);
-      expect(component.trackGroup(0, after[0]))
-        .withContext('group identity changed -> *ngFor tears the row down')
-        .toBe(keyBefore);
+      expect(component.trackGroup(0, after[0]), 'group identity changed -> *ngFor tears the row down').toBe(keyBefore);
     });
 
     it('does not drop the focused textarea when the title changes', () => {
@@ -1628,9 +1537,7 @@ describe('FileNormalizationModalComponent', () => {
       fixture.detectChanges();
 
       const el = fixture.nativeElement as HTMLElement;
-      const inputs = el.querySelectorAll<HTMLTextAreaElement>(
-        '.working-name-input',
-      );
+      const inputs = el.querySelectorAll<HTMLTextAreaElement>('.working-name-input');
       const typing = inputs[0];
       typing.focus();
       // Chrome skips the focus event when its window isn't the active one.
@@ -1647,12 +1554,8 @@ describe('FileNormalizationModalComponent', () => {
       expect(component.files[0].workingBaseName).toBe(typing.value);
       fixture.detectChanges();
 
-      expect(document.activeElement)
-        .withContext('the row was rebuilt and the caret was lost')
-        .toBe(typing);
-      expect(
-        el.querySelectorAll<HTMLTextAreaElement>('.working-name-input')[0],
-      ).toBe(typing);
+      expect(document.activeElement, 'the row was rebuilt and the caret was lost').toBe(typing);
+      expect(el.querySelectorAll<HTMLTextAreaElement>('.working-name-input')[0]).toBe(typing);
     });
 
     it('still shows the corrected title on the header and Copy button', () => {
@@ -1674,9 +1577,7 @@ describe('FileNormalizationModalComponent', () => {
       s1.workingBaseName = 'Party of Four # 03 (2024) - Scene_1';
       component.onCastNameChange(s1);
 
-      expect(component.castFiles)
-        .withContext('editing the title resurrected a dismissed group')
-        .not.toContain(s1);
+      expect(component.castFiles, 'editing the title resurrected a dismissed group').not.toContain(s1);
     });
   });
 });

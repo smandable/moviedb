@@ -4,11 +4,7 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { of, throwError } from 'rxjs';
 
 import { DbTitleUpdatesModalComponent } from './db-title-updates-modal.component';
-import {
-  TitleRow,
-  TitleUpdateItem,
-  TitleUpdateService,
-} from '@services/title-update.service';
+import { TitleRow, TitleUpdateItem, TitleUpdateService, } from '@services/title-update.service';
 
 describe('DbTitleUpdatesModalComponent', () => {
   let fixture: ComponentFixture<DbTitleUpdatesModalComponent>;
@@ -34,7 +30,7 @@ describe('DbTitleUpdatesModalComponent', () => {
   };
 
   const open = (items: TitleUpdateItem[]) => {
-    spyOn(service, 'preview').and.returnValue(of({ items }));
+    vi.spyOn(service, 'preview').mockReturnValue(of({ items }));
     component.renames = [{ path: '/v', originalFileName: 'a.mp4', newFileName: 'b.mp4' }];
     fixture.detectChanges();
   };
@@ -45,7 +41,7 @@ describe('DbTitleUpdatesModalComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DbTitleUpdatesModalComponent, HttpClientTestingModule],
       providers: [
-        { provide: NgbActiveModal, useValue: { close: () => {}, dismiss: () => {} } },
+        { provide: NgbActiveModal, useValue: { close: () => { }, dismiss: () => { } } },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(DbTitleUpdatesModalComponent);
@@ -56,7 +52,9 @@ describe('DbTitleUpdatesModalComponent', () => {
   it('previews the renames and sorts items into updates, merges and skipped', () => {
     open([update(5, 'Up And Away', 'Up and Away'), mergeItem, skippedItem]);
 
-    expect(service.preview).toHaveBeenCalledOnceWith(component.renames);
+    expect(service.preview).toHaveBeenCalledTimes(1);
+
+    expect(service.preview).toHaveBeenCalledWith(component.renames);
     expect(all('.update-row').length).toBe(1);
     expect(all('.merge-item').length).toBe(1);
     expect(all('.skipped-item')[0].textContent).toContain('Not in the database');
@@ -68,27 +66,25 @@ describe('DbTitleUpdatesModalComponent', () => {
     const a = update(5, 'Up And Away', 'Up and Away');
     const b = update(6, 'Down And Out', 'Down and Out');
     open([a, b]);
-    const apply = spyOn(service, 'apply').and.returnValue(
-      of({ results: [{ id: 5, ok: true }] }),
-    );
+    const apply = vi.spyOn(service, 'apply').mockReturnValue(of({ results: [{ id: 5, ok: true }] }));
 
     component.toggle(b, false);
     component.applyUpdates();
     fixture.detectChanges();
 
-    expect(apply).toHaveBeenCalledOnceWith([
+    expect(apply).toHaveBeenCalledTimes(1);
+
+    expect(apply).toHaveBeenCalledWith([
       { table: 'movies_het', id: 5, from: 'Up And Away', to: 'Up and Away' },
     ]);
     expect(all('.update-row')[0].textContent).toContain('Updated');
     expect(component.pendingUpdates).toEqual([]);
-    expect((el('.apply-button') as HTMLButtonElement).disabled).toBeTrue();
+    expect((el('.apply-button') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('shows a per-row refusal from the server', () => {
     open([update(5, 'Up And Away', 'Up and Away')]);
-    spyOn(service, 'apply').and.returnValue(
-      of({ results: [{ id: 5, ok: false, error: 'Another row already has the new title.' }] }),
-    );
+    vi.spyOn(service, 'apply').mockReturnValue(of({ results: [{ id: 5, ok: false, error: 'Another row already has the new title.' }] }));
 
     component.applyUpdates();
     fixture.detectChanges();
@@ -99,22 +95,23 @@ describe('DbTitleUpdatesModalComponent', () => {
 
   it('merges only after confirmation', () => {
     open([mergeItem]);
-    const merge = spyOn(service, 'merge').and.returnValue(of({ ok: true, deleted: 8 }));
-    const confirm = spyOn(window, 'confirm').and.returnValues(false, true);
+    const merge = vi.spyOn(service, 'merge').mockReturnValue(of({ ok: true, deleted: 8 }));
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true);
 
     component.merge(component.merges[0]);
     expect(merge).not.toHaveBeenCalled();
 
     component.merge(component.merges[0]);
     fixture.detectChanges();
-    expect(confirm.calls.mostRecent().args[0]).toContain('delete row 8');
-    expect(merge).toHaveBeenCalledOnceWith(mergeItem);
+    expect(vi.mocked(confirm).mock.lastCall![0]).toContain('delete row 8');
+    expect(merge).toHaveBeenCalledTimes(1);
+    expect(merge).toHaveBeenCalledWith(mergeItem);
     expect(el('.merge-item')!.textContent).toContain('row 8 deleted');
-    expect((el('.merge-button') as HTMLButtonElement).disabled).toBeTrue();
+    expect((el('.merge-button') as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('reports a preview failure', () => {
-    spyOn(service, 'preview').and.returnValue(throwError(() => new Error('boom')));
+    vi.spyOn(service, 'preview').mockReturnValue(throwError(() => new Error('boom')));
     fixture.detectChanges();
     expect(el('.load-error')!.textContent).toContain('boom');
   });
@@ -125,7 +122,7 @@ describe('DbTitleUpdatesModalComponent', () => {
     expect(all('.update-row td').length).toBe(2); // checkbox + title, no outcome column
     expect(el('.update-row .outcome')).toBeNull();
 
-    spyOn(service, 'apply').and.returnValue(of({ results: [{ id: 5, ok: true, logged: true }] }));
+    vi.spyOn(service, 'apply').mockReturnValue(of({ results: [{ id: 5, ok: true, logged: true }] }));
     component.applyUpdates(); // marks the OnPush view for check itself
     fixture.detectChanges();
     const outcome = el('.update-row td:nth-child(2) .outcome');
@@ -137,18 +134,16 @@ describe('DbTitleUpdatesModalComponent', () => {
     const a = update(5, 'Up And Away', 'Up and Away');
     const b = update(5, 'Up And Away', 'Up & Away');
     open([a, b]);
-    spyOn(service, 'apply').and.returnValue(
-      of({ results: [{ id: 5, ok: true, logged: false }, { id: 5, ok: false, error: "The row's title changed" }] }),
-    );
+    vi.spyOn(service, 'apply').mockReturnValue(of({ results: [{ id: 5, ok: true, logged: false }, { id: 5, ok: false, error: "The row's title changed" }] }));
 
     component.applyUpdates();
 
     expect(component.outcomes.get(a)).toEqual({ ok: true, text: 'Updated (undo log not written!)' });
-    expect(component.outcomes.get(b)!.ok).toBeFalse();
+    expect(component.outcomes.get(b)!.ok).toBe(false);
   });
 
   it('warns when the drive index is missing', () => {
-    spyOn(service, 'preview').and.returnValue(of({ items: [], indexMissing: true }));
+    vi.spyOn(service, 'preview').mockReturnValue(of({ items: [], indexMissing: true }));
     fixture.detectChanges();
     expect(el('.index-missing')).not.toBeNull();
   });

@@ -1,8 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { environment } from '@env/environment';
 
 import { TitleUpdateItem, TitleUpdateService } from './title-update.service';
@@ -57,16 +54,13 @@ describe('TitleUpdateService', () => {
     req.flush({ ok: true });
   });
 
-  it("surfaces the server's message on errors", (done) => {
+  it("surfaces the server's message on errors", async () => {
     service.apply([]).subscribe({
       error: (e: Error) => {
         expect(e.message).toBe('Missing X-Requested-With header');
-        done();
+        ;
       },
     });
-    httpMock.expectOne(url).flush(
-      { success: false, message: 'Missing X-Requested-With header' },
-      { status: 403, statusText: 'Forbidden' },
-    );
+    httpMock.expectOne(url).flush({ success: false, message: 'Missing X-Requested-With header' }, { status: 403, statusText: 'Forbidden' });
   });
 });

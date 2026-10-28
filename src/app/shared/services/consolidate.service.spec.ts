@@ -1,8 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { environment } from '@env/environment';
 
 import { ConsolidateService } from './consolidate.service';
@@ -72,17 +69,14 @@ describe('ConsolidateService', () => {
   });
 
   it('unwraps the server error message on a refusal', () => {
-    spyOn(console, 'error');
+    vi.spyOn(console, 'error').mockReturnValue(undefined as never);
     let message = '';
     service.run(true).subscribe({
       error: (err: Error) => (message = err.message),
     });
     httpMock
       .expectOne(url)
-      .flush(
-        { message: 'A consolidation is already running' },
-        { status: 409, statusText: 'Conflict' },
-      );
+      .flush({ message: 'A consolidation is already running' }, { status: 409, statusText: 'Conflict' });
     expect(message).toBe('A consolidation is already running');
   });
 });

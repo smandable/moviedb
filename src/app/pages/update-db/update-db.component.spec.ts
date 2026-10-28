@@ -1,17 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpClientTestingModule, HttpTestingController, } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { provideTranslateService } from '@ngx-translate/core';
 import { ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
 import { UpdateDbComponent } from './update-db.component';
-import {
-  FileService,
-  NormalizedFile,
-  ProcessFilesResponse,
-} from '@services/file.service';
+import { FileService, NormalizedFile, ProcessFilesResponse, } from '@services/file.service';
 import { environment } from '@env/environment';
 import { of, Subject, throwError } from 'rxjs';
 
@@ -49,7 +42,7 @@ describe('UpdateDbComponent', () => {
 
   describe('processDirectory', () => {
     it('should alert if directory is empty', () => {
-      spyOn(window, 'alert');
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
       component.directory = '   ';
       component.processDirectory();
       expect(window.alert).toHaveBeenCalledWith('Please enter a valid directory path.');
@@ -68,47 +61,36 @@ describe('UpdateDbComponent', () => {
         },
       ];
 
-      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValue(
-        of({ files: mockFiles }),
-      );
+      vi.spyOn(fileService, 'checkFileNamesToNormalize').mockReturnValue(of({ files: mockFiles }));
       // Spy on openFilesModal to prevent modal from opening
-      spyOn(component, 'openFilesModal');
+      vi.spyOn(component, 'openFilesModal').mockReturnValue(undefined as never);
 
       component.directory = '/test';
       component.processDirectory();
 
       expect(fileService.checkFileNamesToNormalize).toHaveBeenCalledWith('/test');
       expect(component.totalItems).toBe(1);
-      expect(component.isScanning).toBeFalse();
+      expect(component.isScanning).toBe(false);
       expect(component.openFilesModal).toHaveBeenCalledWith(mockFiles);
     });
 
     it('should alert on error', () => {
-      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValue(
-        throwError(() => new Error('fail')),
-      );
-      spyOn(window, 'alert');
-      spyOn(console, 'error');
+      vi.spyOn(fileService, 'checkFileNamesToNormalize').mockReturnValue(throwError(() => new Error('fail')));
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
+      vi.spyOn(console, 'error').mockReturnValue(undefined as never);
 
       component.directory = '/test';
       component.processDirectory();
 
-      expect(window.alert).toHaveBeenCalledWith(
-        'Failed to process the directory. See console for details.',
-      );
-      expect(component.isScanning).toBeFalse();
+      expect(window.alert).toHaveBeenCalledWith('Failed to process the directory. See console for details.');
+      expect(component.isScanning).toBe(false);
     });
 
     it('repaints the button after a failed scan', () => {
-      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValue(
-        throwError(() => new Error('fail')),
-      );
-      spyOn(window, 'alert');
-      spyOn(console, 'error');
-      const detectChanges = spyOn(
-        component['cdr'] as ChangeDetectorRef,
-        'detectChanges',
-      );
+      vi.spyOn(fileService, 'checkFileNamesToNormalize').mockReturnValue(throwError(() => new Error('fail')));
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
+      vi.spyOn(console, 'error').mockReturnValue(undefined as never);
+      const detectChanges = vi.spyOn(component['cdr'] as ChangeDetectorRef, 'detectChanges').mockReturnValue(undefined as never);
 
       component.directory = '/test';
       component.processDirectory();
@@ -119,24 +101,24 @@ describe('UpdateDbComponent', () => {
     });
 
     it('shows the scan in flight on the button', () => {
-      const scan = new Subject<{ files: NormalizedFile[] }>();
-      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValue(scan);
-      spyOn(component, 'openFilesModal');
+      const scan = new Subject<{
+        files: NormalizedFile[];
+      }>();
+      vi.spyOn(fileService, 'checkFileNamesToNormalize').mockReturnValue(scan);
+      vi.spyOn(component, 'openFilesModal').mockReturnValue(undefined as never);
       fixture.detectChanges();
-      const button = (
-        fixture.nativeElement as HTMLElement
-      ).querySelector<HTMLButtonElement>('button[title="Process Directory"]')!;
-      expect(button.disabled).toBeFalse();
+      const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button[title="Process Directory"]')!;
+      expect(button.disabled).toBe(false);
 
       button.click();
       fixture.detectChanges();
-      expect(button.disabled).toBeTrue();
+      expect(button.disabled).toBe(true);
       expect(button.textContent).toContain('Scanning…');
 
       scan.next({ files: [] });
       scan.complete();
       // No fixture.detectChanges(): the response callback must repaint itself.
-      expect(button.disabled).toBeFalse();
+      expect(button.disabled).toBe(false);
       expect(button.textContent).toContain('Process Directory');
     });
 
@@ -145,23 +127,22 @@ describe('UpdateDbComponent', () => {
       // that window started a second scan, and each scan opened its own modal
       // over the same file list: renaming in the top one and letting it close
       // revealed the other, still listing names already gone from disk.
-      const scan = new Subject<{ files: NormalizedFile[] }>();
-      spyOn(fileService, 'checkFileNamesToNormalize').and.returnValues(
-        scan,
-        of({ files: [] }),
-      );
-      spyOn(component, 'openFilesModal');
+      const scan = new Subject<{
+        files: NormalizedFile[];
+      }>();
+      vi.spyOn(fileService, 'checkFileNamesToNormalize').mockReturnValueOnce(scan).mockReturnValueOnce(of({ files: [] }));
+      vi.spyOn(component, 'openFilesModal').mockReturnValue(undefined as never);
 
       component.directory = '/test';
       component.processDirectory();
-      expect(component.isScanning).toBeTrue();
+      expect(component.isScanning).toBe(true);
       component.processDirectory();
       expect(fileService.checkFileNamesToNormalize).toHaveBeenCalledTimes(1);
 
       scan.next({ files: [] });
       scan.complete();
       expect(component.openFilesModal).toHaveBeenCalledTimes(1);
-      expect(component.isScanning).toBeFalse();
+      expect(component.isScanning).toBe(false);
 
       // Once the scan has answered, the button works again.
       component.processDirectory();
@@ -171,7 +152,7 @@ describe('UpdateDbComponent', () => {
 
   describe('performDatabaseOperations', () => {
     it('should alert if directory is empty', () => {
-      spyOn(window, 'alert');
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
       component.directory = '';
       component.performDatabaseOperations();
       expect(window.alert).toHaveBeenCalledWith('Please enter a valid directory path.');
@@ -200,7 +181,7 @@ describe('UpdateDbComponent', () => {
         ],
       };
 
-      spyOn(fileService, 'processFilesForDB').and.returnValue(of(mockResponse));
+      vi.spyOn(fileService, 'processFilesForDB').mockReturnValue(of(mockResponse));
 
       component.directory = '/test';
       component.performDatabaseOperations();
@@ -210,7 +191,7 @@ describe('UpdateDbComponent', () => {
       expect(component.duplicateItemsCount).toBe(1);
       expect(component.newItemsSize).toBe(1048576);
       expect(component.duplicateItemsSize).toBe(2097152);
-      expect(component.processingComplete).toBeTrue();
+      expect(component.processingComplete).toBe(true);
       expect(component.rowData.length).toBe(2);
     });
 
@@ -221,8 +202,8 @@ describe('UpdateDbComponent', () => {
         titles: [],
       };
 
-      spyOn(fileService, 'processFilesForDB').and.returnValue(of(errorResponse));
-      spyOn(window, 'alert');
+      vi.spyOn(fileService, 'processFilesForDB').mockReturnValue(of(errorResponse));
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
 
       component.directory = '/bad';
       component.performDatabaseOperations();
@@ -243,9 +224,7 @@ describe('UpdateDbComponent', () => {
         needsUpdateFilesize: true,
       };
 
-      spyOn(fileService, 'updateRow').and.returnValue(
-        of({ success: true }),
-      );
+      vi.spyOn(fileService, 'updateRow').mockReturnValue(of({ success: true }));
 
       component.updateDB(mockData);
 
@@ -255,15 +234,13 @@ describe('UpdateDbComponent', () => {
         duration: 3600,
       });
       expect(mockData.isLarger).toBeNull();
-      expect(mockData.needsUpdateMissingMeta).toBeFalse();
-      expect(mockData.needsUpdateFilesize).toBeFalse();
+      expect(mockData.needsUpdateMissingMeta).toBe(false);
+      expect(mockData.needsUpdateFilesize).toBe(false);
     });
 
     it('should alert on failed update response', () => {
-      spyOn(fileService, 'updateRow').and.returnValue(
-        of({ success: false, message: 'DB error' }),
-      );
-      spyOn(window, 'alert');
+      vi.spyOn(fileService, 'updateRow').mockReturnValue(of({ success: false, message: 'DB error' }));
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
 
       component.updateDB({
         id: 1,
@@ -278,7 +255,7 @@ describe('UpdateDbComponent', () => {
 
   describe('searchExternalDrives', () => {
     it('should call fileService.openExternalDriveSearch', () => {
-      spyOn(fileService, 'openExternalDriveSearch').and.returnValue(of({ success: true }));
+      vi.spyOn(fileService, 'openExternalDriveSearch').mockReturnValue(of({ success: true }));
 
       component.searchExternalDrives('test query');
 
@@ -286,17 +263,13 @@ describe('UpdateDbComponent', () => {
     });
 
     it('should alert on error', () => {
-      spyOn(fileService, 'openExternalDriveSearch').and.returnValue(
-        throwError(() => new Error('fail')),
-      );
-      spyOn(window, 'alert');
-      spyOn(console, 'error');
+      vi.spyOn(fileService, 'openExternalDriveSearch').mockReturnValue(throwError(() => new Error('fail')));
+      vi.spyOn(window, 'alert').mockReturnValue(undefined as never);
+      vi.spyOn(console, 'error').mockReturnValue(undefined as never);
 
       component.searchExternalDrives('test');
 
-      expect(window.alert).toHaveBeenCalledWith(
-        'Failed to search external drives. See console for details.',
-      );
+      expect(window.alert).toHaveBeenCalledWith('Failed to search external drives. See console for details.');
     });
   });
 
