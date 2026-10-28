@@ -4,7 +4,7 @@ import {
   HttpClientTestingModule,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import { PLATFORM_ID } from '@angular/core';
 import { HomeComponent } from './home.component';
 import { MovieService, Movie } from '@services/movie.service';
@@ -48,9 +48,9 @@ describe('HomeComponent', () => {
         HomeComponent,
         HttpClientTestingModule,
         RouterTestingModule,
-        TranslateModule.forRoot(),
       ],
       providers: [
+        provideTranslateService(),
         MovieService,
         FileService,
         { provide: PLATFORM_ID, useValue: 'browser' },

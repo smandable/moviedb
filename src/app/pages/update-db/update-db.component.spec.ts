@@ -4,7 +4,7 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import { ChangeDetectorRef, PLATFORM_ID } from '@angular/core';
 import { UpdateDbComponent } from './update-db.component';
 import {
@@ -26,9 +26,9 @@ describe('UpdateDbComponent', () => {
         UpdateDbComponent,
         HttpClientTestingModule,
         RouterTestingModule,
-        TranslateModule.forRoot(),
       ],
       providers: [
+        provideTranslateService(),
         FileService,
         { provide: PLATFORM_ID, useValue: 'browser' },
       ],

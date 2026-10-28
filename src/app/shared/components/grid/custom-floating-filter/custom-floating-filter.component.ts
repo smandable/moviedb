@@ -4,7 +4,7 @@ import {
   TextFilterModel,
 } from 'ag-grid-community';
 import { NgFor, NgIf, NgStyle } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, OnDestroy, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 const HISTORY_KEY = 'filterHistory';
@@ -91,6 +91,7 @@ const MIN_TERM_LENGTH = 2;
     }
   `],
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   imports: [FormsModule, NgIf, NgFor, NgStyle],
 })
 export class CustomFloatingFilterComponent

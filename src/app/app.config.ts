@@ -12,7 +12,7 @@ import { withInMemoryScrolling }  from '@angular/router';
 import { withRouterConfig }       from '@angular/router';
 
 // External modules
-import { TranslateModule }           from '@ngx-translate/core';
+import { provideTranslateService }   from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { AngularSvgIconModule }   from 'angular-svg-icon';
 
@@ -39,17 +39,17 @@ export const appConfig : ApplicationConfig = {
       BrowserModule,
 
       // External modules
-      TranslateModule.forRoot({
-        // v17 renamed defaultLanguage -> fallbackLang; the old option no
-        // longer triggers a language load, so en.json was never fetched and
-        // every key fell through raw (navbar showed "HOME", not "Home")
-        fallbackLang : environment.defaultLanguage,
-      }),
       AngularSvgIconModule.forRoot(),
 
       // Internal modules
     ),
 
+    // v18 removed TranslateModule. fallbackLang (v17's rename of
+    // defaultLanguage) is what triggers loading en.json; without it every key
+    // falls through raw (navbar showed "HOME", not "Home")
+    provideTranslateService({
+      fallbackLang : environment.defaultLanguage,
+    }),
     provideTranslateHttpLoader({ prefix: './assets/i18n/', suffix: '.json' }),
 
     provideHttpClient(withFetch(), withInterceptorsFromDi()),

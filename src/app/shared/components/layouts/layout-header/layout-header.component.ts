@@ -1,11 +1,12 @@
 // Angular modules
+import { ChangeDetectionStrategy } from '@angular/core';
 import { Component }         from '@angular/core';
 import { RouterLink }        from '@angular/router';
 import { RouterLinkActive }  from '@angular/router';
 
 // External modules
 import { NgbCollapse }       from '@ng-bootstrap/ng-bootstrap';
-import { TranslateModule }   from '@ngx-translate/core';
+import { TranslatePipe }     from '@ngx-translate/core';
 
 // Internal modules
 import { environment }       from '@env/environment';
@@ -15,7 +16,8 @@ import { environment }       from '@env/environment';
   templateUrl : './layout-header.component.html',
   styleUrls   : ['./layout-header.component.scss'],
   standalone  : true,
-  imports     : [RouterLink, NgbCollapse, RouterLinkActive, TranslateModule]
+  changeDetection : ChangeDetectionStrategy.Eager,
+  imports     : [RouterLink, NgbCollapse, RouterLinkActive, TranslatePipe]
 })
 export class LayoutHeaderComponent
 {
